@@ -35,7 +35,8 @@ def get_install_requires():
         "pandas",
         "matplotlib",
         "seaborn",
-        "deap"
+        "deap",
+        "tzlocal"
     ]
 
     if sys.version_info.minor < 7:
