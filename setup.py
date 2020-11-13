@@ -24,7 +24,10 @@ from setuptools import find_packages, setup
 
 def get_install_requires():
     install_requires = [
+        "six",
+        "wheel",
         "PyQt5",
+        "pyqtgraph",
         "qdarkstyle",
         "requests",
         "websocket-client",
@@ -36,7 +39,8 @@ def get_install_requires():
         "matplotlib",
         "seaborn",
         "deap",
-        "tzlocal"
+        "tzlocal",
+        "plotly",
     ]
 
     if sys.version_info.minor < 7:
