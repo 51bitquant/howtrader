@@ -36,8 +36,7 @@ def get_install_requires():
         "matplotlib",
         "seaborn",
         "deap",
-        "pyzmq",
-        "QScintilla"
+        "pyzmq"
     ]
 
     if sys.version_info.minor < 7:
@@ -84,7 +83,7 @@ setup(
         "Operating System :: POSIX :: Linux"
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
-        "Topic :: Office/Business :: Financial :: Investment",
+        "Topic :: Office/Business :: Financial :: Investment :: 51bitquant",
         "Programming Language :: Python :: Implementation :: CPython",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: Chinese (Simplified)",
