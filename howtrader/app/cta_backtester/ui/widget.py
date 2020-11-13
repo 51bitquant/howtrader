@@ -172,7 +172,6 @@ class BacktesterManager(QtWidgets.QWidget):
         left_vbox.addWidget(optimization_button)
         left_vbox.addWidget(self.result_button)
         left_vbox.addStretch()
-        left_vbox.addWidget(edit_button)
         left_vbox.addWidget(reload_button)
 
         # Result part
