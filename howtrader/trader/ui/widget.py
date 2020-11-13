@@ -8,7 +8,6 @@ from enum import Enum
 from typing import Any, Dict
 from copy import copy
 from tzlocal import get_localzone
-
 from PyQt5 import QtCore, QtGui, QtWidgets, Qt
 import numpy as np
 
