@@ -6,8 +6,6 @@ from howtrader.trader.engine import BaseEngine, MainEngine, EventEngine
 from howtrader.trader.constant import Interval, Exchange
 from howtrader.trader.object import BarData, HistoryRequest
 from howtrader.trader.database import database_manager
-from howtrader.trader.rqdata import rqdata_client
-
 
 APP_NAME = "DataManager"
 
@@ -207,16 +205,10 @@ class ManagerEngine(BaseEngine):
             data = self.main_engine.query_history(
                 req, contract.gateway_name
             )
-        # Otherwise use RQData to query data
-        else:
-            if not rqdata_client.inited:
-                rqdata_client.init()
 
-            data = rqdata_client.query_history(req)
-
-        if data:
-            database_manager.save_bar_data(data)
-            return(len(data))
+            if data:
+                database_manager.save_bar_data(data)
+                return(len(data))
 
         return 0
 
@@ -236,13 +228,13 @@ class ManagerEngine(BaseEngine):
             end=datetime.now()
         )
 
-        if not rqdata_client.inited:
-            rqdata_client.init()
-
-        data = rqdata_client.query_tick_history(req)
-
-        if data:
-            database_manager.save_tick_data(data)
-            return(len(data))
+        # if not rqdata_client.inited:
+        #     rqdata_client.init()
+        #
+        # data = rqdata_client.query_tick_history(req)
+        #
+        # if data:
+        #     database_manager.save_tick_data(data)
+        #     return(len(data))
 
         return 0
