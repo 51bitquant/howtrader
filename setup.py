@@ -24,10 +24,10 @@ from setuptools import find_packages, setup
 
 def get_install_requires():
     install_requires = [
-        "six",
+        "six==1.13.0",
         "wheel",
-        "PyQt5",
-        "pyqtgraph",
+        "PyQt5==5.14.1",
+        "pyqtgraph==0.10.0",
         "qdarkstyle",
         "requests",
         "websocket-client",
@@ -59,7 +59,7 @@ def get_version_string():
 setup(
     name="howtrader",
     version=get_version_string(),
-    author="vn.py team",
+    author="vn.py team,51bitquant",
     author_email="vn.py@foxmail.com",
     license="MIT",
     url="https://www.vnpy.com",
