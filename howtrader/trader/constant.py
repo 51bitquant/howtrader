@@ -79,19 +79,7 @@ class Exchange(Enum):
     Exchange.
     """
     # CryptoCurrency
-    BITMEX = "BITMEX"
-    OKEX = "OKEX"
-    HUOBI = "HUOBI"
-    BITFINEX = "BITFINEX"
     BINANCE = "BINANCE"
-    BYBIT = "BYBIT"      # bybit.com
-    COINBASE = "COINBASE"
-    DERIBIT = "DERIBIT"
-    GATEIO = "GATEIO"
-    BITSTAMP = "BITSTAMP"
-
-    # Special Function
-    LOCAL = "LOCAL"         # For local generated data
 
 
 class Currency(Enum):

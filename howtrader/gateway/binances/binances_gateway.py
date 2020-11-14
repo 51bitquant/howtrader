@@ -186,7 +186,7 @@ class BinancesGateway(BaseGateway):
 
 class BinancesRestApi(RestClient):
     """
-    BINANCE REST API
+    BINANCE Future REST API
     """
 
     def __init__(self, gateway: BinancesGateway):
