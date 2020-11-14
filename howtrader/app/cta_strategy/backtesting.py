@@ -433,12 +433,12 @@ class BacktestingEngine:
             daily_trade_count = total_trade_count / total_days
 
             total_return = (end_balance / self.capital - 1) * 100
-            annual_return = total_return / total_days * 240
+            annual_return = total_return / total_days * 365
             daily_return = df["return"].mean() * 100
             return_std = df["return"].std() * 100
 
             if return_std:
-                sharpe_ratio = daily_return / return_std * np.sqrt(240)
+                sharpe_ratio = daily_return / return_std * np.sqrt(365)
             else:
                 sharpe_ratio = 0
 
