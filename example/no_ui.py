@@ -21,34 +21,11 @@ binances_setting = {
         "key": "",
         "secret": "",
         "会话数": 3,
-        "服务器": ["TESTNET", "REAL"],
-        "合约模式": ["反向", "正向"],
+        "服务器": "REAL",
+        "合约模式": "正向",
         "代理地址": "",
         "代理端口": 0,
     }
-
-
-# Chinese futures market trading period (day/night)
-DAY_START = time(8, 45)
-DAY_END = time(14, 29)
-
-NIGHT_START = time(20, 45)
-NIGHT_END = time(2, 45)
-
-
-def check_trading_period():
-    """"""
-    current_time = datetime.now().time()
-
-    trading = False
-    if (
-        (current_time >= DAY_START and current_time <= DAY_END)
-        or (current_time >= NIGHT_START)
-        or (current_time <= NIGHT_END)
-    ):
-        trading = True
-
-    return trading
 
 
 def run():
@@ -84,13 +61,6 @@ def run():
 
     while True:
         sleep(10)
-
-        trading = check_trading_period()
-        if not trading:
-            print("关闭进程")
-            main_engine.close()
-            sys.exit(0)
-
 
 if __name__ == "__main__":
     run()
