@@ -10,6 +10,9 @@ from howtrader.app.cta_strategy import (
     TargetPosTemplate
 )
 
+import pandas as pd
+import pandas_ta as ta
+
 
 class RsiSignal(CtaSignal):
     """"""
@@ -40,7 +43,9 @@ class RsiSignal(CtaSignal):
         if not self.am.inited:
             self.set_signal_pos(0)
 
-        rsi_value = self.am.rsi(self.rsi_window)
+        close = pd.Series(self.am.close_array)
+
+        rsi_value = ta.rsi(close, self.rsi_window).iloc[-1]
 
         if rsi_value >= self.rsi_long:
             self.set_signal_pos(1)
@@ -79,7 +84,11 @@ class CciSignal(CtaSignal):
         if not self.am.inited:
             self.set_signal_pos(0)
 
-        cci_value = self.am.cci(self.cci_window)
+        close = pd.Series(self.am.close_array)
+        high = pd.Series(self.am.high_array)
+        low = pd.Series(self.am.low_array)
+
+        cci_value = ta.cci(high, low, close, self.cci_window).iloc[-1]
 
         if cci_value >= self.cci_long:
             self.set_signal_pos(1)
@@ -120,8 +129,9 @@ class MaSignal(CtaSignal):
         if not self.am.inited:
             self.set_signal_pos(0)
 
-        fast_ma = self.am.sma(self.fast_window)
-        slow_ma = self.am.sma(self.slow_window)
+        close = pd.Series(self.am.close_array)
+        fast_ma = ta.sma(close, self.fast_window).iloc[-1]
+        slow_ma = ta.sma(close, self.slow_window).iloc[-1]
 
         if fast_ma > slow_ma:
             self.set_signal_pos(1)

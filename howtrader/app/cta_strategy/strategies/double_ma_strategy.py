@@ -9,6 +9,8 @@ from howtrader.app.cta_strategy import (
     ArrayManager,
 )
 
+import pandas_ta as ta
+import pandas as pd
 
 class DoubleMaStrategy(CtaTemplate):
     author = "用Python的交易员"
@@ -70,13 +72,15 @@ class DoubleMaStrategy(CtaTemplate):
         if not am.inited:
             return
 
-        fast_ma = am.sma(self.fast_window, array=True)
-        self.fast_ma0 = fast_ma[-1]
-        self.fast_ma1 = fast_ma[-2]
+        close = pd.Series(am.close_array)
 
-        slow_ma = am.sma(self.slow_window, array=True)
-        self.slow_ma0 = slow_ma[-1]
-        self.slow_ma1 = slow_ma[-2]
+        fast_ma = ta.sma(close, self.fast_window)
+        self.fast_ma0 = fast_ma.iloc[-1]
+        self.fast_ma1 = fast_ma.iloc[-2]
+
+        slow_ma = ta.sma(close, self.slow_window)
+        self.slow_ma0 = slow_ma.iloc[-1]
+        self.slow_ma1 = slow_ma.iloc[-2]
 
         cross_over = self.fast_ma0 > self.slow_ma0 and self.fast_ma1 < self.slow_ma1
         cross_below = self.fast_ma0 < self.slow_ma0 and self.fast_ma1 > self.slow_ma1

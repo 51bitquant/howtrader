@@ -9,6 +9,8 @@ from howtrader.app.cta_strategy import (
     ArrayManager,
 )
 
+import pandas_ta as ta
+import pandas as pd
 
 class KingKeltnerStrategy(CtaTemplate):
     """"""
@@ -81,7 +83,18 @@ class KingKeltnerStrategy(CtaTemplate):
         if not am.inited:
             return
 
-        self.kk_up, self.kk_down = am.keltner(self.kk_length, self.kk_dev)
+        high = pd.Series(am.high_array)
+        low = pd.Series(am.low_array)
+        close = pd.Series(am.close_array)
+
+        range_ = ta.true_range(high, low, close)
+
+        basis = ta.sma(close, self.kk_length)
+        band = ta.sma(range_, self.kk_length)
+        up = basis + self.kk_dev * band
+        down = basis - self.kk_dev * band
+
+        self.kk_up, self.kk_down = up.iloc[-1], down.iloc[-1]
 
         if self.pos == 0:
             self.intra_trade_high = bar.high_price

@@ -10,6 +10,9 @@ from howtrader.app.cta_strategy import (
     ArrayManager,
 )
 
+import pandas as pd
+import pandas_ta as ta
+
 
 class TurtleSignalStrategy(CtaTemplate):
     """"""
@@ -76,16 +79,20 @@ class TurtleSignalStrategy(CtaTemplate):
         if not self.am.inited:
             return
 
-        # Only calculates new entry channel when no position holding
-        if not self.pos:
-            self.entry_up, self.entry_down = self.am.donchian(
-                self.entry_window
-            )
-
-        self.exit_up, self.exit_down = self.am.donchian(self.exit_window)
+        high = pd.Series(self.am.high_array)
+        low = pd.Series(self.am.low_array)
+        close = pd.Series(self.am.close_array)
 
         if not self.pos:
-            self.atr_value = self.am.atr(self.atr_window)
+            self.entry_up, self.entry_down = high.rolling(self.entry_window).max().iloc[-1], low.rolling(
+                self.entry_window).min().iloc[-1]
+
+        self.exit_up, self.exit_down = high.rolling(self.exit_window).max().iloc[-1], \
+                                       low.rolling(self.entry_window).min().iloc[-1]
+
+        if not self.pos:
+
+            self.atr_value = ta.atr(high, low, close, self.atr_window).iloc[-1]  # self.am.atr(self.atr_window)
 
             self.long_entry = 0
             self.short_entry = 0

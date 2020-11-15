@@ -9,6 +9,8 @@ from howtrader.app.cta_strategy import (
     ArrayManager,
 )
 
+import pandas_ta as ta
+import pandas as pd
 
 class MultiTimeframeStrategy(CtaTemplate):
     """"""
@@ -90,7 +92,8 @@ class MultiTimeframeStrategy(CtaTemplate):
         if not self.ma_trend:
             return
 
-        self.rsi_value = self.am5.rsi(self.rsi_window)
+        close_5 = pd.Series(self.am5.close_array)
+        self.rsi_value = ta.rsi(close_5, self.rsi_window).iloc[-1]
 
         if self.pos == 0:
             if self.ma_trend > 0 and self.rsi_value >= self.rsi_long:
@@ -114,8 +117,10 @@ class MultiTimeframeStrategy(CtaTemplate):
         if not self.am15.inited:
             return
 
-        self.fast_ma = self.am15.sma(self.fast_window)
-        self.slow_ma = self.am15.sma(self.slow_window)
+        close_15 = pd.Series(self.am15.close_array)
+
+        self.fast_ma = ta.sma(close_15, self.fast_window).iloc[-1]
+        self.slow_ma = ta.sma(close_15, self.slow_window).iloc[-1]
 
         if self.fast_ma > self.slow_ma:
             self.ma_trend = 1
