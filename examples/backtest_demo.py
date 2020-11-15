@@ -3,12 +3,13 @@ from howtrader.app.cta_strategy.strategies.atr_rsi_strategy import (
     AtrRsiStrategy,
 )
 from datetime import datetime
+from howtrader.trader.object import Interval
 
 
 engine = BacktestingEngine()
 engine.set_parameters(
-    vt_symbol="IF88.CFFEX",
-    interval="1m",
+    vt_symbol="BTCUSDT.BINANCE",
+    interval=Interval.MINUTE,
     start=datetime(2019, 1, 1),
     end=datetime(2019, 4, 30),
     rate=0.3/10000,
@@ -20,7 +21,7 @@ engine.set_parameters(
 
 engine.add_strategy(AtrRsiStrategy, {})
 
-#%%
+
 engine.load_data()
 engine.run_backtesting()
 df = engine.calculate_result()
