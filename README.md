@@ -23,3 +23,22 @@ script the following command
 
 or you can use pip to install the howtrader.
 > pip install git+https://github.com/ramoslin02/howtrader.git
+
+
+# 使用 Usage
+你需要在项目下面创建一个文件夹加，howtrader, 这个主要是存放一些日记和配置文件的信息。
+如果不不知道配置文件如何配置，你可以启动examples文件目录下面的main_window.py文件，就可以看到其下面的一些日志和配置文件信息了。
+
+1. firstly you need to create a folder(howtrader) at your project, at
+   this folder, there are log file or configuration file. If you're not
+   sure how to config, you can simply run the main_window.py at examples
+   folder, you can play with UI.
+# 数据爬取
+howtrader可以通过data_manager的app直接下载数据，但是这个过程比较慢，适合少量数据的更新。
+如果你想批量获取数据，可以参考examples下面的download_data_demo2.py文件.
+
+you can download the data through data_manage app, but it's pretty slow,
+it just designs for small piece of data updating and strategy data
+warming. If you want to download the data as soon as possible, you can
+try the download_data_demo2.py or download_data_demo1.py at examples
+folder by using the multi-threads for speeding.
