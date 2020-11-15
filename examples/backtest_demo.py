@@ -1,7 +1,7 @@
 from howtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
 from howtrader.trader.object import Interval
 from datetime import datetime
-from strategies.atr_rsi_strategy import AtrRsiStrategy
+from howtrader.app.cta_strategy.strategies.atr_rsi_strategy import AtrRsiStrategy
 
 engine = BacktestingEngine()
 engine.set_parameters(
