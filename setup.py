@@ -41,6 +41,7 @@ def get_install_requires():
         "deap",
         "tzlocal",
         "plotly",
+        "pandas_ta"
     ]
 
     if sys.version_info.minor < 7:
