@@ -9,6 +9,8 @@ from howtrader.app.cta_strategy import (
     ArrayManager,
 )
 
+import pandas as pd
+import pandas_ta as ta
 
 class BollChannelStrategy(CtaTemplate):
     """"""
@@ -98,9 +100,18 @@ class BollChannelStrategy(CtaTemplate):
         if not am.inited:
             return
 
-        self.boll_up, self.boll_down = am.boll(self.boll_window, self.boll_dev)
-        self.cci_value = am.cci(self.cci_window)
-        self.atr_value = am.atr(self.atr_window)
+        close = pd.Series(am.close_array)
+        high = pd.Series(am.high_array)
+        low = pd.Series(am.low_array)
+
+        standard_deviation = ta.stdev(close=close, length=self.boll_window)
+        deviations = self.boll_dev * standard_deviation
+
+        mid = ta.sma(close=close, length=self.boll_window)
+
+        self.boll_up, self.boll_down = (mid + deviations).iloc[-1],  (mid - deviations).iloc[-1]
+        self.cci_value = ta.cci(high, low, close, self.cci_window).iloc[-1]
+        self.atr_value = ta.atr(high, low, close, self.atr_window).iloc[-1]
 
         if self.pos == 0:
             self.intra_trade_high = bar.high_price

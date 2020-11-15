@@ -9,6 +9,8 @@ from howtrader.app.cta_strategy import (
     ArrayManager,
 )
 
+import pandas as pd
+import pandas_ta as ta
 
 class AtrRsiStrategy(CtaTemplate):
     """"""
@@ -94,10 +96,14 @@ class AtrRsiStrategy(CtaTemplate):
         if not am.inited:
             return
 
-        atr_array = am.atr(self.atr_length, array=True)
-        self.atr_value = atr_array[-1]
-        self.atr_ma = atr_array[-self.atr_ma_length:].mean()
-        self.rsi_value = am.rsi(self.rsi_length)
+        high = pd.Series(am.high_array)
+        low = pd.Series(am.low_array)
+        close = pd.Series(am.close_array)
+
+        atr_array = ta.atr(high, low, close, self.atr_length) #am.atr(self.atr_length, array=True)
+        self.atr_value = atr_array.iloc[-1]
+        self.atr_ma = atr_array.iloc[-self.atr_ma_length:].mean()
+        self.rsi_value = ta.rsi(close, self.rsi_length).iloc[-1]
 
         if self.pos == 0:
             self.intra_trade_high = bar.high_price
