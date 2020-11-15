@@ -1,21 +1,18 @@
 from howtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
-from howtrader.app.cta_strategy.strategies.atr_rsi_strategy import (
-    AtrRsiStrategy,
-)
-from datetime import datetime
 from howtrader.trader.object import Interval
-
+from datetime import datetime
+from strategies.atr_rsi_strategy import AtrRsiStrategy
 
 engine = BacktestingEngine()
 engine.set_parameters(
     vt_symbol="BTCUSDT.BINANCE",
     interval=Interval.MINUTE,
-    start=datetime(2019, 1, 1),
-    end=datetime(2019, 4, 30),
-    rate=0.3/10000,
-    slippage=0.2,
-    size=300,
-    pricetick=0.2,
+    start=datetime(2019, 10, 1),
+    end=datetime(2020, 5, 1),
+    rate=6/ 10000,
+    slippage=0,
+    size=1,
+    pricetick=0.01,
     capital=1_000_000,
 )
 
