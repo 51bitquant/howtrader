@@ -5,7 +5,7 @@ from abc import ABC
 
 class BaseApp(ABC):
     """
-    Absstract class for app.
+    Abstract class for app.
     """
 
     app_name: str = ""           # Unique name used for creating engine and widget

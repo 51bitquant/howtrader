@@ -12,28 +12,33 @@ from .mainwindow import MainWindow
 from ..setting import SETTINGS
 from ..utility import get_icon_path
 
+qapp = None
+
 
 def excepthook(exctype: type, value: Exception, tb: types.TracebackType) -> None:
     """
     Raise exception under debug mode, otherwise
     show exception detail with QMessageBox.
     """
+    global qapp
+
     sys.__excepthook__(exctype, value, tb)
 
     msg = "".join(traceback.format_exception(exctype, value, tb))
-    dialog = ExceptionDialog(msg)
-    dialog.exec_()
+    qapp.signal_exception.emit(msg)
 
 
 def create_qapp(app_name: str = "VN Trader") -> QtWidgets.QApplication:
     """
     Create Qt Application.
     """
+    global qapp
+
     sys.excepthook = excepthook
 
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 
-    qapp = QtWidgets.QApplication(sys.argv)
+    qapp = QApplication(sys.argv)
     qapp.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 
     font = QtGui.QFont(SETTINGS["font.family"], SETTINGS["font.size"])
@@ -48,6 +53,19 @@ def create_qapp(app_name: str = "VN Trader") -> QtWidgets.QApplication:
         )
 
     return qapp
+
+
+class QApplication(QtWidgets.QApplication):
+
+    signal_exception = QtCore.pyqtSignal(str)
+
+    def __init__(self, argv):
+        super().__init__(argv)
+        self.signal_exception.connect(self.show_exception)
+
+    def show_exception(self, msg: str) -> None:
+        dialog = ExceptionDialog(msg)
+        dialog.exec_()
 
 
 class ExceptionDialog(QtWidgets.QDialog):

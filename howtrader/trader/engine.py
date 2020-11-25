@@ -2,7 +2,7 @@
 """
 
 import logging
-from logging import Logger
+import sys
 import smtplib
 import os
 from abc import ABC
@@ -118,7 +118,7 @@ class MainEngine:
         """
         gateway = self.gateways.get(gateway_name, None)
         if not gateway:
-            self.write_log(f"couldn't find the gateway：{gateway_name}")
+            self.write_log(f"找不到底层接口：{gateway_name}")
         return gateway
 
     def get_engine(self, engine_name: str) -> "BaseEngine":
@@ -127,7 +127,7 @@ class MainEngine:
         """
         engine = self.engines.get(engine_name, None)
         if not engine:
-            self.write_log(f"couldn't find the engine：{engine_name}")
+            self.write_log(f"找不到引擎：{engine_name}")
         return engine
 
     def get_default_setting(self, gateway_name: str) -> Optional[Dict[str, Any]]:
@@ -141,7 +141,7 @@ class MainEngine:
 
     def get_all_gateway_names(self) -> List[str]:
         """
-        Get all names of gatewasy added in main engine.
+        Get all names of gateway added in main engine.
         """
         return list(self.gateways.keys())
 
@@ -267,7 +267,7 @@ class LogEngine(BaseEngine):
 
         self.level: int = SETTINGS["log.level"]
 
-        self.logger: Logger = logging.getLogger("VN Trader")
+        self.logger: logging.Logger = logging.getLogger("VN Trader")
         self.logger.setLevel(self.level)
 
         self.formatter = logging.Formatter(
@@ -295,7 +295,7 @@ class LogEngine(BaseEngine):
         """
         Add console output of log.
         """
-        console_handler = logging.StreamHandler()
+        console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(self.level)
         console_handler.setFormatter(self.formatter)
         self.logger.addHandler(console_handler)
@@ -546,8 +546,13 @@ class EmailEngine(BaseEngine):
                         SETTINGS["email.username"], SETTINGS["email.password"]
                     )
                     smtp.send_message(msg)
+                self.write_log(f"发送邮件成功 - {msg}")
             except Empty:
                 pass
+            except Exception:
+                et, ev, tb = sys.exc_info()
+                self.write_log(f"发送邮件失败 - {et.__name__}: {ev}")
+                sys.excepthook(et, ev, tb)
 
     def start(self) -> None:
         """"""
@@ -561,3 +566,11 @@ class EmailEngine(BaseEngine):
 
         self.active = False
         self.thread.join()
+
+    def write_log(self, msg: str) -> None:
+        """
+        Put log event with specific message.
+        """
+        log = LogData(msg=msg, gateway_name="EMAIL")
+        event = Event(EVENT_LOG, log)
+        self.event_engine.put(event)
