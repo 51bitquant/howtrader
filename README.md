@@ -12,6 +12,9 @@ the other part not related to cryptocurrency.
 
 # 安装 installation 
 直接把代码下载下来，然后切换到你的虚拟环境，或者使用当前的环境也是可以的， 在终端输入：
+
+> pip install -r requirements.txt 
+
 > python setup.py install 
 
 如果没有报错，就表示已经安装好了, 你也可以直接在终端输入:
@@ -19,6 +22,9 @@ the other part not related to cryptocurrency.
 
 you can directly download the source code. then open your termal, then
 script the following command
+
+> pip install -r requirements.txt 
+
 > python setup.py install 
 
 or you can use pip to install the howtrader.
