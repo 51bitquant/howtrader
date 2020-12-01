@@ -61,7 +61,6 @@ def get_binance_data(symbol: str, exchanges: str, start_time: str, end_time: str
         print("coin_future")
         limit = BINANCE_FUTURE_LIMIT
         f'https://dapi.binance.com/dapi/v1/klines?symbol={symbol}&interval=1m&limit={limit}'
-        pass
 
     else:
         raise Exception('交易所名称请输入以下其中一个：spot, future, coin_future')
@@ -74,8 +73,7 @@ def get_binance_data(symbol: str, exchanges: str, start_time: str, end_time: str
             print(start_time)
             url = f'{api_url}&startTime={start_time}'
             print(url)
-
-            data = requests.get(url=url).json()
+            data = requests.get(url=url, timeout=10, proxies=proxies).json()
 
             """
             [
@@ -162,8 +160,17 @@ def download_future():
 
 
 if __name__ == '__main__':
+
+    # 如果你有代理你就设置，如果没有你就设置为 None 或者空的字符串 "",
+    # 但是你要确保你的电脑网络能访问币安交易所，你可以通过 ping api.binance.com 看看过能否ping得通
+    proxy_host = "111" # 如果没有就设置为"", 如果有就设置为你的代理主机如：127.0.0.1
+    proxy_port = 0  # 设置你的代理端口号如: 1087, 没有你修改为0,但是要保证你能访问api.binance.com这个主机。
+
+    proxies = None
+    if proxy_host and proxy_port:
+        proxy = f'http://{proxy_host}:{proxy_port}'
+        proxies = {'http': proxy, 'https': proxy}
+
     # download_spot() # 下载现货的数据.
 
     download_future()  # 下载合约的数据
-
-
