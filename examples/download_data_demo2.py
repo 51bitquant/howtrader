@@ -1,6 +1,5 @@
 """
-we use the ccxt to crawl data then save it to csv file.
-you need to install ccxt by running firstly:
+    我们使用币安原生的api进行数据爬取.
 
 """
 
@@ -124,16 +123,16 @@ def get_binance_data(symbol: str, exchanges: str, start_time: str, end_time: str
             time.sleep(10)
 
 
-def download_spot():
+def download_spot(symbol):
     """
     下载现货数据的方法.
     :return:
     """
-    t1 = Thread(target=get_binance_data, args=('BTCUSDT', 'spot', "2018-1-1", "2019-1-1"))
+    t1 = Thread(target=get_binance_data, args=(symbol, 'spot', "2018-1-1", "2019-1-1"))
 
-    t2 = Thread(target=get_binance_data, args=('BTCUSDT', 'spot', "2019-1-1", "2020-1-1"))
+    t2 = Thread(target=get_binance_data, args=(symbol, 'spot', "2019-1-1", "2020-1-1"))
 
-    t3 = Thread(target=get_binance_data, args=('BTCUSDT', 'spot', "2020-1-1", "2020-11-16"))
+    t3 = Thread(target=get_binance_data, args=(symbol, 'spot', "2020-1-1", "2020-11-16"))
 
     t1.start()
     t2.start()
@@ -144,13 +143,13 @@ def download_spot():
     t3.join()
 
 
-def download_future():
+def download_future(symbol):
     """
     下载合约数据的方法。
     :return:
     """
-    t1 = Thread(target=get_binance_data, args=('BTCUSDT', 'future', "2019-9-10", "2020-3-1"))
-    t2 = Thread(target=get_binance_data, args=('BTCUSDT', 'future', "2019-3-1", "2020-11-16"))
+    t1 = Thread(target=get_binance_data, args=(symbol, 'future', "2019-9-10", "2020-3-1"))
+    t2 = Thread(target=get_binance_data, args=(symbol, 'future', "2019-3-1", "2020-11-16"))
 
     t1.start()
     t2.start()
@@ -163,14 +162,16 @@ if __name__ == '__main__':
 
     # 如果你有代理你就设置，如果没有你就设置为 None 或者空的字符串 "",
     # 但是你要确保你的电脑网络能访问币安交易所，你可以通过 ping api.binance.com 看看过能否ping得通
-    proxy_host = "111" # 如果没有就设置为"", 如果有就设置为你的代理主机如：127.0.0.1
-    proxy_port = 0  # 设置你的代理端口号如: 1087, 没有你修改为0,但是要保证你能访问api.binance.com这个主机。
+    proxy_host = "127.0.0.1"  # 如果没有就设置为"", 如果有就设置为你的代理主机如：127.0.0.1
+    proxy_port = 1087  # 设置你的代理端口号如: 1087, 没有你修改为0,但是要保证你能访问api.binance.com这个主机。
 
     proxies = None
     if proxy_host and proxy_port:
         proxy = f'http://{proxy_host}:{proxy_port}'
         proxies = {'http': proxy, 'https': proxy}
 
-    # download_spot() # 下载现货的数据.
+    symbol = "BTCUSDT"
 
-    download_future()  # 下载合约的数据
+    # download_spot(symbol) # 下载现货的数据.
+
+    download_future(symbol)  # 下载合约的数据
