@@ -1,7 +1,7 @@
 """
 Event-driven framework of vn.py framework.
 """
-
+import sys
 from collections import defaultdict
 from queue import Empty, Queue
 from threading import Thread
@@ -63,17 +63,21 @@ class EventEngine:
 
     def _process(self, event: Event) -> None:
         """
-        First ditribute event to those handlers registered listening
+        First distribute event to those handlers registered listening
         to this type.
 
-        Then distrubute event to those general handlers which listens
+        Then distribute event to those general handlers which listens
         to all types.
         """
-        if event.type in self._handlers:
-            [handler(event) for handler in self._handlers[event.type]]
+        try:
+            if event.type in self._handlers:
+                [handler(event) for handler in self._handlers[event.type]]
 
-        if self._general_handlers:
-            [handler(event) for handler in self._general_handlers]
+            if self._general_handlers:
+                [handler(event) for handler in self._general_handlers]
+        except Exception:
+            et, ev, tb = sys.exc_info()
+            sys.excepthook(et, ev, tb)
 
     def _run_timer(self) -> None:
         """

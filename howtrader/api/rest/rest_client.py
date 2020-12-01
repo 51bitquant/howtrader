@@ -196,7 +196,7 @@ class RestClient(object):
             et, ev, tb = sys.exc_info()
             self.on_error(et, ev, tb, None)
 
-    def sign(self, request: Request) -> None:
+    def sign(self, request: Request) -> Request:
         """
         This function is called before sending any request out.
         Please implement signature method here.
@@ -231,7 +231,7 @@ class RestClient(object):
         exception_value: Exception,
         tb,
         request: Optional[Request],
-    ) -> None:
+    ) -> str:
         text = "[{}]: Unhandled RestClient Error:{}\n".format(
             datetime.now().isoformat(), exception_type
         )
