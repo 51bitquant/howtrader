@@ -891,7 +891,7 @@ class BinancesDataWebsocketApi(WebsocketClient):
             interval=Interval.MINUTE
         )
 
-        self.bars[req.symbol] = bar
+        self.bars[req.symbol.lower()] = bar
 
         # Close previous connection
         if self._active:
