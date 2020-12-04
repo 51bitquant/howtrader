@@ -48,3 +48,19 @@ it just designs for small piece of data updating and strategy data
 warming. If you want to download the data as soon as possible, you can
 try the download_data_demo2.py or download_data_demo1.py at examples
 folder by using the multi-threads for speeding.
+
+## learning materials 学习资料
+
+学习资料请参考网易云课堂[《VNPY数字货币量化交易从零到实盘》](https://study.163.com/course/courseMain.htm?courseId=1210904816)
+你也可以在youtube或者b站找到相应的视频，搜索51bitquant即可找到视频。
+
+## updates
+
+1. V2.1.7.3 : update the binance gateway for klines, subscribe the 1min
+   kline for kline update, V2.1.7.3版本更新了币安的K线数据的更新。
+
+
+## 联系方式
+微信: bitquant51
+
+[币安邀请链接](https://www.binancezh.pro/cn/futures/ref/51bitquant)
