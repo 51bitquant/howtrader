@@ -846,6 +846,7 @@ class BinancesDataWebsocketApi(WebsocketClient):
         self.gateway_name: str = gateway.gateway_name
 
         self.ticks: Dict[str, TickData] = {}
+        self.bars: Dict[str, BarData] = {}
         self.usdt_base = False
 
     def connect(
@@ -881,6 +882,17 @@ class BinancesDataWebsocketApi(WebsocketClient):
         )
         self.ticks[req.symbol.lower()] = tick
 
+        # Create bar buf data
+        bar = BarData(
+            symbol=req.symbol,
+            exchange=Exchange.BINANCE,
+            datetime=datetime.now(CHINA_TZ),
+            gateway_name=self.gateway_name,
+            interval=Interval.MINUTE
+        )
+
+        self.bars[req.symbol] = bar
+
         # Close previous connection
         if self._active:
             self.stop()
@@ -891,6 +903,7 @@ class BinancesDataWebsocketApi(WebsocketClient):
         for ws_symbol in self.ticks.keys():
             channels.append(ws_symbol + "@ticker")
             channels.append(ws_symbol + "@depth5")
+            channels.append(ws_symbol + "@kline_1m")
 
         if self.server == "REAL":
             url = F_WEBSOCKET_DATA_HOST + "/".join(channels)
@@ -910,7 +923,8 @@ class BinancesDataWebsocketApi(WebsocketClient):
         data = packet["data"]
 
         symbol, channel = stream.split("@")
-        tick = self.ticks[symbol]
+        tick: TickData = self.ticks[symbol]
+        bar: BarData = self.bars[symbol]
 
         if channel == "ticker":
             tick.volume = float(data['v'])
@@ -918,7 +932,23 @@ class BinancesDataWebsocketApi(WebsocketClient):
             tick.high_price = float(data['h'])
             tick.low_price = float(data['l'])
             tick.last_price = float(data['c'])
-            tick.datetime = datetime.fromtimestamp(float(data['E']) / 1000)
+            tick.datetime = generate_datetime(float(data['E'])) # datetime.fromtimestamp(float(data['E']) / 1000)
+
+        elif channel == "kline_1m":
+
+            dt = generate_datetime(float(data['k']['t']))
+            if dt < bar.datetime and bar.close_price > 0:
+                # filter the older kline.
+                return
+            bar.open_price = float(data['k']['o'])
+            bar.high_price = float(data['k']['h'])
+            bar.low_price = float(data['k']['l'])
+            bar.close_price = float(data['k']['c'])
+            bar.volume = float(data['k']['v'])
+            bar.datetime = dt
+            if data['k']['x']:  # bar finished
+                self.gateway.on_bar(copy(bar))
+
         else:
             bids = data["b"]
             for n in range(min(5, len(bids))):

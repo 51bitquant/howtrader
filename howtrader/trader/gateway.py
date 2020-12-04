@@ -9,6 +9,7 @@ from copy import copy
 from howtrader.event import Event, EventEngine
 from .event import (
     EVENT_TICK,
+    EVENT_BAR,
     EVENT_ORDER,
     EVENT_TRADE,
     EVENT_POSITION,
@@ -62,6 +63,7 @@ class BaseGateway(ABC):
     * on_position
     * on_account
     * on_contract
+    * on_bar
 
     All the XxxData passed to callback should be constant, which means that
         the object should not be modified after passing to on_xxxx.
@@ -97,6 +99,14 @@ class BaseGateway(ABC):
         """
         self.on_event(EVENT_TICK, tick)
         self.on_event(EVENT_TICK + tick.vt_symbol, tick)
+
+    def on_bar(self, bar: BarData) -> None:
+        """
+        Bar  event push.
+        Bar event of a specific vt_symbol is also pushed.
+        """
+        self.on_event(EVENT_BAR, bar)
+        self.on_event(EVENT_BAR + bar.vt_symbol, bar)
 
     def on_trade(self, trade: TradeData) -> None:
         """

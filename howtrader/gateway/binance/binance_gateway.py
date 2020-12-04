@@ -1,7 +1,7 @@
 """
 Gateway for Binance Crypto Exchange.
 """
-
+from typing import Dict
 import urllib
 import hashlib
 import hmac
@@ -37,7 +37,6 @@ from howtrader.trader.object import (
 )
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event
-
 
 REST_HOST = "https://www.binance.com"
 WEBSOCKET_TRADE_HOST = "wss://stream.binance.com:9443/ws/"
@@ -489,7 +488,7 @@ class BinanceRestApi(RestClient):
         """"""
         pass
 
-    def on_send_order_failed(self, status_code: str, request: Request):
+    def on_send_order_failed(self, status_code: str, request: Request) -> None:
         """
         Callback when sending order failed on server.
         """
@@ -696,7 +695,8 @@ class BinanceDataWebsocketApi(WebsocketClient):
         self.gateway = gateway
         self.gateway_name = gateway.gateway_name
 
-        self.ticks = {}
+        self.ticks: Dict[str, TickData] = {}
+        self.bars: Dict[str, BarData] = {}
 
     def connect(self, proxy_host: str, proxy_port: int):
         """"""
@@ -723,6 +723,17 @@ class BinanceDataWebsocketApi(WebsocketClient):
         )
         self.ticks[req.symbol] = tick
 
+        # Create bar buf data
+        bar = BarData(
+            symbol=req.symbol,
+            exchange=Exchange.BINANCE,
+            datetime=datetime.now(CHINA_TZ),
+            gateway_name=self.gateway_name,
+            interval=Interval.MINUTE
+        )
+
+        self.bars[req.symbol] = bar
+
         # Close previous connection
         if self._active:
             self.stop()
@@ -733,6 +744,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
         for ws_symbol in self.ticks.keys():
             channels.append(ws_symbol + "@ticker")
             channels.append(ws_symbol + "@depth5")
+            channels.append(ws_symbol + "@kline_1m")
 
         url = WEBSOCKET_DATA_HOST + "/".join(channels)
         self.init(url, self.proxy_host, self.proxy_port)
@@ -744,7 +756,8 @@ class BinanceDataWebsocketApi(WebsocketClient):
         data = packet["data"]
 
         symbol, channel = stream.split("@")
-        tick = self.ticks[symbol]
+        tick: TickData = self.ticks[symbol]
+        bar: BarData = self.bars[symbol]
 
         if channel == "ticker":
             tick.volume = float(data['v'])
@@ -753,6 +766,21 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.low_price = float(data['l'])
             tick.last_price = float(data['c'])
             tick.datetime = generate_datetime(float(data['E']))
+        elif channel == "kline_1m":
+
+            dt = generate_datetime(float(data['k']['t']))
+            if dt < bar.datetime and bar.close_price > 0:
+                # filter the older kline.
+                return
+            bar.open_price = float(data['k']['o'])
+            bar.high_price = float(data['k']['h'])
+            bar.low_price = float(data['k']['l'])
+            bar.close_price = float(data['k']['c'])
+            bar.volume = float(data['k']['v'])
+            bar.datetime = dt
+            if data['k']['x']:  # bar finished
+                self.gateway.on_bar(copy(bar))
+
         else:
             bids = data["bids"]
             for n in range(5):

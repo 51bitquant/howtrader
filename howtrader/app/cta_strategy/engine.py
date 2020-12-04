@@ -24,6 +24,7 @@ from howtrader.trader.object import (
 )
 from howtrader.trader.event import (
     EVENT_TICK,
+    EVENT_BAR,
     EVENT_ORDER,
     EVENT_TRADE,
     EVENT_POSITION
@@ -113,6 +114,7 @@ class CtaEngine(BaseEngine):
     def register_event(self):
         """"""
         self.event_engine.register(EVENT_TICK, self.process_tick_event)
+        self.event_engine.register(EVENT_BAR, self.process_bar_event)
         self.event_engine.register(EVENT_ORDER, self.process_order_event)
         self.event_engine.register(EVENT_TRADE, self.process_trade_event)
         self.event_engine.register(EVENT_POSITION, self.process_position_event)
@@ -130,6 +132,19 @@ class CtaEngine(BaseEngine):
         for strategy in strategies:
             if strategy.inited:
                 self.call_strategy_func(strategy, strategy.on_tick, tick)
+
+    def process_bar_event(self, event: Event):
+        """
+        process the bar event data for kline updating.
+        """
+        bar = event.data
+        strategies = self.symbol_strategy_map[bar.vt_symbol]
+        if not strategies:
+            return
+
+        for strategy in strategies:
+            if strategy.inited:
+                self.call_strategy_func(strategy, strategy.on_bar, bar)
 
     def process_order_event(self, event: Event):
         """"""
@@ -522,7 +537,6 @@ class CtaEngine(BaseEngine):
                 )
                 bars = self.main_engine.query_history(req, contract.gateway_name)
 
-        
         # try to load the data from database if we query no data from api.
         if not bars:
             bars = database_manager.load_bar_data(
