@@ -286,9 +286,8 @@ class BarGenerator:
                 finished = True
         elif self.interval == Interval.HOUR:
             # if self.last_bar and bar.datetime.hour != self.last_bar.datetime.hour: # vnpy的判断条件
-            if bar.datetime.minute == 59 or (self.last_bar and bar.datetime.hour != self.last_bar.datetime.hour):
+            if (bar.datetime.minute == 59 and bar.interval == Interval.MINUTE) or (self.last_bar and bar.datetime.hour != self.last_bar.datetime.hour and bar.interval == Interval.HOUR):
                 # if the bar is one minute, then the 59minute is the last one bar for one hour.
-                self.last_bar = None # preventing push hour bar twice
                 # 1-hour bar
                 if self.window == 1:
                     finished = True
