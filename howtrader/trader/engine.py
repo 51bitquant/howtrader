@@ -16,6 +16,7 @@ from howtrader.event import Event, EventEngine
 from .app import BaseApp
 from .event import (
     EVENT_TICK,
+    EVENT_TIMER,
     EVENT_ORDER,
     EVENT_TRADE,
     EVENT_POSITION,
@@ -26,6 +27,7 @@ from .event import (
 from .gateway import BaseGateway
 from .object import (
     CancelRequest,
+    QueryRequest,
     LogData,
     OrderRequest,
     SubscribeRequest,
@@ -191,6 +193,14 @@ class MainEngine:
         if gateway:
             gateway.cancel_order(req)
 
+    def query_order(self, req: QueryRequest, gateway_name: str) -> None:
+        """
+        Send query order request to a specific gateway.
+        """
+        gateway = self.get_gateway(gateway_name)
+        if gateway and hasattr(gateway, 'query_order'):
+            gateway.query_order(req)
+
     def send_orders(self, reqs: Sequence[OrderRequest], gateway_name: str) -> List[str]:
         """
         """
@@ -349,6 +359,8 @@ class OmsEngine(BaseEngine):
         self.add_function()
         self.register_event()
 
+        self.timer_count = 0  # for counting the timer.
+
     def add_function(self) -> None:
         """Add query function to main engine."""
         self.main_engine.get_tick = self.get_tick
@@ -373,6 +385,7 @@ class OmsEngine(BaseEngine):
         self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_ACCOUNT, self.process_account_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
+        self.event_engine.register(EVENT_TIMER, self.process_timer)
 
     def process_tick_event(self, event: Event) -> None:
         """"""
@@ -410,6 +423,17 @@ class OmsEngine(BaseEngine):
         """"""
         contract = event.data
         self.contracts[contract.vt_symbol] = contract
+
+    def process_timer(self, event: Event) -> None:
+        if self.timer_count >= 120:
+            self.timer_count = 0
+            orders = self.get_all_active_orders()
+            for order in orders:
+                if (datetime.now(order.datetime.tzinfo) - order.datetime).seconds > 120:
+                    req = order.create_query_request()
+                    self.main_engine.query_order(req, order.gateway_name)
+        else:
+            self.timer_count += 1
 
     def get_tick(self, vt_symbol: str) -> Optional[TickData]:
         """

@@ -34,6 +34,7 @@ from howtrader.trader.object import (
     PositionData,
     BarData,
     OrderRequest,
+    QueryRequest,
     CancelRequest,
     SubscribeRequest,
     HistoryRequest
@@ -157,9 +158,12 @@ class BinancesGateway(BaseGateway):
         """"""
         return self.rest_api.send_order(req)
 
-    def cancel_order(self, req: CancelRequest) -> Request:
+    def cancel_order(self, req: CancelRequest) -> None:
         """"""
         self.rest_api.cancel_order(req)
+
+    def query_order(self, req: QueryRequest):
+        self.rest_api.query_order(req)
 
     def query_account(self) -> None:
         """"""
@@ -260,14 +264,14 @@ class BinancesRestApi(RestClient):
         return request
 
     def connect(
-        self,
-        usdt_base: bool,
-        key: str,
-        secret: str,
-        session_number: int,
-        server: str,
-        proxy_host: str,
-        proxy_port: int
+            self,
+            usdt_base: bool,
+            key: str,
+            secret: str,
+            session_number: int,
+            server: str,
+            proxy_host: str,
+            proxy_port: int
     ) -> None:
         """
         Initialize connection to REST server.
@@ -280,7 +284,7 @@ class BinancesRestApi(RestClient):
         self.server = server
 
         self.connect_time = (
-            int(datetime.now().strftime("%y%m%d%H%M%S")) * self.order_count
+                int(datetime.now().strftime("%y%m%d%H%M%S")) * self.order_count
         )
 
         if self.server == "REAL":
@@ -301,7 +305,7 @@ class BinancesRestApi(RestClient):
         self.query_time()
         self.query_account()
         self.query_position()
-        self.query_order()
+        self.query_orders()
         self.query_contract()
         self.start_user_stream()
 
@@ -355,7 +359,7 @@ class BinancesRestApi(RestClient):
             data=data
         )
 
-    def query_order(self) -> Request:
+    def query_orders(self) -> None:
         """"""
         data = {"security": Security.SIGNED}
 
@@ -367,8 +371,33 @@ class BinancesRestApi(RestClient):
         self.add_request(
             method="GET",
             path=path,
-            callback=self.on_query_order,
+            callback=self.on_query_orders,
             data=data
+        )
+
+    def query_order(self, req: QueryRequest) -> None:
+        """"""
+        data = {
+            "security": Security.SIGNED
+        }
+
+        params = {
+            "symbol": req.symbol,
+            "origClientOrderId": req.orderid
+        }
+
+        if self.usdt_base:
+            path = "/fapi/v1/order"
+        else:
+            path = "/dapi/v1/order"
+
+        self.add_request(
+            method="GET",
+            path=path,
+            callback=self.on_query_order,
+            params=params,
+            data=data,
+            extra=req
         )
 
     def query_contract(self) -> Request:
@@ -441,7 +470,7 @@ class BinancesRestApi(RestClient):
 
         return order.vt_orderid
 
-    def cancel_order(self, req: CancelRequest) -> Request:
+    def cancel_order(self, req: CancelRequest) -> None:
         """"""
         data = {
             "security": Security.SIGNED
@@ -466,7 +495,7 @@ class BinancesRestApi(RestClient):
             extra=req
         )
 
-    def start_user_stream(self) -> Request:
+    def start_user_stream(self) -> None:
         """"""
         data = {
             "security": Security.API_KEY
@@ -550,7 +579,7 @@ class BinancesRestApi(RestClient):
 
         self.gateway.write_log("持仓信息查询成功")
 
-    def on_query_order(self, data: dict, request: Request) -> None:
+    def on_query_orders(self, data: dict, request: Request) -> None:
         """"""
         for d in data:
             key = (d["type"], d["timeInForce"])
@@ -574,6 +603,31 @@ class BinancesRestApi(RestClient):
             self.gateway.on_order(order)
 
         self.gateway.write_log("委托信息查询成功")
+
+    def on_query_order(self, data: dict, request: Request) -> None:
+        """"""
+
+        key = (data["type"], data["timeInForce"])
+        order_type = ORDERTYPE_BINANCES2VT.get(key, None)
+        if not order_type:
+            return
+
+        order = OrderData(
+            orderid=data["clientOrderId"],
+            symbol=data["symbol"],
+            exchange=Exchange.BINANCE,
+            price=float(data["price"]),
+            volume=float(data["origQty"]),
+            type=order_type,
+            direction=DIRECTION_BINANCES2VT[data["side"]],
+            traded=float(data["executedQty"]),
+            status=STATUS_BINANCES2VT.get(data["status"], None),
+            datetime=generate_datetime(data["time"]),
+            gateway_name=self.gateway_name,
+        )
+        self.gateway.on_order(order)
+
+        self.gateway.write_log("订单信息查询成功")
 
     def on_query_contract(self, data: dict, request: Request) -> None:
         """"""

@@ -32,6 +32,7 @@ from howtrader.trader.object import (
     BarData,
     OrderRequest,
     CancelRequest,
+    QueryRequest,
     SubscribeRequest,
     HistoryRequest
 )
@@ -134,6 +135,9 @@ class BinanceGateway(BaseGateway):
     def cancel_order(self, req: CancelRequest):
         """"""
         self.rest_api.cancel_order(req)
+
+    def query_order(self, req: QueryRequest):
+        self.rest_api.query_order(req)
 
     def query_account(self):
         """"""
@@ -259,7 +263,7 @@ class BinanceRestApi(RestClient):
 
         self.query_time()
         self.query_account()
-        self.query_order()
+        self.query_orders()
         self.query_contract()
         self.start_user_stream()
 
@@ -288,15 +292,39 @@ class BinanceRestApi(RestClient):
             data=data
         )
 
-    def query_order(self):
+    def query_orders(self):
         """"""
         data = {"security": Security.SIGNED}
 
         self.add_request(
             method="GET",
             path="/api/v3/openOrders",
-            callback=self.on_query_order,
+            callback=self.on_query_orders,
             data=data
+        )
+
+    def query_order(self, req: QueryRequest):
+        """
+        query order with a specific orderid.
+        :param req:
+        :return:
+        """
+        data = {
+            "security": Security.SIGNED
+        }
+
+        params = {
+            "symbol": req.symbol.upper(),
+            "origClientOrderId": req.orderid
+        }
+
+        self.add_request(
+            method="GET",
+            path="/api/v3/order",
+            callback=self.on_query_order,
+            params=params,
+            data=data,
+            extra=req
         )
 
     def query_contract(self):
@@ -431,7 +459,7 @@ class BinanceRestApi(RestClient):
 
         self.gateway.write_log("账户资金查询成功")
 
-    def on_query_order(self, data, request):
+    def on_query_orders(self, data, request):
         """"""
         for d in data:
             order = OrderData(
@@ -450,6 +478,25 @@ class BinanceRestApi(RestClient):
             self.gateway.on_order(order)
 
         self.gateway.write_log("委托信息查询成功")
+
+    def on_query_order(self, data, request):
+        """"""
+        order = OrderData(
+            orderid=data["clientOrderId"],
+            symbol=data["symbol"].lower(),
+            exchange=Exchange.BINANCE,
+            price=float(data["price"]),
+            volume=float(data["origQty"]),
+            type=ORDERTYPE_BINANCE2VT[data["type"]],
+            direction=DIRECTION_BINANCE2VT[data["side"]],
+            traded=float(data["executedQty"]),
+            status=STATUS_BINANCE2VT.get(data["status"], None),
+            datetime=generate_datetime(data["time"]),
+            gateway_name=self.gateway_name,
+        )
+        self.gateway.on_order(order)
+
+        self.gateway.write_log("委托订单查询成功")
 
     def on_query_contract(self, data, request):
         """"""

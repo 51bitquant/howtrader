@@ -27,6 +27,7 @@ from .object import (
     LogData,
     OrderRequest,
     CancelRequest,
+    QueryRequest,
     SubscribeRequest,
     HistoryRequest,
     Exchange,
@@ -217,6 +218,15 @@ class BaseGateway(ABC):
     def cancel_order(self, req: CancelRequest) -> None:
         """
         Cancel an existing order.
+        implementation should finish the tasks blow:
+        * send request to server
+        """
+        pass
+
+    @abstractmethod
+    def query_order(self, req: QueryRequest) -> None:
+        """
+        query an existing order.
         implementation should finish the tasks blow:
         * send request to server
         """
