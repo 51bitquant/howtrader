@@ -58,6 +58,9 @@ folder by using the multi-threads for speeding.
 
 1. V2.1.7.3 : update the binance gateway for klines, subscribe the 1min
    kline for kline update, V2.1.7.3版本更新了币安的K线数据的更新。
+2. V2.1.7.4 : Order Status management for bad network or disconnection,
+   V2.1.7.4版本对订单状态查询和更新,
+   特别是在在网络失去连接的时候能够进行查询和更新。
 
 
 ## 联系方式
