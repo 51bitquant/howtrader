@@ -272,7 +272,7 @@ class BinanceRestApi(RestClient):
         data = {
             "security": Security.NONE
         }
-        path = "/api/v1/time"
+        path = "/api/v3/time"
 
         return self.add_request(
             "GET",
@@ -334,7 +334,7 @@ class BinanceRestApi(RestClient):
         }
         self.add_request(
             method="GET",
-            path="/api/v1/exchangeInfo",
+            path="/api/v3/exchangeInfo",
             callback=self.on_query_contract,
             data=data
         )
@@ -410,7 +410,7 @@ class BinanceRestApi(RestClient):
 
         self.add_request(
             method="POST",
-            path="/api/v1/userDataStream",
+            path="/api/v3/userDataStream",
             callback=self.on_start_user_stream,
             data=data
         )
@@ -432,7 +432,7 @@ class BinanceRestApi(RestClient):
 
         self.add_request(
             method="PUT",
-            path="/api/v1/userDataStream",
+            path="/api/v3/userDataStream",
             callback=self.on_keep_user_stream,
             params=params,
             data=data
@@ -599,7 +599,7 @@ class BinanceRestApi(RestClient):
             # Get response from server
             resp = self.request(
                 "GET",
-                "/api/v1/klines",
+                "/api/v3/klines",
                 data={"security": Security.NONE},
                 params=params
             )
@@ -672,7 +672,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
 
     def on_packet(self, packet: dict):  # type: (dict)->None
         """"""
-        if packet["e"] == "outboundAccountInfo":
+        if packet["e"] == "outboundAccountPosition":
             self.on_account(packet)
         elif packet["e"] == "executionReport":
             self.on_order(packet)
