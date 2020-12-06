@@ -884,6 +884,9 @@ class BinancesTradeWebsocketApi(WebsocketClient):
             )
             order.trade_data = trade_data
 
+        else:
+            order.trade_data = None
+
         self.gateway.on_order(order)
 
 
