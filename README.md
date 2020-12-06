@@ -62,9 +62,10 @@ folder by using the multi-threads for speeding.
    V2.1.7.4版本对订单状态查询和更新,
    特别是在在网络失去连接的时候能够进行查询和更新。
 
-3.V2.1.7.5 : update the on_trade event and binance future api position
+3. V2.1.7.5 : update the on_trade event and binance future api position
 更新对on_trade交易事件的推送，websocket断开的时候订单的成交能够重新推送，并且能够计算策略的仓位。
 
+4. V2.1.7.6 : update the position. 对订阅的交易对，都会推送其头寸的更新.
 
 ## 联系方式
 微信: bitquant51

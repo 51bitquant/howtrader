@@ -201,6 +201,7 @@ class BinancesRestApi(RestClient):
         self.gateway_name: str = gateway.gateway_name
 
         self.trade_ws_api: BinancesTradeWebsocketApi = self.gateway.trade_ws_api
+        self.market_ws_api: BinancesDataWebsocketApi = self.gateway.market_ws_api
 
         self.key: str = ""
         self.secret: str = ""
@@ -348,7 +349,7 @@ class BinancesRestApi(RestClient):
         data = {"security": Security.SIGNED}
 
         if self.usdt_base:
-            path = "/fapi/v1/positionRisk"
+            path = "/fapi/v2/positionRisk"
         else:
             path = "/dapi/v1/positionRisk"
 
@@ -562,7 +563,11 @@ class BinancesRestApi(RestClient):
         self.gateway.write_log("账户资金查询成功")
 
     def on_query_position(self, data: dict, request: Request) -> None:
-        """"""
+        """
+        Query position.
+        """
+        symbols = self.market_ws_api.ticks.keys()
+
         for d in data:
             position = PositionData(
                 symbol=d["symbol"],
@@ -574,7 +579,7 @@ class BinancesRestApi(RestClient):
                 gateway_name=self.gateway_name,
             )
 
-            if position.volume:
+            if position.volume or d['symbol'].lower() in symbols:
                 self.gateway.on_position(position)
 
         self.gateway.write_log("持仓信息查询成功")
