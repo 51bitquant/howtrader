@@ -44,9 +44,6 @@ from .object import (
 from .setting import SETTINGS
 from .utility import get_folder_path, TRADER_DIR
 
-
-TIMER_EVENT_UPDATE_INTERVAL = 120
-
 class MainEngine:
     """
     Acts as the core of VN Trader.
@@ -228,6 +225,14 @@ class MainEngine:
             return gateway.query_history(req)
         else:
             return None
+    #
+    # def query_account_position(self):
+    #     """
+    #     query the account and position
+    #     """
+    #     for gateway in self.gateways.values():
+    #         gateway.query_account()
+    #         gateway.query_position()
 
     def close(self) -> None:
         """
@@ -427,11 +432,14 @@ class OmsEngine(BaseEngine):
         self.contracts[contract.vt_symbol] = contract
 
     def process_timer(self, event: Event) -> None:
-        if self.timer_count >= TIMER_EVENT_UPDATE_INTERVAL:
+        """
+        update the orders, positions, account by timer, for we may be disconnected from server update push.
+        """
+        if self.timer_count >= SETTINGS.get('order_update_timer', 120):
             self.timer_count = 0
             orders = self.get_all_active_orders()
             for order in orders:
-                if order.datetime and (datetime.now(order.datetime.tzinfo) - order.datetime).seconds > TIMER_EVENT_UPDATE_INTERVAL:
+                if order.datetime and (datetime.now(order.datetime.tzinfo) - order.datetime).seconds > SETTINGS.get('order_update_timer', 120):
                     req = order.create_query_request()
                     self.main_engine.query_order(req, order.gateway_name)
         else:

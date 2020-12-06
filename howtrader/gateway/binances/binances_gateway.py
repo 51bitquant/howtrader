@@ -167,11 +167,11 @@ class BinancesGateway(BaseGateway):
 
     def query_account(self) -> None:
         """"""
-        pass
+        self.rest_api.query_account()
 
     def query_position(self) -> None:
         """"""
-        pass
+        self.rest_api.query_position()
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
         """"""
@@ -568,7 +568,7 @@ class BinancesRestApi(RestClient):
                 symbol=d["symbol"],
                 exchange=Exchange.BINANCE,
                 direction=Direction.NET,
-                volume=int(float(d["positionAmt"])),
+                volume=float(float(d["positionAmt"])),
                 price=float(d["entryPrice"]),
                 pnl=float(d["unRealizedProfit"]),
                 gateway_name=self.gateway_name,
@@ -718,7 +718,7 @@ class BinancesRestApi(RestClient):
     def query_history(self, req: HistoryRequest) -> List[BarData]:
         """"""
         history = []
-        limit = 1000
+        limit = 1500
         start_time = int(datetime.timestamp(req.start))
 
         while True:
@@ -839,9 +839,9 @@ class BinancesTradeWebsocketApi(WebsocketClient):
                 symbol=pos_data["s"],
                 exchange=Exchange.BINANCE,
                 direction=Direction.NET,
-                volume=int(float(pos_data["pa"])),
+                volume=float(float(pos_data["pa"])),
                 price=float(pos_data["ep"]),
-                pnl=float(pos_data["cr"]),
+                pnl=float(pos_data["up"]),
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_position(position)
@@ -868,25 +868,23 @@ class BinancesTradeWebsocketApi(WebsocketClient):
             gateway_name=self.gateway_name
         )
 
-        self.gateway.on_order(order)
-
         # Push trade event
         trade_volume = float(ord_data["l"])
-        if not trade_volume:
-            return
+        if trade_volume:
+            trade_data = TradeData(
+                symbol=order.symbol,
+                exchange=order.exchange,
+                orderid=order.orderid,
+                tradeid=ord_data["t"],
+                direction=order.direction,
+                price=float(ord_data["L"]),
+                volume=trade_volume,
+                datetime=generate_datetime(ord_data["T"]),
+                gateway_name=self.gateway_name,
+            )
+            order.trade_data = trade_data
 
-        trade = TradeData(
-            symbol=order.symbol,
-            exchange=order.exchange,
-            orderid=order.orderid,
-            tradeid=ord_data["t"],
-            direction=order.direction,
-            price=float(ord_data["L"]),
-            volume=trade_volume,
-            datetime=generate_datetime(ord_data["T"]),
-            gateway_name=self.gateway_name,
-        )
-        self.gateway.on_trade(trade)
+        self.gateway.on_order(order)
 
 
 class BinancesDataWebsocketApi(WebsocketClient):

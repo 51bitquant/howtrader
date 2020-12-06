@@ -5,6 +5,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Sequence, Dict, List, Optional, Callable
 from copy import copy
+import uuid
 
 from howtrader.event import Event, EventEngine
 from .event import (
@@ -85,6 +86,7 @@ class BaseGateway(ABC):
         """"""
         self.event_engine: EventEngine = event_engine
         self.gateway_name: str = gateway_name
+        self.active_orders: Dict[str, OrderData] = {}  # {order_id: OrderData} for updating the trade event
 
     def on_event(self, type: str, data: Any = None) -> None:
         """
@@ -124,6 +126,32 @@ class BaseGateway(ABC):
         """
         self.on_event(EVENT_ORDER, order)
         self.on_event(EVENT_ORDER + order.vt_orderid, order)
+
+        # for updating the trade event
+        pre_order = self.active_orders.get(order.vt_orderid, None)
+
+        if order.is_active():
+            self.active_orders[order.vt_orderid] = order
+        elif order.vt_orderid in self.active_orders:
+            self.active_orders.pop(order.vt_orderid)
+
+        if order.trade_data:
+            self.on_trade(order.trade_data)
+        elif pre_order:
+            trade_volume = order.traded - pre_order.traded
+            if trade_volume > 0:
+                trade = TradeData(
+                    symbol=order.symbol,
+                    exchange=order.exchange,
+                    orderid=order.orderid,
+                    tradeid=str(uuid.uuid1()),
+                    direction=order.direction,
+                    price=order.price,
+                    volume=trade_volume,
+                    datetime=order.datetime,
+                    gateway_name=self.gateway_name,
+                )
+                self.on_trade(trade)
 
     def on_position(self, position: PositionData) -> None:
         """

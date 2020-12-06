@@ -141,7 +141,7 @@ class BinanceGateway(BaseGateway):
 
     def query_account(self):
         """"""
-        pass
+        self.rest_api.query_account()
 
     def query_position(self):
         """"""
@@ -711,25 +711,24 @@ class BinanceTradeWebsocketApi(WebsocketClient):
             gateway_name=self.gateway_name
         )
 
-        self.gateway.on_order(order)
-
         # Push trade event
         trade_volume = float(packet["l"])
-        if not trade_volume:
-            return
+        if trade_volume:
+            trade_data = TradeData(
+                symbol=order.symbol,
+                exchange=order.exchange,
+                orderid=order.orderid,
+                tradeid=packet["t"],
+                direction=order.direction,
+                price=float(packet["L"]),
+                volume=trade_volume,
+                datetime=generate_datetime(packet["T"]),
+                gateway_name=self.gateway_name,
+            )
 
-        trade = TradeData(
-            symbol=order.symbol,
-            exchange=order.exchange,
-            orderid=order.orderid,
-            tradeid=packet["t"],
-            direction=order.direction,
-            price=float(packet["L"]),
-            volume=trade_volume,
-            datetime=generate_datetime(packet["T"]),
-            gateway_name=self.gateway_name,
-        )
-        self.gateway.on_trade(trade)
+            order.trade_data = trade_data
+
+        self.gateway.on_order(order)
 
 
 class BinanceDataWebsocketApi(WebsocketClient):
