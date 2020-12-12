@@ -18,7 +18,7 @@ the other part not related to cryptocurrency.
 > python setup.py install 
 
 如果没有报错，就表示已经安装好了, 你也可以直接在终端输入:
-> pip install git+https://github.com/ramoslin02/howtrader.git
+> pip install git+https://github.com/51bitquant/howtrader.git
 
 you can directly download the source code. then open your termal, then
 script the following command
@@ -28,7 +28,7 @@ script the following command
 > python setup.py install 
 
 or you can use pip to install the howtrader.
-> pip install git+https://github.com/ramoslin02/howtrader.git
+> pip install git+https://github.com/51bitquant/howtrader.git
 
 
 # 使用 Usage
