@@ -67,6 +67,9 @@ folder by using the multi-threads for speeding.
 
 4. V2.1.7.6 : update the position. 对订阅的交易对，都会推送其头寸的更新.
 
+5. V2.1.7.7 : add the position_update_interval and
+   order_update_interval, 添加对订单和仓位信息的更新频率.
+   
 ## 联系方式
 微信: bitquant51
 

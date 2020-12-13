@@ -365,7 +365,8 @@ class OmsEngine(BaseEngine):
         self.add_function()
         self.register_event()
 
-        self.timer_count = 0  # for counting the timer.
+        self.order_update_interval = 0  # for counting the timer.
+        self.position_update_interval = 0
 
     def add_function(self) -> None:
         """Add query function to main engine."""
@@ -434,17 +435,21 @@ class OmsEngine(BaseEngine):
         """
         update the orders, positions by timer, for we may be disconnected from server update push.
         """
-        if self.timer_count >= SETTINGS.get('order_update_timer', 120):
-            self.timer_count = 0
+
+        self.order_update_interval += 1
+        self.position_update_interval += 1
+
+        if self.order_update_interval >= SETTINGS.get('order_update_interval', 120):
+            self.order_update_interval = 0
             orders = self.get_all_active_orders()
             for order in orders:
                 if order.datetime and (datetime.now(order.datetime.tzinfo) - order.datetime).seconds > SETTINGS.get('order_update_timer', 120):
                     req = order.create_query_request()
                     self.main_engine.query_order(req, order.gateway_name)
 
+        if self.position_update_interval >= SETTINGS.get('position_update_interval', 120):
             self.main_engine.query_position()
-        else:
-            self.timer_count += 1
+            self.position_update_interval = 0
 
     def get_tick(self, vt_symbol: str) -> Optional[TickData]:
         """

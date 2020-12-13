@@ -11,7 +11,8 @@ from .utility import load_json
 SETTINGS: Dict[str, Any] = {
     "font.family": "Arial",
     "font.size": 12,
-    "order_update_timer": 120,
+    "order_update_interval": 120,
+    "position_update_interval": 120,
     "log.active": True,
     "log.level": CRITICAL,
     "log.console": True,
