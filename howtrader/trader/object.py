@@ -358,3 +358,65 @@ class HistoryRequest:
     def __post_init__(self):
         """"""
         self.vt_symbol = f"{self.symbol}.{self.exchange.value}"
+
+class GridPositionCalculator(object):
+    """
+    用来计算网格头寸的平均价格
+    Use for calculating the grid position's average price.
+
+    :param grid_step: 网格间隙.
+    """
+
+    def __init__(self, grid_step=1.0):
+        self.pos = 0
+        self.avg_price = 0
+        self.profit = 0
+        self.grid_step = grid_step
+    def update_position(self, order: OrderData):
+        if order.status != Status.ALLTRADED:
+            return
+
+        previous_pos = self.pos
+        previous_avg = self.avg_price
+
+        if order.direction == Direction.LONG:
+            self.pos += order.volume
+
+            if self.pos == 0:
+                self.avg_price = 0
+            else:
+
+                if previous_pos == 0:
+                    self.avg_price = order.price
+
+                elif previous_pos > 0:
+                    self.avg_price = (previous_pos * previous_avg + order.volume * order.price) / abs(self.pos)
+
+                elif previous_pos < 0 and self.pos < 0:
+                    self.avg_price = (previous_avg * abs(self.pos) - (
+                            order.price - previous_avg) * order.volume - order.volume * self.grid_step) / abs(
+                        self.pos)
+
+                elif previous_pos < 0 < self.pos:
+                    self.avg_price = order.price
+
+        elif order.direction == Direction.SHORT:
+            self.pos -= order.volume
+
+            if self.pos == 0:
+                self.avg_price = 0
+            else:
+
+                if previous_pos == 0:
+                    self.avg_price = order.price
+
+                elif previous_pos < 0:
+                    self.avg_price = (abs(previous_pos) * previous_avg + order.volume * order.price) / abs(self.pos)
+
+                elif previous_pos > 0 and self.pos > 0:
+                    self.avg_price = (previous_avg * self.pos - (
+                            order.price - previous_avg) * order.volume + order.volume * self.grid_step) / abs(
+                        self.pos)
+
+                elif previous_pos > 0 > self.pos:
+                    self.avg_price = order.price
