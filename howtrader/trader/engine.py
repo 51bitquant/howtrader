@@ -232,6 +232,7 @@ class MainEngine:
         """
         for gateway in self.gateways.values():
             gateway.query_position()
+            gateway.query_account()
 
     def close(self) -> None:
         """
