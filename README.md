@@ -72,6 +72,10 @@ folder by using the multi-threads for speeding.
    
 6. V2.1.7.8 move the default strategies to example/strategies folders
    把内置的策略移到example/strategies文件夹.
+  
+7. V2.1.7.9 account update interval and binance_spot_grid_strategy
+   添加资产更新的定时推送和币安现货网格交易的策略。
+  
 ## 联系方式
 微信: bitquant51
 
