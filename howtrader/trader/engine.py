@@ -447,6 +447,7 @@ class OmsEngine(BaseEngine):
 
         self.order_update_interval += 1
         self.position_update_interval += 1
+        self.account_update_interval += 1
 
         if self.order_update_interval >= SETTINGS.get('order_update_interval', 120):
             self.order_update_interval = 0
