@@ -44,6 +44,7 @@ from .object import (
 from .setting import SETTINGS
 from .utility import get_folder_path, TRADER_DIR
 
+
 class MainEngine:
     """
     Acts as the core of VN Trader.
@@ -62,8 +63,8 @@ class MainEngine:
         self.apps: Dict[str, BaseApp] = {}
         self.exchanges: List[Exchange] = []
 
-        os.chdir(TRADER_DIR)    # Change working directory
-        self.init_engines()     # Initialize function engines
+        os.chdir(TRADER_DIR)  # Change working directory
+        self.init_engines()  # Initialize function engines
 
     def add_engine(self, engine_class: Any) -> "BaseEngine":
         """
@@ -228,10 +229,16 @@ class MainEngine:
 
     def query_position(self):
         """
-        query the account and position
+        query the position
         """
         for gateway in self.gateways.values():
             gateway.query_position()
+
+    def query_account(self):
+        """
+        query the account
+        """
+        for gateway in self.gateways.values():
             gateway.query_account()
 
     def close(self) -> None:
@@ -255,10 +262,10 @@ class BaseEngine(ABC):
     """
 
     def __init__(
-        self,
-        main_engine: MainEngine,
-        event_engine: EventEngine,
-        engine_name: str,
+            self,
+            main_engine: MainEngine,
+            event_engine: EventEngine,
+            engine_name: str,
     ):
         """"""
         self.main_engine = main_engine
@@ -368,6 +375,7 @@ class OmsEngine(BaseEngine):
 
         self.order_update_interval = 0  # for counting the timer.
         self.position_update_interval = 0
+        self.account_update_interval = 0
 
     def add_function(self) -> None:
         """Add query function to main engine."""
@@ -451,6 +459,10 @@ class OmsEngine(BaseEngine):
         if self.position_update_interval >= SETTINGS.get('position_update_interval', 120):
             self.main_engine.query_position()
             self.position_update_interval = 0
+
+        if self.account_update_interval >= SETTINGS.get('account_update_interval', 120):
+            self.account_update_interval = 0
+            self.main_engine.query_account()
 
     def get_tick(self, vt_symbol: str) -> Optional[TickData]:
         """
@@ -581,7 +593,7 @@ class EmailEngine(BaseEngine):
                 msg = self.queue.get(block=True, timeout=1)
 
                 with smtplib.SMTP_SSL(
-                    SETTINGS["email.server"], SETTINGS["email.port"]
+                        SETTINGS["email.server"], SETTINGS["email.port"]
                 ) as smtp:
                     smtp.login(
                         SETTINGS["email.username"], SETTINGS["email.password"]
