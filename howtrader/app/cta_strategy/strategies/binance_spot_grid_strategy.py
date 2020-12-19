@@ -91,7 +91,7 @@ class BinanceSpotGridStrategy(CtaTemplate):
                 self.buy_orders.extend(buy_orders_ids)
                 self.sell_orders.extend(sell_orders_ids)
 
-            else:
+            elif len(self.buy_orders) == 0 or len(self.sell_orders) == 0:
                 # 网格两边的数量不对等.
                 self.cancel_all()
 
