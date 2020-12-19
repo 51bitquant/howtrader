@@ -13,8 +13,8 @@ from howtrader.event import Event
 from howtrader.trader.object import Status
 from typing import Union
 
+BINANCE_SPOT_GRID_TIMER_WAITING_INTERVAL = 30
 
-TIMER_WAITING_INTERVAL = 30
 
 class BinanceSpotGridStrategy(CtaTemplate):
     """
@@ -57,9 +57,7 @@ class BinanceSpotGridStrategy(CtaTemplate):
         """
         self.write_log("策略启动")
         self.cta_engine.event_engine.register(EVENT_TIMER, self.process_timer_event)
-        self.cta_engine.event_engine.register(EVENT_ACCOUNT + "USDT", self.process_account_event)
-        self.cta_engine.event_engine.register(EVENT_ACCOUNT + "bnb", self.process_account_event)
-        self.cta_engine.event_engine.register(EVENT_ACCOUNT + "usdt", self.process_account_event)
+
     def on_stop(self):
         """
         Callback when strategy is stopped.
@@ -73,7 +71,7 @@ class BinanceSpotGridStrategy(CtaTemplate):
             return
 
         self.timer_interval += 1
-        if self.timer_interval >= TIMER_WAITING_INTERVAL:
+        if self.timer_interval >= BINANCE_SPOT_GRID_TIMER_WAITING_INTERVAL:
 
             self.timer_interval = 0
             # 如果你想比较高频可以把定时器给关了。
@@ -93,14 +91,9 @@ class BinanceSpotGridStrategy(CtaTemplate):
                 self.buy_orders.extend(buy_orders_ids)
                 self.sell_orders.extend(sell_orders_ids)
 
-                print(f"开启网格交易，双边下单：BUY: {buy_orders_ids}@{buy_price}, SELL: {sell_orders_ids}@{sell_price}")
-
             else:
                 # 网格两边的数量不对等.
                 self.cancel_all()
-
-    def process_account_event(self, event:Event):
-        print("收到的账户资金的信息:", event.data)
 
     def on_tick(self, tick: TickData):
         """
@@ -128,7 +121,6 @@ class BinanceSpotGridStrategy(CtaTemplate):
                 self.sell_orders.remove(order.vt_orderid)
 
             self.cancel_all()
-            print(f"订单买卖单完全成交, 先撤销所有订单")
 
             self.last_filled_order = order
 
@@ -147,9 +139,6 @@ class BinanceSpotGridStrategy(CtaTemplate):
 
                 self.buy_orders.extend(buy_ids)
                 self.sell_orders.extend(sell_ids)
-
-                print(
-                    f"订单完全成交, 分别下双边网格: BUY: {buy_ids}@{buy_price}, SELL: {sell_ids}@{sell_price}")
 
         if not order.is_active():
             if order.vt_orderid in self.buy_orders:
@@ -173,11 +162,6 @@ class BinanceSpotGridStrategy(CtaTemplate):
         pass
 
     def get_step(self) -> int:
-        """
-        这个步长的乘积，随你你设置， 你可以都设置为1
-        :return:
-        """
-
         pos = abs(self.pos)
 
         if pos < 3 * self.trading_size:
@@ -190,6 +174,3 @@ class BinanceSpotGridStrategy(CtaTemplate):
             return 3
 
         return 4
-
-        # or you can set it to only one.
-        # return 1
