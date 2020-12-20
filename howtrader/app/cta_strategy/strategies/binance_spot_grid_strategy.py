@@ -164,13 +164,15 @@ class BinanceSpotGridStrategy(CtaTemplate):
     def get_step(self) -> int:
         pos = abs(self.pos)
 
-        if pos < 3 * self.trading_size:
-            return 1
+        return 1
 
-        elif pos < 5 * self.trading_size:
-            return 2
-
-        elif pos < 7 * self.trading_size:
-            return 3
-
-        return 4
+        # if pos < 3 * self.trading_size:
+        #     return 1
+        #
+        # elif pos < 5 * self.trading_size:
+        #     return 2
+        #
+        # elif pos < 7 * self.trading_size:
+        #     return 3
+        #
+        # return 4
