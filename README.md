@@ -11,25 +11,30 @@ the other part not related to cryptocurrency.
 而且很多部分我们是用不到的。
 
 # 安装 installation 
-直接把代码下载下来，然后切换到你的虚拟环境，或者使用当前的环境也是可以的， 在终端输入：
+直接在终端输入:
+> pip install git+https://github.com/51bitquant/howtrader.git
+
+you can use pip to install the howtrader.
+> pip install git+https://github.com/51bitquant/howtrader.git
+
+或者你直接把代码下载下来，然后切换到你的虚拟环境，或者使用当前的环境也是可以的，
+在终端输入：
 
 > pip install -r requirements.txt 
 
 > python setup.py install 
 
-如果没有报错，就表示已经安装好了, 你也可以直接在终端输入:
-> pip install git+https://github.com/51bitquant/howtrader.git
-
-you can directly download the source code. then open your termal, then
-script the following command
+or you can directly download the source code. then open your termal,
+then script the following command
 
 > pip install -r requirements.txt 
 
 > python setup.py install 
 
-or you can use pip to install the howtrader.
-> pip install git+https://github.com/51bitquant/howtrader.git
+但是我们直接推荐你用pip来安装，这样它能帮你把各种依赖处理好，减少错误的发生。
 
+but we recommend you using the pip to install the howtrader, for you can
+encounter some unexpected errors.
 
 # 使用 Usage
 你需要在项目下面创建一个文件夹加，howtrader, 这个主要是存放一些日记和配置文件的信息。
