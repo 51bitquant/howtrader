@@ -20,7 +20,7 @@ class SpotSimpleGridStrategy(CtaTemplate):
     """
     币安现货简单网格交易策略
     该策略没有止盈止损功能，一直在成交的上下方进行高卖低卖操作.
-    免责声明: 本策略仅供测试参考，本人不负有任何责任。使用前请熟悉代码。测试其中的bugs, 请清楚里面的功能后使用。
+    免责声明: 本策略仅供测试参考，本人不负有任何责任。使用前请熟悉代码。测试其中的bugs, 请清楚里面的功能后再使用。
     币安邀请链接: https://www.binancezh.pro/cn/futures/ref/51bitquant
     合约邀请码：51bitquant
     """

@@ -13,28 +13,22 @@ from howtrader.event import Event
 from howtrader.trader.object import Status, Direction
 from howtrader.trader.object import GridPositionCalculator
 
-NORMAL_TIMER = 5
+NORMAL_TIMER_INTERVALL = 5
 PROFIT_TIMER_INTERVAL = 5
 STOP_TIMER_INTERVAL = 60
 
 
-class FutureProfitGridStrategy(CtaTemplate):
+class SpotProfitGridStrategy(CtaTemplate):
     """
-    币安合约网格策略，里面有止盈止损的功能。
-    策略在震荡行情下表现很好，但是如果发生趋势行情，单次止损会比较大，导致亏损过多。
-
-    免责声明: 本策略仅供测试参考，本人不负有任何责任。使用前请熟悉代码。测试其中的bugs, 请清楚里面的功能后再使用。
-    币安邀请链接: https://www.binancezh.pro/cn/futures/ref/51bitquant
-    合约邀请码：51bitquant
-
+    币安现货网格策略，添加止盈止损的功能.
     """
     author = "51bitquant"
 
     grid_step = 2.0  # 网格间隙.
     profit_step = 2.0  # 获利的间隔.
-    trading_size = 0.5  # 每次下单的头寸.
-    max_pos = 7.0  # 最大的头寸数.
-    profit_orders_counts = 3  # 出现多少个网格的时候，会考虑止盈.
+    trading_size = 1.0  # 每次下单的头寸.
+    max_pos = 100  # 最大的头寸数, 表示不会触发止损的条件.
+    profit_orders_counts = 10  # 出现多少个网格的时候，会考虑止盈.
     trailing_stop_multiplier = 2.0
     stop_minutes = 360.0  # sleep for six hour
 
@@ -83,6 +77,7 @@ class FutureProfitGridStrategy(CtaTemplate):
         """
         self.write_log("策略启动")
         self.cta_engine.event_engine.register(EVENT_TIMER, self.process_timer_event)
+
         self.position_calculator = GridPositionCalculator(
             grid_step=self.grid_step)  # 计算仓位用的对象 
         self.avg_price = self.position_calculator.avg_price
@@ -105,7 +100,7 @@ class FutureProfitGridStrategy(CtaTemplate):
 
         self.normal_timer_interval += 1
 
-        if self.normal_timer_interval >= NORMAL_TIMER:
+        if self.normal_timer_interval >= NORMAL_TIMER_INTERVALL:
             self.normal_timer_interval = 0
 
             # 仓位为零的时候
@@ -122,7 +117,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                     buy_price = self.tick.bid_price_1 - self.grid_step / 2
                     sell_price = self.tick.bid_price_1 + self.grid_step / 2
                     long_ids = self.buy(buy_price, self.trading_size)
-                    short_ids = self.short(sell_price, self.trading_size)
+                    short_ids = self.sell(sell_price, self.trading_size)
 
                     self.long_orders.extend(long_ids)
                     self.short_orders.extend(short_ids)
@@ -153,7 +148,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                 buy_price = min(self.tick.bid_price_1, buy_price)
                 sell_price = max(self.tick.ask_price_1, sell_price)
                 long_ids = self.buy(buy_price, self.trading_size)
-                short_ids = self.short(sell_price, self.trading_size)
+                short_ids = self.sell(sell_price, self.trading_size)
 
                 self.long_orders.extend(long_ids)
                 self.short_orders.extend(short_ids)
@@ -171,7 +166,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                 if self.position_calculator.pos > 0:
                     price = max(self.tick.ask_price_1 * (1 + 0.0001),
                                 self.position_calculator.avg_price + self.profit_step)
-                    order_ids = self.short(price, abs(self.position_calculator.pos))
+                    order_ids = self.sell(price, abs(self.position_calculator.pos))
                     self.profit_orders.extend(order_ids)
                     print(f"多头止盈情况: {self.position_calculator.pos}@{price}")
                 elif self.position_calculator.pos < 0:
@@ -194,7 +189,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                 if self.last_filled_order:
                     if self.position_calculator.pos > 0:
                         if self.tick.bid_price_1 < self.last_filled_order.price - self.trailing_stop_multiplier * self.grid_step:
-                            vt_ids = self.short(self.tick.bid_price_1, abs(self.position_calculator.pos))
+                            vt_ids = self.sell(self.tick.bid_price_1, abs(self.position_calculator.pos))
                             self.stop_orders.extend(vt_ids)
 
                     elif self.position_calculator.pos < 0:
@@ -205,7 +200,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                 else:
                     if self.position_calculator.pos > 0:
                         if self.tick.bid_price_1 < self.position_calculator.avg_price - self.max_pos * self.grid_step:
-                            vt_ids = self.short(self.tick.bid_price_1, abs(self.position_calculator.pos))
+                            vt_ids = self.sell(self.tick.bid_price_1, abs(self.position_calculator.pos))
                             self.stop_orders.extend(vt_ids)
 
                     elif self.position_calculator.pos < 0:
@@ -265,7 +260,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                     sell_price = max(self.tick.ask_price_1 * (1 + 0.0001), sell_price)
 
                     long_ids = self.buy(buy_price, self.trading_size)
-                    short_ids = self.short(sell_price, self.trading_size)
+                    short_ids = self.sell(sell_price, self.trading_size)
 
                     self.long_orders.extend(long_ids)
                     self.short_orders.extend(short_ids)
@@ -314,23 +309,5 @@ class FutureProfitGridStrategy(CtaTemplate):
         """
         pass
 
-    def get_step(self):
-
-        pos = abs(self.position_calculator.pos)
-
-        if pos < 3 * self.trading_size:
-            return 1
-
-        elif pos < 5 * self.trading_size:
-            return 2
-
-        elif pos < 8 * self.trading_size:
-            return 3
-
-        elif pos < 11 * self.trading_size:
-            return 5
-
-        elif pos < 13 * self.trading_size:
-            return 6
-
-        return 8
+    def get_step(self) -> int:
+        return 1
