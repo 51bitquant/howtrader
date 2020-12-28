@@ -15,7 +15,10 @@ the other part not related to cryptocurrency.
 > pip install git+https://github.com/51bitquant/howtrader.git
 
 you can use pip to install the howtrader.
+
 > pip install git+https://github.com/51bitquant/howtrader.git
+
+如果提示你没有git, 那么你需要去安装git软件，具体的话参考系列课程的第十三课的视频。
 
 或者你直接把代码下载下来，然后切换到你的虚拟环境，或者使用当前的环境也是可以的，
 在终端输入：
@@ -35,6 +38,13 @@ then script the following command
 
 but we recommend you using the pip to install the howtrader, for you can
 encounter some unexpected errors.
+
+# 更新版本 update
+直接在终端输入: 
+
+> pip install git+https://github.com/51bitquant/howtrader.git -U 
+
+
 
 # 使用 Usage
 你需要在项目下面创建一个文件夹加，howtrader, 这个主要是存放一些日记和配置文件的信息。
