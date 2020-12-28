@@ -16,9 +16,10 @@ from typing import Union
 BINANCE_SPOT_GRID_TIMER_WAITING_INTERVAL = 30
 
 
-class BinanceSpotGridStrategy(CtaTemplate):
+class SpotSimpleGridStrategy(CtaTemplate):
     """
-    币安现货网格交易策略
+    币安现货简单网格交易策略
+    该策略没有止盈止损功能，一直在成交的上下方进行高卖低卖操作.
     免责声明: 本策略仅供测试参考，本人不负有任何责任。使用前请熟悉代码。测试其中的bugs, 请清楚里面的功能后使用。
     币安邀请链接: https://www.binancezh.pro/cn/futures/ref/51bitquant
     合约邀请码：51bitquant
@@ -43,6 +44,12 @@ class BinanceSpotGridStrategy(CtaTemplate):
         self.last_filled_order: Union[OrderData, None] = None  # 联合类型, 或者叫可选类型，二选一那种.
         self.tick: Union[TickData, None] = None  #
 
+        # # 订阅现货的资产信息. BINANCE.资产名, 或者BINANCES.资产名
+        # self.cta_engine.event_engine.register(EVENT_ACCOUNT + "BINANCE.USDT", self.process_account_event)
+
+        # # 订阅合约的资产信息
+        # self.cta_engine.event_engine.register(EVENT_ACCOUNT + "BINANCE.USDT", self.process_account_event)
+
     def on_init(self):
         """
         Callback when strategy is inited.
@@ -62,6 +69,9 @@ class BinanceSpotGridStrategy(CtaTemplate):
         """
         self.write_log("策略停止")
         self.cta_engine.event_engine.unregister(EVENT_TIMER, self.process_timer_event)
+
+    def process_account_event(self, event:Event):
+        self.write_log(f"收到的账户资金的信息: {event.data}")
 
     def process_timer_event(self, event: Event):
 
