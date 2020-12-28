@@ -14,7 +14,7 @@ from howtrader.trader.object import Status
 from howtrader.trader.object import GridPositionCalculator
 from typing import Union
 
-NORMAL_TIMER_INTERVALL = 5
+NORMAL_TIMER_INTERVAL = 5
 PROFIT_TIMER_INTERVAL = 5
 STOP_TIMER_INTERVAL = 60
 
@@ -22,6 +22,10 @@ STOP_TIMER_INTERVAL = 60
 class SpotProfitGridStrategy(CtaTemplate):
     """
     币安现货网格策略，添加止盈止损的功能.
+    该策略没有止盈止损功能，一直在成交的上下方进行高卖低卖操作, 达到最大的单子数量的时候，会计算仓位均价，然后进行平仓操作.
+    免责声明: 本策略仅供测试参考，本人不负有任何责任。使用前请熟悉代码。测试其中的bugs, 请清楚里面的功能后再使用。
+    币安邀请链接: https://www.binancezh.pro/cn/futures/ref/51bitquant
+    合约邀请码：51bitquant
     """
     author = "51bitquant"
 
@@ -101,7 +105,7 @@ class SpotProfitGridStrategy(CtaTemplate):
 
         self.normal_timer_interval += 1
 
-        if self.normal_timer_interval >= NORMAL_TIMER_INTERVALL:
+        if self.normal_timer_interval >= NORMAL_TIMER_INTERVAL:
             self.normal_timer_interval = 0
 
             # 仓位为零的时候
