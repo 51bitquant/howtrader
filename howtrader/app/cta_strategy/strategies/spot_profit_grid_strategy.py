@@ -10,8 +10,9 @@ from howtrader.app.cta_strategy import (
 from howtrader.app.cta_strategy.engine import CtaEngine
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event
-from howtrader.trader.object import Status, Direction
+from howtrader.trader.object import Status
 from howtrader.trader.object import GridPositionCalculator
+from typing import Union
 
 NORMAL_TIMER_INTERVALL = 5
 PROFIT_TIMER_INTERVAL = 5
@@ -28,7 +29,7 @@ class SpotProfitGridStrategy(CtaTemplate):
     profit_step = 2.0  # 获利的间隔.
     trading_size = 1.0  # 每次下单的头寸.
     max_pos = 100  # 最大的头寸数, 表示不会触发止损的条件.
-    profit_orders_counts = 10  # 出现多少个网格的时候，会考虑止盈.
+    profit_orders_counts = 10  # 出现单边吃单太多的时候会考虑止盈.
     trailing_stop_multiplier = 2.0
     stop_minutes = 360.0  # sleep for six hour
 
@@ -61,9 +62,9 @@ class SpotProfitGridStrategy(CtaTemplate):
 
         self.trigger_stop_loss = False  # 是否触发止损。
 
-        self.last_filled_order: OrderData = None
+        self.last_filled_order: Union[OrderData, None] = None
 
-        self.tick: TickData = None
+        self.tick: Union[TickData,None] = None
 
     def on_init(self):
         """
