@@ -43,8 +43,6 @@ class BinanceSpotGridStrategy(CtaTemplate):
         self.last_filled_order: Union[OrderData, None] = None  # 联合类型, 或者叫可选类型，二选一那种.
         self.tick: Union[TickData, None] = None  #
 
-        print("交易的交易对:", vt_symbol)
-
     def on_init(self):
         """
         Callback when strategy is inited.
@@ -162,17 +160,4 @@ class BinanceSpotGridStrategy(CtaTemplate):
         pass
 
     def get_step(self) -> int:
-        pos = abs(self.pos)
-
         return 1
-
-        # if pos < 3 * self.trading_size:
-        #     return 1
-        #
-        # elif pos < 5 * self.trading_size:
-        #     return 2
-        #
-        # elif pos < 7 * self.trading_size:
-        #     return 3
-        #
-        # return 4
