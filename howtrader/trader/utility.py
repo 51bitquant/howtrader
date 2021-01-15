@@ -274,7 +274,7 @@ class BarGenerator:
 
         # Update close price/volume into window bar
         self.window_bar.close_price = bar.close_price
-        self.window_bar.volume += int(bar.volume)
+        self.window_bar.volume += float(bar.volume)
         self.window_bar.open_interest = bar.open_interest
 
         # Check if window bar completed
@@ -403,6 +403,7 @@ class ArrayManager(object):
         Get trading volume time series.
         """
         return self.open_interest_array
+
 
 def virtual(func: Callable) -> Callable:
     """
