@@ -338,7 +338,7 @@ class LocalOrderManager:
         self.cancel_request_buf: Dict[str, CancelRequest] = {}    # local_orderid: req
 
         # Hook cancel order function
-        self._cancel_order: Callable[CancelRequest] = gateway.cancel_order
+        self._cancel_order: Callable[[CancelRequest], None] = gateway.cancel_order
         gateway.cancel_order = self.cancel_order
 
     def new_local_orderid(self) -> str:
