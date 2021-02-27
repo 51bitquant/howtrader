@@ -26,7 +26,7 @@ def get_install_requires():
     install_requires = [
         "six==1.13.0",
         "wheel",
-        "PyQt5==5.14.1",
+        "PyQt5==5.15.2",
         "pyqtgraph==0.10.0",
         "qdarkstyle",
         "requests",
