@@ -562,7 +562,7 @@ class BinancesRestApi(RestClient):
 
         self.gateway.write_log("账户资金查询成功")
 
-    def on_query_position(self, data: dict, request: Request) -> None:
+    def on_query_position(self, data: list, request: Request) -> None:
         """
         Query position.
         """
