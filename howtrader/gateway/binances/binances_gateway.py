@@ -557,8 +557,8 @@ class BinancesRestApi(RestClient):
                 gateway_name=self.gateway_name
             )
 
-            if account.balance:
-                self.gateway.on_account(account)
+            # if account.balance:
+            self.gateway.on_account(account)
 
         self.gateway.write_log("账户资金查询成功")
 
@@ -579,8 +579,8 @@ class BinancesRestApi(RestClient):
                 gateway_name=self.gateway_name,
             )
 
-            if position.volume or d['symbol'].lower() in symbols:
-                self.gateway.on_position(position)
+            # if position.volume or d['symbol'].lower() in symbols:
+            self.gateway.on_position(position)
 
         self.gateway.write_log("持仓信息查询成功")
 
@@ -836,8 +836,8 @@ class BinancesTradeWebsocketApi(WebsocketClient):
                 gateway_name=self.gateway_name
             )
 
-            if account.balance:
-                self.gateway.on_account(account)
+            # if account.balance:
+            self.gateway.on_account(account)
 
         for pos_data in packet["a"]["P"]:
             position = PositionData(

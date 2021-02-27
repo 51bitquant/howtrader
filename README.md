@@ -16,7 +16,14 @@ the other part not related to cryptocurrency.
 
 you can use pip to install the howtrader.
 
-> pip install git+https://github.com/51bitquant/howtrader.git
+> pip install git+https://github.com/51bitquant/howtrader.git 
+
+if you encounter the error with --use-feature=2020-resolver, you can
+solve with the following command: 
+> pip install git+https://github.com/51bitquant/howtrader.git --use-feature=2020-resolver
+
+如果安装报错，可能各个包之间存在冲突，可以通过以下命令解决:
+> pip install git+https://github.com/51bitquant/howtrader.git --use-feature=2020-resolver
 
 如果提示你没有git, 那么你需要去安装git软件，具体的话参考系列课程的第十三课的视频。
 
@@ -93,6 +100,7 @@ folder by using the multi-threads for speeding.
   
 8. V2.1.8 增加现货和合约网格策略 add spot and future grid strategies
 
+9. V2.1.8.1 修改接口的api关于资产的推送问题.
 
 ## 联系方式
 微信: bitquant51

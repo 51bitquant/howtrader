@@ -454,8 +454,8 @@ class BinanceRestApi(RestClient):
                 gateway_name=self.gateway_name
             )
 
-            if account.balance:
-                self.gateway.on_account(account)
+            # if account.balance:
+            self.gateway.on_account(account)
 
         self.gateway.write_log("账户资金查询成功")
 
@@ -687,8 +687,8 @@ class BinanceTradeWebsocketApi(WebsocketClient):
                 gateway_name=self.gateway_name
             )
 
-            if account.balance:
-                self.gateway.on_account(account)
+            # if account.balance:
+            self.gateway.on_account(account)
 
     def on_order(self, packet: dict):
         """"""
