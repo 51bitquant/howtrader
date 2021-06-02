@@ -54,7 +54,7 @@ encounter some unexpected errors.
 
 
 # 使用 Usage
-你需要在项目下面创建一个文件夹加，howtrader, 这个主要是存放一些日记和配置文件的信息。
+你需要在项目下面创建一个文件夹howtrader, 这个主要是存放一些日记和配置文件的信息。
 如果不不知道配置文件如何配置，你可以启动examples文件目录下面的main_window.py文件，就可以看到其下面的一些日志和配置文件信息了。
 
 1. firstly you need to create a folder(howtrader) at your project, at
