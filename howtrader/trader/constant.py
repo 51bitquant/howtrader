@@ -53,13 +53,13 @@ class Product(Enum):
     SPREAD = "价差"
     FUND = "基金"
 
-
 class OrderType(Enum):
     """
     Order type.
     """
     LIMIT = "限价"
     MARKET = "市价"
+    LIMIT_MAKER = "MAKER"
     STOP = "STOP"
     FAK = "FAK"
     FOK = "FOK"
