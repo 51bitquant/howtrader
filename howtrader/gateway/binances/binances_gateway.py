@@ -72,6 +72,7 @@ ORDERTYPE_VT2BINANCES: Dict[OrderType, Tuple[str, str]] = {
     OrderType.MARKET: ("MARKET", "GTC"),
     OrderType.FAK: ("LIMIT", "IOC"),
     OrderType.FOK: ("LIMIT", "FOK"),
+    OrderType.LIMIT_MAKER: ("LIMIT", "GTX")
 }
 ORDERTYPE_BINANCES2VT: Dict[Tuple[str, str], OrderType] = {v: k for k, v in ORDERTYPE_VT2BINANCES.items()}
 
@@ -114,8 +115,8 @@ class BinancesGateway(BaseGateway):
         "key": "",
         "secret": "",
         "会话数": 3,
-        "服务器": ["TESTNET", "REAL"],
-        "合约模式": ["反向", "正向"],
+        "服务器": ["REAL", "TESTNET"],
+        "合约模式": ["正向", "反向"],
         "代理地址": "",
         "代理端口": 0,
     }
@@ -569,18 +570,19 @@ class BinancesRestApi(RestClient):
         symbols = self.market_ws_api.ticks.keys()
 
         for d in data:
-            position = PositionData(
-                symbol=d["symbol"],
-                exchange=Exchange.BINANCE,
-                direction=Direction.NET,
-                volume=float(float(d["positionAmt"])),
-                price=float(d["entryPrice"]),
-                pnl=float(d["unRealizedProfit"]),
-                gateway_name=self.gateway_name,
-            )
+            if d['positionSide'] == "BOTH":
+                position = PositionData(
+                    symbol=d["symbol"],
+                    exchange=Exchange.BINANCE,
+                    direction=Direction.NET,
+                    volume=float(float(d["positionAmt"])),
+                    price=float(d["entryPrice"]),
+                    pnl=float(d["unRealizedProfit"]),
+                    gateway_name=self.gateway_name,
+                )
 
-            # if position.volume or d['symbol'].lower() in symbols:
-            self.gateway.on_position(position)
+                # if position.volume or d['symbol'].lower() in symbols:
+                self.gateway.on_position(position)
 
         self.gateway.write_log("持仓信息查询成功")
 
@@ -840,16 +842,18 @@ class BinancesTradeWebsocketApi(WebsocketClient):
             self.gateway.on_account(account)
 
         for pos_data in packet["a"]["P"]:
-            position = PositionData(
-                symbol=pos_data["s"],
-                exchange=Exchange.BINANCE,
-                direction=Direction.NET,
-                volume=float(float(pos_data["pa"])),
-                price=float(pos_data["ep"]),
-                pnl=float(pos_data["up"]),
-                gateway_name=self.gateway_name,
-            )
-            self.gateway.on_position(position)
+
+            if pos_data['ps'] == "BOTH":
+                position = PositionData(
+                    symbol=pos_data["s"],
+                    exchange=Exchange.BINANCE,
+                    direction=Direction.NET,
+                    volume=float(pos_data["pa"]),
+                    price=float(pos_data["ep"]),
+                    pnl=float(pos_data["up"]),
+                    gateway_name=self.gateway_name,
+                )
+                self.gateway.on_position(position)
 
     def on_order(self, packet: dict) -> None:
         """"""
