@@ -102,6 +102,9 @@ folder by using the multi-threads for speeding.
 
 9. V2.1.8.1 修改接口的api关于资产的推送问题.
 
+10. V2.2.0 修改接口的bug,仓位模式为both,防止币安推送错误数据。 Change the
+    position mode to BOTH to avoid the rubbish data pushed from Binance
+    Exchange.
 ## 联系方式
 微信: bitquant51
 
