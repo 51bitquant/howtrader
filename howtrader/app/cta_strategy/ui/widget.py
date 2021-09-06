@@ -194,6 +194,9 @@ class StrategyManager(QtWidgets.QFrame):
         self.stop_button.clicked.connect(self.stop_strategy)
         self.stop_button.setEnabled(False)
 
+        self.edit_button = QtWidgets.QPushButton("编辑")
+        self.edit_button.clicked.connect(self.edit_strategy)
+
         self.remove_button = QtWidgets.QPushButton("移除")
         self.remove_button.clicked.connect(self.remove_strategy)
 
@@ -215,6 +218,7 @@ class StrategyManager(QtWidgets.QFrame):
         hbox.addWidget(self.init_button)
         hbox.addWidget(self.start_button)
         hbox.addWidget(self.stop_button)
+        hbox.addWidget(self.edit_button)
         hbox.addWidget(self.remove_button)
 
         vbox = QtWidgets.QVBoxLayout()
