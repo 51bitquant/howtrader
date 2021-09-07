@@ -106,7 +106,10 @@ folder by using the multi-threads for speeding.
     position mode to BOTH to avoid the rubbish data pushed from Binance
     Exchange.
     
-111.V2.2.1 添加策略编辑功能 Edit Strategy
+11. V2.2.1 添加策略编辑功能 Edit Strategy
+
+12. V2.2.3 添加马丁策略 martingle strategies
+
 ## 联系方式
 微信: bitquant51
 
