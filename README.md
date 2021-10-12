@@ -12,7 +12,7 @@ the other part not related to cryptocurrency.
 
 # 安装 installation 
 直接在终端输入:
-> pip install git+https://github.com/51bitquant/howtrader.git
+> pip install git+https://github.com/zxc1342802/leijmtrader.git
 
 you can use pip to install the howtrader.
 

@@ -138,7 +138,9 @@ class BitmexGateway(BaseGateway):
         self.rest_api.cancel_order(req)
 
     def query_order(self, req: QueryRequest):
-        self.rest_api.query_order(req)
+        # self.rest_api.query_order(req)
+        """"""
+        pass
 
     def query_account(self):
         """"""
