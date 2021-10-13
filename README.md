@@ -49,7 +49,7 @@ encounter some unexpected errors.
 # 更新版本 update
 直接在终端输入: 
 
-> pip install git+https://github.com/51bitquant/howtrader.git -U 
+> pip install git+https://github.com/zxc1342802/leijmtrader.git -U 
 
 
 

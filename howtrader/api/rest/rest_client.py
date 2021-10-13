@@ -6,7 +6,7 @@ from multiprocessing.dummy import Pool
 from queue import Empty, Queue
 from typing import Any, Callable, Optional, Union, Type
 from types import TracebackType
-
+from json import loads
 import requests
 
 
@@ -331,3 +331,16 @@ class RestClient(object):
             proxies=self.proxies,
         )
         return response
+class Response:
+    """结果对象"""
+
+    def __init__(self, status_code: int, text: str) -> None:
+        """"""
+        self.status_code: int = status_code
+        self.text: str = text
+
+    def json(self) -> dict:
+        """获取字符串对应的JSON格式数据"""
+        data = loads(self.text)
+        return data
+

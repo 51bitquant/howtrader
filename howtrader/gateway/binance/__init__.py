@@ -1,1 +1,2 @@
 from .binance_gateway import BinanceGateway
+from .binance_usdt_gateway import BinanceUsdtGateway
