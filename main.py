@@ -1,20 +1,20 @@
-from howtrader.event import EventEngine
+from jiamtrader.event import EventEngine
 
-from howtrader.trader.engine import MainEngine
-from howtrader.trader.ui import MainWindow, create_qapp
+from jiamtrader.trader.engine import MainEngine
+from jiamtrader.trader.ui import MainWindow, create_qapp
 
-from howtrader.gateway.binance import BinanceUsdtGateway  # 合约
-from howtrader.gateway.binance import BinanceInverseGateway  # 反向合约
-from howtrader.gateway.binance import BinanceSpotGateway  # 现货
-from howtrader.gateway.bitmex import BitmexGateway  # bitmex
+from jiamtrader.gateway.binance import BinanceUsdtGateway  # 合约
+from jiamtrader.gateway.binance import BinanceInverseGateway  # 反向合约
+from jiamtrader.gateway.binance import BinanceSpotGateway  # 现货
+from jiamtrader.gateway.bitmex import BitmexGateway  # bitmex
 
-from howtrader.app.cta_strategy import CtaStrategyApp  # CTA策略
-from howtrader.app.data_manager import DataManagerApp  # 数据管理, csv_data
-from howtrader.app.data_recorder import DataRecorderApp  # 录行情数据
-from howtrader.app.algo_trading import AlgoTradingApp  # 算法交易
-from howtrader.app.cta_backtester import CtaBacktesterApp  # 回测研究
-from howtrader.app.risk_manager import RiskManagerApp  # 风控管理
-from howtrader.app.spread_trading import SpreadTradingApp  # 价差交易
+from jiamtrader.app.cta_strategy import CtaStrategyApp  # CTA策略
+from jiamtrader.app.data_manager import DataManagerApp  # 数据管理, csv_data
+from jiamtrader.app.data_recorder import DataRecorderApp  # 录行情数据
+from jiamtrader.app.algo_trading import AlgoTradingApp  # 算法交易
+from jiamtrader.app.cta_backtester import CtaBacktesterApp  # 回测研究
+from jiamtrader.app.risk_manager import RiskManagerApp  # 风控管理
+from jiamtrader.app.spread_trading import SpreadTradingApp  # 价差交易
 
 
 def main():
@@ -46,8 +46,8 @@ def main():
 
 if __name__ == "__main__":
     """
-     howtrader main window demo
-     howtrader 的图形化界面
+     jiamtrader main window demo
+     jiamtrader 的图形化界面
 
      we have binance gate way, which is for spot, while the binances gateway is for contract or futures.
      the difference between the spot and future is their symbol is just different. Spot uses the lower case for symbol, 

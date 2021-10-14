@@ -3,13 +3,13 @@ from time import sleep
 from datetime import datetime, time
 from logging import INFO
 
-from howtrader.event import EventEngine
-from howtrader.trader.setting import SETTINGS
-from howtrader.trader.engine import MainEngine
+from jiamtrader.event import EventEngine
+from jiamtrader.trader.setting import SETTINGS
+from jiamtrader.trader.engine import MainEngine
 
-from howtrader.gateway.binances import BinancesGateway
-from howtrader.app.cta_strategy import CtaStrategyApp
-from howtrader.app.cta_strategy.base import EVENT_CTA_LOG
+from jiamtrader.gateway.binances import BinancesGateway
+from jiamtrader.app.cta_strategy import CtaStrategyApp
+from jiamtrader.app.cta_strategy.base import EVENT_CTA_LOG
 
 
 SETTINGS["log.active"] = True

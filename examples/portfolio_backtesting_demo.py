@@ -2,15 +2,15 @@
 from datetime import datetime
 from importlib import reload
 
-import howtrader.app.portfolio_strategy
-reload(howtrader.app.portfolio_strategy)
+import jiamtrader.app.portfolio_strategy
+reload(jiamtrader.app.portfolio_strategy)
 
-from howtrader.app.portfolio_strategy import BacktestingEngine
-from howtrader.trader.constant import Interval
+from jiamtrader.app.portfolio_strategy import BacktestingEngine
+from jiamtrader.trader.constant import Interval
 
-import howtrader.app.portfolio_strategy.strategies.pair_trading_strategy as stg
+import jiamtrader.app.portfolio_strategy.strategies.pair_trading_strategy as stg
 reload(stg)
-from howtrader.app.portfolio_strategy.strategies.pair_trading_strategy import PairTradingStrategy
+from jiamtrader.app.portfolio_strategy.strategies.pair_trading_strategy import PairTradingStrategy
 
 
 engine = BacktestingEngine()

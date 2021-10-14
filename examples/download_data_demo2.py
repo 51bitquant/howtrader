@@ -8,10 +8,10 @@ import time
 from datetime import datetime
 import requests
 import pytz
-from howtrader.trader.database import database_manager
+from jiamtrader.trader.database import database_manager
 
 pd.set_option('expand_frame_repr', False)  #
-from howtrader.trader.object import BarData, Interval, Exchange
+from jiamtrader.trader.object import BarData, Interval, Exchange
 
 BINANCE_SPOT_LIMIT = 1000
 BINANCE_FUTURE_LIMIT = 1500

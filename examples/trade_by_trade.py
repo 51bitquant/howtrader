@@ -1,5 +1,5 @@
-from howtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
-from howtrader.app.cta_strategy.strategies.turtle_signal_strategy import TurtleSignalStrategy
+from jiamtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
+from jiamtrader.app.cta_strategy.strategies.turtle_signal_strategy import TurtleSignalStrategy
 from datetime import datetime
 
 engine = BacktestingEngine()

@@ -10,8 +10,8 @@ from statsmodels.tsa.stattools import adfuller as ADF
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 import talib
 
-from howtrader.trader.constant import Exchange, Interval
-from howtrader.trader.database import database_manager
+from jiamtrader.trader.constant import Exchange, Interval
+from jiamtrader.trader.database import database_manager
 warnings.filterwarnings("ignore")
 
 

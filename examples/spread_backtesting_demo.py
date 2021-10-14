@@ -1,9 +1,9 @@
 
-from howtrader.app.spread_trading.backtesting import BacktestingEngine
-from howtrader.app.spread_trading.strategies.statistical_arbitrage_strategy import (
+from jiamtrader.app.spread_trading.backtesting import BacktestingEngine
+from jiamtrader.app.spread_trading.strategies.statistical_arbitrage_strategy import (
     StatisticalArbitrageStrategy
 )
-from howtrader.app.spread_trading.base import LegData, SpreadData
+from jiamtrader.app.spread_trading.base import LegData, SpreadData
 from datetime import datetime
 
 

@@ -3,17 +3,17 @@ from time import sleep
 from datetime import datetime, time
 from logging import INFO
 
-from howtrader.event import EventEngine
-from howtrader.trader.setting import SETTINGS
-from howtrader.trader.engine import MainEngine
+from jiamtrader.event import EventEngine
+from jiamtrader.trader.setting import SETTINGS
+from jiamtrader.trader.engine import MainEngine
 
-from howtrader.gateway.binances import BinancesGateway
-from howtrader.gateway.binance import BinanceGateway
-from howtrader.gateway.binances.binances_gateway import BinancesRestApi
-from howtrader.trader.object import Exchange, Interval
+from jiamtrader.gateway.binances import BinancesGateway
+from jiamtrader.gateway.binance import BinanceGateway
+from jiamtrader.gateway.binances.binances_gateway import BinancesRestApi
+from jiamtrader.trader.object import Exchange, Interval
 from tzlocal import get_localzone
-from howtrader.trader.object import HistoryRequest
-from howtrader.trader.database import database_manager
+from jiamtrader.trader.object import HistoryRequest
+from jiamtrader.trader.database import database_manager
 from threading import Thread
 
 SETTINGS["log.active"] = True

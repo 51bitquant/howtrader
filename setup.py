@@ -51,14 +51,14 @@ def get_install_requires():
 
 def get_version_string():
     global version
-    with open("howtrader/__init__.py", "rb") as f:
+    with open("jiamtrader/__init__.py", "rb") as f:
         version_line = re.search(
             r"__version__\s+=\s+(.*)", f.read().decode("utf-8")
         ).group(1)
         return str(ast.literal_eval(version_line))
 
 setup(
-    name="howtrader",
+    name="jiamtrader",
     version=get_version_string(),
     author="vn.py team,51bitquant",
     author_email="vn.py@foxmail.com",

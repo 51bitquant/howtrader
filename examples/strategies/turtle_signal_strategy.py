@@ -1,4 +1,4 @@
-from howtrader.app.cta_strategy import (
+from jiamtrader.app.cta_strategy import (
     CtaTemplate,
     StopOrder,
     Direction,
