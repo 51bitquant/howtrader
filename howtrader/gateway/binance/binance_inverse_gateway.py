@@ -1,7 +1,7 @@
 """
 1. 只支持全仓模式
 2. 只支持单向持仓模式
-3. 只支持正向合约
+3. 只支持反向合约
 """
 
 import urllib
@@ -49,19 +49,19 @@ from howtrader.api.websocket import WebsocketClient
 # 中国时区
 CHINA_TZ = pytz.timezone("Asia/Shanghai")
 
-# 实盘正向合约REST API地址
-F_REST_HOST: str = "https://fapi.binance.com"
+# 实盘反向合约REST API地址
+D_REST_HOST: str = "https://dapi.binance.com"
 
-# 实盘正向合约Websocket API地址
-F_WEBSOCKET_TRADE_HOST: str = "wss://fstream.binance.com/ws/"
-F_WEBSOCKET_DATA_HOST: str = "wss://fstream.binance.com/stream"
+# 实盘反向合约Websocket API地址
+D_WEBSOCKET_TRADE_HOST: str = "wss://dstream.binance.com/ws/"
+D_WEBSOCKET_DATA_HOST: str = "wss://dstream.binance.com/stream"
 
-# 模拟盘正向合约REST API地址
-F_TESTNET_REST_HOST: str = "https://testnet.binancefuture.com"
+# 模拟盘反向合约REST API地址
+D_TESTNET_REST_HOST: str = "https://testnet.binancefuture.com"
 
-# 模拟盘正向合约Websocket API地址
-F_TESTNET_WEBSOCKET_TRADE_HOST: str = "wss://stream.binancefuture.com/ws/"
-F_TESTNET_WEBSOCKET_DATA_HOST: str = "wss://stream.binancefuture.com/stream"
+# 模拟盘反向合约Websocket API地址
+D_TESTNET_WEBSOCKET_TRADE_HOST: str = "wss://dstream.binancefuture.com/ws/"
+D_TESTNET_WEBSOCKET_DATA_HOST: str = "wss://dstream.binancefuture.com/stream"
 
 # 委托状态映射
 STATUS_BINANCES2VT: Dict[str, Status] = {
@@ -114,10 +114,8 @@ class Security(Enum):
     API_KEY: int = 2
 
 
-class BinanceUsdtGateway(BaseGateway):
-    """
-    vn.py用于对接币安正向合约的交易接口。
-    """
+class BinanceInverseGateway(BaseGateway):
+    """vn.py用于对接币安反向合约的交易接口"""
 
     default_setting: Dict[str, Any] = {
         "key": "",
@@ -129,13 +127,13 @@ class BinanceUsdtGateway(BaseGateway):
 
     exchanges: Exchange = [Exchange.BINANCE]
 
-    def __init__(self, event_engine: EventEngine, gateway_name: str = "BINANCE_USDT") -> None:
+    def __init__(self, event_engine: EventEngine, gateway_name: str = "BINANCE_INVERSE") -> None:
         """构造函数"""
         super().__init__(event_engine, gateway_name)
 
-        self.trade_ws_api: "BinanceUsdtTradeWebsocketApi" = BinanceUsdtTradeWebsocketApi(self)
-        self.market_ws_api: "BinanceUsdtDataWebsocketApi" = BinanceUsdtDataWebsocketApi(self)
-        self.rest_api: "BinanceUsdtRestApi" = BinanceUsdtRestApi(self)
+        self.trade_ws_api: "BinanceInverseTradeWebsocketApi" = BinanceInverseTradeWebsocketApi(self)
+        self.market_ws_api: "BinanceInverseDataWebsocketApi" = BinanceInverseDataWebsocketApi(self)
+        self.rest_api: "BinanceInverseRestApi" = BinanceInverseRestApi(self)
 
         self.orders: Dict[str, OrderData] = {}
 
@@ -144,8 +142,8 @@ class BinanceUsdtGateway(BaseGateway):
         key: str = setting["key"]
         secret: str = setting["secret"]
         server: str = setting["服务器"]
-        proxy_host: str = setting["代理地址"]
-        proxy_port: int = setting["代理端口"]
+        proxy_host: int = setting["代理地址"]
+        proxy_port: str = setting["代理端口"]
 
         self.rest_api.connect(key, secret, server, proxy_host, proxy_port)
         self.market_ws_api.connect(proxy_host, proxy_port, server)
@@ -196,17 +194,17 @@ class BinanceUsdtGateway(BaseGateway):
         return self.orders.get(orderid, None)
 
 
-class BinanceUsdtRestApi(RestClient):
-    """币安正向合约的REST API"""
+class BinanceInverseRestApi(RestClient):
+    """币安反向合约的REST API"""
 
-    def __init__(self, gateway: BinanceUsdtGateway) -> None:
+    def __init__(self, gateway: BinanceInverseGateway) -> None:
         """构造函数"""
         super().__init__()
 
-        self.gateway: BinanceUsdtGateway = gateway
+        self.gateway: BinanceInverseGateway = gateway
         self.gateway_name: str = gateway.gateway_name
 
-        self.trade_ws_api: BinanceUsdtTradeWebsocketApi = self.gateway.trade_ws_api
+        self.trade_ws_api: BinanceInverseTradeWebsocketApi = self.gateway.trade_ws_api
 
         self.key: str = ""
         self.secret: str = ""
@@ -287,9 +285,9 @@ class BinanceUsdtRestApi(RestClient):
         )
 
         if self.server == "REAL":
-            self.init(F_REST_HOST, proxy_host, proxy_port)
+            self.init(D_REST_HOST, proxy_host, proxy_port)
         else:
-            self.init(F_TESTNET_REST_HOST, proxy_host, proxy_port)
+            self.init(D_TESTNET_REST_HOST, proxy_host, proxy_port)
 
         self.start()
 
@@ -307,8 +305,7 @@ class BinanceUsdtRestApi(RestClient):
         data: dict = {
             "security": Security.NONE
         }
-
-        path: str = "/fapi/v1/time"
+        path: str = "/dapi/v1/time"
 
         return self.add_request(
             "GET",
@@ -321,7 +318,7 @@ class BinanceUsdtRestApi(RestClient):
         """查询资金"""
         data: dict = {"security": Security.SIGNED}
 
-        path: str = "/fapi/v1/account"
+        path: str = "/dapi/v1/account"
 
         self.add_request(
             method="GET",
@@ -334,7 +331,7 @@ class BinanceUsdtRestApi(RestClient):
         """查询持仓"""
         data: dict = {"security": Security.SIGNED}
 
-        path: str = "/fapi/v1/positionRisk"
+        path: str = "/dapi/v1/positionRisk"
 
         self.add_request(
             method="GET",
@@ -347,7 +344,7 @@ class BinanceUsdtRestApi(RestClient):
         """查询未成交委托"""
         data: dict = {"security": Security.SIGNED}
 
-        path: str = "/fapi/v1/openOrders"
+        path: str = "/dapi/v1/openOrders"
 
         self.add_request(
             method="GET",
@@ -362,7 +359,7 @@ class BinanceUsdtRestApi(RestClient):
             "security": Security.NONE
         }
 
-        path: str = "/fapi/v1/exchangeInfo"
+        path: str = "/dapi/v1/exchangeInfo"
 
         self.add_request(
             method="GET",
@@ -406,7 +403,7 @@ class BinanceUsdtRestApi(RestClient):
             "newClientOrderId": orderid,
         }
 
-        path: str = "/fapi/v1/order"
+        path: str = "/dapi/v1/order"
 
         self.add_request(
             method="POST",
@@ -432,7 +429,7 @@ class BinanceUsdtRestApi(RestClient):
             "origClientOrderId": req.orderid
         }
 
-        path: str = "/fapi/v1/order"
+        path: str = "/dapi/v1/order"
 
         order: OrderData = self.gateway.get_order(req.orderid)
 
@@ -452,7 +449,7 @@ class BinanceUsdtRestApi(RestClient):
             "security": Security.API_KEY
         }
 
-        path: str = "/fapi/v1/listenKey"
+        path: str = "/dapi/v1/listenKey"
 
         self.add_request(
             method="POST",
@@ -476,7 +473,7 @@ class BinanceUsdtRestApi(RestClient):
             "listenKey": self.user_stream_key
         }
 
-        path: str = "/fapi/v1/listenKey"
+        path: str = "/dapi/v1/listenKey"
 
         self.add_request(
             method="PUT",
@@ -635,9 +632,9 @@ class BinanceUsdtRestApi(RestClient):
         self.keep_alive_count = 0
 
         if self.server == "REAL":
-            url = F_WEBSOCKET_TRADE_HOST + self.user_stream_key
+            url = D_WEBSOCKET_TRADE_HOST + self.user_stream_key
         else:
-            url = F_TESTNET_WEBSOCKET_TRADE_HOST + self.user_stream_key
+            url = D_TESTNET_WEBSOCKET_TRADE_HOST + self.user_stream_key
 
         self.trade_ws_api.connect(url, self.proxy_host, self.proxy_port)
 
@@ -657,8 +654,7 @@ class BinanceUsdtRestApi(RestClient):
         """查询历史数据"""
         history: List[BarData] = []
         limit: int = 1500
-
-        start_time: int = int(datetime.timestamp(req.start))
+        end_time: int = int(datetime.timestamp(req.end))
 
         while True:
             # 创建查询参数
@@ -668,11 +664,11 @@ class BinanceUsdtRestApi(RestClient):
                 "limit": limit
             }
 
-            params["startTime"] = start_time * 1000
-            path: str = "/fapi/v1/klines"
-            if req.end:
-                end_time = int(datetime.timestamp(req.end))
-                params["endTime"] = end_time * 1000     # 转换成毫秒
+            params["endTime"] = end_time * 1000
+            path: str = "/dapi/v1/klines"
+            if req.start:
+                start_time = int(datetime.timestamp(req.start))
+                params["startTime"] = start_time * 1000     # 转换成毫秒
 
             resp: Response = self.request(
                 "GET",
@@ -714,6 +710,7 @@ class BinanceUsdtRestApi(RestClient):
                 begin: datetime = buf[0].datetime
                 end: datetime = buf[-1].datetime
 
+                buf = list(reversed(buf))
                 history.extend(buf)
                 msg: str = f"获取历史数据成功，{req.symbol} - {req.interval.value}，{begin} - {end}"
                 self.gateway.write_log(msg)
@@ -722,21 +719,22 @@ class BinanceUsdtRestApi(RestClient):
                 if len(data) < limit:
                     break
 
-                # 更新开始时间
-                start_dt = bar.datetime + TIMEDELTA_MAP[req.interval]
-                start_time = int(datetime.timestamp(start_dt))
+                # 更新结束时间
+                end_dt = begin - TIMEDELTA_MAP[req.interval]
+                end_time = int(datetime.timestamp(end_dt))
 
+        history = list(reversed(history))
         return history
 
 
-class BinanceUsdtTradeWebsocketApi(WebsocketClient):
-    """币安正向合约的交易Websocket API"""
+class BinanceInverseTradeWebsocketApi(WebsocketClient):
+    """币安反向合约的交易Websocket API"""
 
-    def __init__(self, gateway: BinanceUsdtGateway) -> None:
+    def __init__(self, gateway: BinanceInverseGateway) -> None:
         """构造函数"""
         super().__init__()
 
-        self.gateway: BinanceUsdtGateway = gateway
+        self.gateway: BinanceInverseGateway = gateway
         self.gateway_name: str = gateway.gateway_name
 
     def connect(self, url: str, proxy_host: str, proxy_port: int) -> None:
@@ -834,14 +832,14 @@ class BinanceUsdtTradeWebsocketApi(WebsocketClient):
         self.gateway.on_trade(trade)
 
 
-class BinanceUsdtDataWebsocketApi(WebsocketClient):
-    """币安正向合约的行情Websocket API"""
+class BinanceInverseDataWebsocketApi(WebsocketClient):
+    """币安反向合约的行情Websocket API"""
 
-    def __init__(self, gateway: BinanceUsdtGateway) -> None:
+    def __init__(self, gateway: BinanceInverseGateway) -> None:
         """构造函数"""
         super().__init__()
 
-        self.gateway: BinanceUsdtGateway = gateway
+        self.gateway: BinanceInverseGateway = gateway
         self.gateway_name: str = gateway.gateway_name
 
         self.subscribed: Dict[str, SubscribeRequest] = {}
@@ -856,10 +854,10 @@ class BinanceUsdtDataWebsocketApi(WebsocketClient):
     ) -> None:
         """连接Websocket行情频道"""
         if server == "REAL":
-            self.init(F_WEBSOCKET_DATA_HOST, proxy_host, proxy_port)
+            self.init(D_WEBSOCKET_DATA_HOST, proxy_host, proxy_port)
         else:
-            self.init(F_TESTNET_WEBSOCKET_DATA_HOST, proxy_host, proxy_port)
-    
+            self.init(D_TESTNET_WEBSOCKET_DATA_HOST, proxy_host, proxy_port)
+
         self.start()
 
     def on_connected(self) -> None:

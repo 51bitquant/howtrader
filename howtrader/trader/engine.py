@@ -2,6 +2,7 @@
 """
 
 import logging
+from logging import Logger
 import sys
 import smtplib
 import os
@@ -10,30 +11,31 @@ from datetime import datetime
 from email.message import EmailMessage
 from queue import Empty, Queue
 from threading import Thread
-from typing import Any, Sequence, Type, Dict, List, Optional
+from typing import Any, Type, Dict, List, Optional
 
 from howtrader.event import Event, EventEngine
 from .app import BaseApp
 from .event import (
     EVENT_TICK,
-    EVENT_TIMER,
     EVENT_ORDER,
     EVENT_TRADE,
     EVENT_POSITION,
     EVENT_ACCOUNT,
     EVENT_CONTRACT,
-    EVENT_LOG
+    EVENT_LOG,
+    EVENT_QUOTE
 )
 from .gateway import BaseGateway
 from .object import (
     CancelRequest,
-    QueryRequest,
     LogData,
     OrderRequest,
     SubscribeRequest,
     HistoryRequest,
     OrderData,
     BarData,
+    QuoteData,
+    QuoteRequest,
     TickData,
     TradeData,
     PositionData,
@@ -63,8 +65,8 @@ class MainEngine:
         self.apps: Dict[str, BaseApp] = {}
         self.exchanges: List[Exchange] = []
 
-        os.chdir(TRADER_DIR)  # Change working directory
-        self.init_engines()  # Initialize function engines
+        os.chdir(TRADER_DIR)    # Change working directory
+        self.init_engines()     # Initialize function engines
 
     def add_engine(self, engine_class: Any) -> "BaseEngine":
         """
@@ -143,7 +145,7 @@ class MainEngine:
 
     def get_all_gateway_names(self) -> List[str]:
         """
-        Get all names of gateway added in main engine.
+        Get all names of gatewasy added in main engine.
         """
         return list(self.gateways.keys())
 
@@ -193,53 +195,33 @@ class MainEngine:
         if gateway:
             gateway.cancel_order(req)
 
-    def query_order(self, req: QueryRequest, gateway_name: str) -> None:
+    def send_quote(self, req: QuoteRequest, gateway_name: str) -> str:
         """
-        Send query order request to a specific gateway.
-        """
-        gateway = self.get_gateway(gateway_name)
-        if gateway and hasattr(gateway, 'query_order'):
-            gateway.query_order(req)
-
-    def send_orders(self, reqs: Sequence[OrderRequest], gateway_name: str) -> List[str]:
-        """
+        Send new quote request to a specific gateway.
         """
         gateway = self.get_gateway(gateway_name)
         if gateway:
-            return gateway.send_orders(reqs)
+            return gateway.send_quote(req)
         else:
-            return ["" for req in reqs]
+            return ""
 
-    def cancel_orders(self, reqs: Sequence[CancelRequest], gateway_name: str) -> None:
+    def cancel_quote(self, req: CancelRequest, gateway_name: str) -> None:
         """
+        Send cancel quote request to a specific gateway.
         """
         gateway = self.get_gateway(gateway_name)
         if gateway:
-            gateway.cancel_orders(reqs)
+            gateway.cancel_quote(req)
 
     def query_history(self, req: HistoryRequest, gateway_name: str) -> Optional[List[BarData]]:
         """
-        Send cancel order request to a specific gateway.
+        Query bar history data from a specific gateway.
         """
         gateway = self.get_gateway(gateway_name)
         if gateway:
             return gateway.query_history(req)
         else:
             return None
-
-    def query_position(self):
-        """
-        query the position
-        """
-        for gateway in self.gateways.values():
-            gateway.query_position()
-
-    def query_account(self):
-        """
-        query the account
-        """
-        for gateway in self.gateways.values():
-            gateway.query_account()
 
     def close(self) -> None:
         """
@@ -262,10 +244,10 @@ class BaseEngine(ABC):
     """
 
     def __init__(
-            self,
-            main_engine: MainEngine,
-            event_engine: EventEngine,
-            engine_name: str,
+        self,
+        main_engine: MainEngine,
+        event_engine: EventEngine,
+        engine_name: str,
     ):
         """"""
         self.main_engine = main_engine
@@ -291,7 +273,7 @@ class LogEngine(BaseEngine):
 
         self.level: int = SETTINGS["log.level"]
 
-        self.logger: logging.Logger = logging.getLogger("VN Trader")
+        self.logger: Logger = logging.getLogger("VN Trader")
         self.logger.setLevel(self.level)
 
         self.formatter = logging.Formatter(
@@ -319,7 +301,7 @@ class LogEngine(BaseEngine):
         """
         Add console output of log.
         """
-        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler = logging.StreamHandler()
         console_handler.setLevel(self.level)
         console_handler.setFormatter(self.formatter)
         self.logger.addHandler(console_handler)
@@ -367,15 +349,13 @@ class OmsEngine(BaseEngine):
         self.positions: Dict[str, PositionData] = {}
         self.accounts: Dict[str, AccountData] = {}
         self.contracts: Dict[str, ContractData] = {}
+        self.quotes: Dict[str, QuoteData] = {}
 
         self.active_orders: Dict[str, OrderData] = {}
+        self.active_quotes: Dict[str, QuoteData] = {}
 
         self.add_function()
         self.register_event()
-
-        self.order_update_interval = 0  # for counting the timer.
-        self.position_update_interval = 0
-        self.account_update_interval = 0
 
     def add_function(self) -> None:
         """Add query function to main engine."""
@@ -385,13 +365,17 @@ class OmsEngine(BaseEngine):
         self.main_engine.get_position = self.get_position
         self.main_engine.get_account = self.get_account
         self.main_engine.get_contract = self.get_contract
+        self.main_engine.get_quote = self.get_quote
+
         self.main_engine.get_all_ticks = self.get_all_ticks
         self.main_engine.get_all_orders = self.get_all_orders
         self.main_engine.get_all_trades = self.get_all_trades
         self.main_engine.get_all_positions = self.get_all_positions
         self.main_engine.get_all_accounts = self.get_all_accounts
         self.main_engine.get_all_contracts = self.get_all_contracts
+        self.main_engine.get_all_quotes = self.get_all_quotes
         self.main_engine.get_all_active_orders = self.get_all_active_orders
+        self.main_engine.get_all_active_qutoes = self.get_all_active_quotes
 
     def register_event(self) -> None:
         """"""
@@ -401,16 +385,16 @@ class OmsEngine(BaseEngine):
         self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_ACCOUNT, self.process_account_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
-        self.event_engine.register(EVENT_TIMER, self.process_timer)
+        self.event_engine.register(EVENT_QUOTE, self.process_quote_event)
 
     def process_tick_event(self, event: Event) -> None:
         """"""
-        tick = event.data
+        tick: TickData = event.data
         self.ticks[tick.vt_symbol] = tick
 
     def process_order_event(self, event: Event) -> None:
         """"""
-        order = event.data
+        order: OrderData = event.data
         self.orders[order.vt_orderid] = order
 
         # If order is active, then update data in dict.
@@ -422,48 +406,35 @@ class OmsEngine(BaseEngine):
 
     def process_trade_event(self, event: Event) -> None:
         """"""
-        trade = event.data
+        trade: TradeData = event.data
         self.trades[trade.vt_tradeid] = trade
 
     def process_position_event(self, event: Event) -> None:
         """"""
-        position = event.data
+        position: PositionData = event.data
         self.positions[position.vt_positionid] = position
 
     def process_account_event(self, event: Event) -> None:
         """"""
-        account = event.data
+        account: AccountData = event.data
         self.accounts[account.vt_accountid] = account
 
     def process_contract_event(self, event: Event) -> None:
         """"""
-        contract = event.data
+        contract: ContractData = event.data
         self.contracts[contract.vt_symbol] = contract
 
-    def process_timer(self, event: Event) -> None:
-        """
-        update the orders, positions by timer, for we may be disconnected from server update push.
-        """
+    def process_quote_event(self, event: Event) -> None:
+        """"""
+        quote: QuoteData = event.data
+        self.quotes[quote.vt_quoteid] = quote
 
-        self.order_update_interval += 1
-        self.position_update_interval += 1
-        self.account_update_interval += 1
-
-        if self.order_update_interval >= SETTINGS.get('order_update_interval', 120):
-            self.order_update_interval = 0
-            orders = self.get_all_active_orders()
-            for order in orders:
-                if order.datetime and (datetime.now(order.datetime.tzinfo) - order.datetime).seconds > SETTINGS.get('order_update_timer', 120):
-                    req = order.create_query_request()
-                    self.main_engine.query_order(req, order.gateway_name)
-
-        if self.position_update_interval >= SETTINGS.get('position_update_interval', 120):
-            self.main_engine.query_position()
-            self.position_update_interval = 0
-
-        if self.account_update_interval >= SETTINGS.get('account_update_interval', 120):
-            self.account_update_interval = 0
-            self.main_engine.query_account()
+        # If quote is active, then update data in dict.
+        if quote.is_active():
+            self.active_quotes[quote.vt_quoteid] = quote
+        # Otherwise, pop inactive quote from in dict
+        elif quote.vt_quoteid in self.active_quotes:
+            self.active_quotes.pop(quote.vt_quoteid)
 
     def get_tick(self, vt_symbol: str) -> Optional[TickData]:
         """
@@ -501,6 +472,12 @@ class OmsEngine(BaseEngine):
         """
         return self.contracts.get(vt_symbol, None)
 
+    def get_quote(self, vt_quoteid: str) -> Optional[QuoteData]:
+        """
+        Get latest quote data by vt_orderid.
+        """
+        return self.quotes.get(vt_quoteid, None)
+
     def get_all_ticks(self) -> List[TickData]:
         """
         Get all tick data.
@@ -537,6 +514,12 @@ class OmsEngine(BaseEngine):
         """
         return list(self.contracts.values())
 
+    def get_all_quotes(self) -> List[QuoteData]:
+        """
+        Get all quote data.
+        """
+        return list(self.quotes.values())
+
     def get_all_active_orders(self, vt_symbol: str = "") -> List[OrderData]:
         """
         Get all active orders by vt_symbol.
@@ -552,6 +535,22 @@ class OmsEngine(BaseEngine):
                 if order.vt_symbol == vt_symbol
             ]
             return active_orders
+
+    def get_all_active_quotes(self, vt_symbol: str = "") -> List[QuoteData]:
+        """
+        Get all active quotes by vt_symbol.
+
+        If vt_symbol is empty, return all active qutoes.
+        """
+        if not vt_symbol:
+            return list(self.active_quotes.values())
+        else:
+            active_quotes = [
+                quote
+                for quote in self.active_quotes.values()
+                if quote.vt_symbol == vt_symbol
+            ]
+            return active_quotes
 
 
 class EmailEngine(BaseEngine):
@@ -594,19 +593,14 @@ class EmailEngine(BaseEngine):
                 msg = self.queue.get(block=True, timeout=1)
 
                 with smtplib.SMTP_SSL(
-                        SETTINGS["email.server"], SETTINGS["email.port"]
+                    SETTINGS["email.server"], SETTINGS["email.port"]
                 ) as smtp:
                     smtp.login(
                         SETTINGS["email.username"], SETTINGS["email.password"]
                     )
                     smtp.send_message(msg)
-                self.write_log(f"发送邮件成功 - {msg}")
             except Empty:
                 pass
-            except Exception:
-                et, ev, tb = sys.exc_info()
-                self.write_log(f"发送邮件失败 - {et.__name__}: {ev}")
-                sys.excepthook(et, ev, tb)
 
     def start(self) -> None:
         """"""
@@ -620,11 +614,3 @@ class EmailEngine(BaseEngine):
 
         self.active = False
         self.thread.join()
-
-    def write_log(self, msg: str) -> None:
-        """
-        Put log event with specific message.
-        """
-        log = LogData(msg=msg, gateway_name="EMAIL")
-        event = Event(EVENT_LOG, log)
-        self.event_engine.put(event)

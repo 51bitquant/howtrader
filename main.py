@@ -3,8 +3,9 @@ from howtrader.event import EventEngine
 from howtrader.trader.engine import MainEngine
 from howtrader.trader.ui import MainWindow, create_qapp
 
-from howtrader.gateway.binance import BinanceGateway  #现货
-from howtrader.gateway.binances import BinancesGateway  # 合约
+from howtrader.gateway.binance import BinanceUsdtGateway  # 合约
+from howtrader.gateway.binance import BinanceInverseGateway  # 反向合约
+from howtrader.gateway.binance import BinanceSpotGateway  # 现货
 from howtrader.gateway.bitmex import BitmexGateway  # bitmex
 
 from howtrader.app.cta_strategy import CtaStrategyApp  # CTA策略
@@ -25,8 +26,9 @@ def main():
 
     main_engine = MainEngine(event_engine)
 
-    main_engine.add_gateway(BinanceGateway)
-    main_engine.add_gateway(BinancesGateway)
+    main_engine.add_gateway(BinanceInverseGateway)
+    main_engine.add_gateway(BinanceSpotGateway)
+    main_engine.add_gateway(BinanceUsdtGateway)
     main_engine.add_gateway(BitmexGateway)
     main_engine.add_app(CtaStrategyApp)
     main_engine.add_app(CtaBacktesterApp)
@@ -53,8 +55,9 @@ if __name__ == "__main__":
 
      币安的接口有现货和合约接口之分。 他们之间的区别是通过交易对来区分的。现货用小写，合约用大写。 btcusdt.BINANCE 是现货的symbol,
      BTCUSDT.BINANCE合约的交易对。 BTCUSD.BINANCE是合约的币本位保证金的交易对.
-     
+
      BTCUSDT, BTCUSDT
     """
 
     main()
+

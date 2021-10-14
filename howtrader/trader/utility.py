@@ -6,11 +6,12 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Callable, Dict, Tuple, Optional
+from typing import Callable, Dict, Tuple, Union, Optional
 from decimal import Decimal
 from math import floor, ceil
 
 import numpy as np
+import talib
 
 from .object import BarData, TickData
 from .constant import Exchange, Interval

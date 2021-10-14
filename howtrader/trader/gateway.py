@@ -5,18 +5,17 @@
 from abc import ABC, abstractmethod
 from typing import Any, Sequence, Dict, List, Optional, Callable
 from copy import copy
-import uuid
 
 from howtrader.event import Event, EventEngine
 from .event import (
     EVENT_TICK,
-    EVENT_BAR,
     EVENT_ORDER,
     EVENT_TRADE,
     EVENT_POSITION,
     EVENT_ACCOUNT,
     EVENT_CONTRACT,
     EVENT_LOG,
+    EVENT_QUOTE,
 )
 from .object import (
     TickData,
@@ -26,11 +25,12 @@ from .object import (
     AccountData,
     ContractData,
     LogData,
+    QuoteData,
     OrderRequest,
     CancelRequest,
-    QueryRequest,
     SubscribeRequest,
     HistoryRequest,
+    QuoteRequest,
     Exchange,
     BarData
 )
@@ -65,7 +65,6 @@ class BaseGateway(ABC):
     * on_position
     * on_account
     * on_contract
-    * on_bar
 
     All the XxxData passed to callback should be constant, which means that
         the object should not be modified after passing to on_xxxx.
@@ -86,7 +85,6 @@ class BaseGateway(ABC):
         """"""
         self.event_engine: EventEngine = event_engine
         self.gateway_name: str = gateway_name
-        self.active_orders: Dict[str, OrderData] = {}  # {order_id: OrderData} for updating the trade event
 
     def on_event(self, type: str, data: Any = None) -> None:
         """
@@ -102,14 +100,6 @@ class BaseGateway(ABC):
         """
         self.on_event(EVENT_TICK, tick)
         self.on_event(EVENT_TICK + tick.vt_symbol, tick)
-
-    def on_bar(self, bar: BarData) -> None:
-        """
-        Bar  event push.
-        Bar event of a specific vt_symbol is also pushed.
-        """
-        self.on_event(EVENT_BAR, bar)
-        self.on_event(EVENT_BAR + bar.vt_symbol, bar)
 
     def on_trade(self, trade: TradeData) -> None:
         """
@@ -127,32 +117,6 @@ class BaseGateway(ABC):
         self.on_event(EVENT_ORDER, order)
         self.on_event(EVENT_ORDER + order.vt_orderid, order)
 
-        # for updating the trade event
-        pre_order = self.active_orders.get(order.vt_orderid, None)
-
-        if order.is_active():
-            self.active_orders[order.vt_orderid] = order
-        elif order.vt_orderid in self.active_orders:
-            self.active_orders.pop(order.vt_orderid)
-
-        if order.trade_data:
-            self.on_trade(order.trade_data)
-        elif pre_order:
-            trade_volume = order.traded - pre_order.traded
-            if trade_volume > 0:
-                trade = TradeData(
-                    symbol=order.symbol,
-                    exchange=order.exchange,
-                    orderid=order.orderid,
-                    tradeid=str(uuid.uuid1()),
-                    direction=order.direction,
-                    price=order.price,
-                    volume=trade_volume,
-                    datetime=order.datetime,
-                    gateway_name=self.gateway_name,
-                )
-                self.on_trade(trade)
-
     def on_position(self, position: PositionData) -> None:
         """
         Position event push.
@@ -168,6 +132,14 @@ class BaseGateway(ABC):
         """
         self.on_event(EVENT_ACCOUNT, account)
         self.on_event(EVENT_ACCOUNT + account.vt_accountid, account)
+
+    def on_quote(self, quote: QuoteData) -> None:
+        """
+        Quote event push.
+        Quote event of a specific vt_symbol is also pushed.
+        """
+        self.on_event(EVENT_QUOTE, quote)
+        self.on_event(EVENT_QUOTE + quote.vt_symbol, quote)
 
     def on_log(self, log: LogData) -> None:
         """
@@ -251,37 +223,30 @@ class BaseGateway(ABC):
         """
         pass
 
-    @abstractmethod
-    def query_order(self, req: QueryRequest) -> None:
+    def send_quote(self, req: QuoteRequest) -> str:
         """
-        query an existing order.
+        Send a new two-sided quote to server.
+
+        implementation should finish the tasks blow:
+        * create an QuoteData from req using QuoteRequest.create_quote_data
+        * assign a unique(gateway instance scope) id to QuoteData.quoteid
+        * send request to server
+            * if request is sent, QuoteData.status should be set to Status.SUBMITTING
+            * if request is failed to sent, QuoteData.status should be set to Status.REJECTED
+        * response on_quote:
+        * return vt_quoteid
+
+        :return str vt_quoteid for created QuoteData
+        """
+        return ""
+
+    def cancel_quote(self, req: CancelRequest) -> None:
+        """
+        Cancel an existing quote.
         implementation should finish the tasks blow:
         * send request to server
         """
         pass
-
-    def send_orders(self, reqs: Sequence[OrderRequest]) -> List[str]:
-        """
-        Send a batch of orders to server.
-        Use a for loop of send_order function by default.
-        Reimplement this function if batch order supported on server.
-        """
-        vt_orderids = []
-
-        for req in reqs:
-            vt_orderid = self.send_order(req)
-            vt_orderids.append(vt_orderid)
-
-        return vt_orderids
-
-    def cancel_orders(self, reqs: Sequence[CancelRequest]) -> None:
-        """
-        Cancel a batch of orders to server.
-        Use a for loop of cancel_order function by default.
-        Reimplement this function if batch cancel supported on server.
-        """
-        for req in reqs:
-            self.cancel_order(req)
 
     @abstractmethod
     def query_account(self) -> None:
