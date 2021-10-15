@@ -30,6 +30,7 @@ from jiamtrader.trader.object import (
     HistoryRequest
 )
 from .huobi_apibase import _split_url, generate_datetime, create_signature, CHINA_TZ, HuobiWebsocketApiBase
+from jiamtrader.api.rest import Request, RestClient, Response
 
 
 # 实盘REST API地址

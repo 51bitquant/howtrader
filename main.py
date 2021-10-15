@@ -41,6 +41,14 @@ def main():
     main_engine.add_gateway(BinanceSpotGateway)
     main_engine.add_gateway(BinanceUsdtGateway)
     main_engine.add_gateway(BitmexGateway)
+    main_engine.add_gateway(FtxGateway)
+    main_engine.add_gateway(HuobiFuturesGateway)
+    main_engine.add_gateway(HuobiInverseGateway)
+    main_engine.add_gateway(HuobiSpotGateway)
+    main_engine.add_gateway(HuobiUsdtGateway)
+    main_engine.add_gateway(OkexGateway)
+
+
     main_engine.add_app(CtaStrategyApp)
     main_engine.add_app(CtaBacktesterApp)
     main_engine.add_app(DataManagerApp)
