@@ -1,1 +1,1 @@
-from ftx_gateway import FtxGateway
+from .ftx_gateway import FtxGateway

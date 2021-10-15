@@ -6,7 +6,18 @@ from jiamtrader.trader.ui import MainWindow, create_qapp
 from jiamtrader.gateway.binance import BinanceUsdtGateway  # 合约
 from jiamtrader.gateway.binance import BinanceInverseGateway  # 反向合约
 from jiamtrader.gateway.binance import BinanceSpotGateway  # 现货
+
 from jiamtrader.gateway.bitmex import BitmexGateway  # bitmex
+
+from jiamtrader.gateway.ftx import FtxGateway
+
+from jiamtrader.gateway.huobi import huobi_spot_gateway
+from jiamtrader.gateway.huobi import HuobiFuturesGateway
+from jiamtrader.gateway.huobi import HuobiInverseGateway
+from jiamtrader.gateway.huobi import HuobiSpotGateway
+from jiamtrader.gateway.huobi import HuobiUsdtGateway
+
+from jiamtrader.gateway.okex import OkexGateway
 
 from jiamtrader.app.cta_strategy import CtaStrategyApp  # CTA策略
 from jiamtrader.app.data_manager import DataManagerApp  # 数据管理, csv_data
