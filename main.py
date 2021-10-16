@@ -19,6 +19,7 @@ from jiamtrader.gateway.huobi import HuobiUsdtGateway
 
 from jiamtrader.gateway.okex import OkexGateway
 
+from jiamtrader.app.chart_wizard import ChartWizardApp # K线
 from jiamtrader.app.cta_strategy import CtaStrategyApp  # CTA策略
 from jiamtrader.app.data_manager import DataManagerApp  # 数据管理, csv_data
 from jiamtrader.app.data_recorder import DataRecorderApp  # 录行情数据
@@ -49,6 +50,7 @@ def main():
     main_engine.add_gateway(OkexGateway)
 
 
+    main_engine.add_app(ChartWizardApp)
     main_engine.add_app(CtaStrategyApp)
     main_engine.add_app(CtaBacktesterApp)
     main_engine.add_app(DataManagerApp)

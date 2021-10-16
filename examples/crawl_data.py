@@ -190,8 +190,8 @@ if __name__ == '__main__':
     # download_spot(symbol) # 下载现货的数据.
 
 
-    # symbol = "BTCUSDT"
-    symbol = "ETHUSDT"
+    symbol = "BTCUSDT"
+    # symbol = "ETHUSDT"
     # symbol = "BNBUSDT"
 
     download_future(symbol)  # 下载合约的数据
