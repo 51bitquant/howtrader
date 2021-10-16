@@ -3,8 +3,7 @@ from copy import copy
 from datetime import datetime
 from typing import Dict, List, Tuple
 from jiamtrader.trader.utility import round_to
-
-from vnpy_rest import RestClient, Request, Response
+from jiamtrader.api.rest import Request, RestClient, Response
 from jiamtrader.trader.constant import (
     Direction,
     Exchange,

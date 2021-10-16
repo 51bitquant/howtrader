@@ -46,8 +46,8 @@ from jiamtrader.trader.object import (
     TickData,
     TradeData
 )
-from vnpy_rest import Request, RestClient
-from vnpy_websocket import WebsocketClient
+from jiamtrader.api.rest import Request, RestClient, Response
+from jiamtrader.api.websocket import WebsocketClient
 
 
 # 中国时区

@@ -33,9 +33,8 @@ from jiamtrader.trader.object import (
 )
 from jiamtrader.trader.event import EVENT_TIMER
 
-from vnpy_websocket import WebsocketClient
-from vnpy_rest import Request, RestClient
-from vnpy_rest.rest_client import Response
+from jiamtrader.api.rest import Request, RestClient, Response
+from jiamtrader.api.websocket import WebsocketClient
 
 
 # 中国时区
