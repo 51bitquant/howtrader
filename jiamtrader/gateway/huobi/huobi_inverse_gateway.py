@@ -5,7 +5,7 @@ from typing import Dict, List, Any, Set
 from collections import defaultdict
 
 from jiamtrader.event import EventEngine
-from vnpy_rest import RestClient, Request, Response
+from jiamtrader.api.rest import RestClient, Request, Response
 from jiamtrader.trader.constant import (
     Direction,
     Offset,
