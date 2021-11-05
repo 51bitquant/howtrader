@@ -5,7 +5,7 @@ from typing import Dict, List, Any, Set
 from collections import defaultdict
 
 from jiamtrader.event import EventEngine
-from vnpy_rest import RestClient, Request, Response
+from jiamtrader.api.rest import Request, RestClient, Response
 from jiamtrader.trader.constant import (
     Direction,
     Offset,
@@ -30,7 +30,6 @@ from jiamtrader.trader.object import (
     HistoryRequest
 )
 from .huobi_apibase import _split_url, generate_datetime, create_signature, CHINA_TZ, HuobiWebsocketApiBase
-
 
 # 实盘REST API地址
 REST_HOST: str = "https://api.hbdm.com"
@@ -207,11 +206,11 @@ class HuobiInverseRestApi(RestClient):
         return request
 
     def connect(
-        self,
-        key: str,
-        secret: str,
-        proxy_host: str,
-        proxy_port: int
+            self,
+            key: str,
+            secret: str,
+            proxy_host: str,
+            proxy_port: int
     ) -> None:
         """连接REST服务器"""
         self.key = key
@@ -462,11 +461,11 @@ class HuobiInverseRestApi(RestClient):
         self.gateway.write_log(msg)
 
     def on_send_order_error(
-        self,
-        exception_type: type,
-        exception_value: Exception,
-        tb,
-        request: Request
+            self,
+            exception_type: type,
+            exception_value: Exception,
+            tb,
+            request: Request
     ) -> None:
         """委托下单回报函数报错回报"""
         order: OrderData = request.extra
@@ -486,7 +485,7 @@ class HuobiInverseRestApi(RestClient):
         self.gateway.write_log(msg)
 
     def on_error(
-        self, exception_type: type, exception_value: Exception, tb, request: Request
+            self, exception_type: type, exception_value: Exception, tb, request: Request
     ) -> None:
         """请求触发异常的回调"""
         msg: str = f"触发异常，状态码：{exception_type}，信息：{exception_value}"
@@ -516,11 +515,11 @@ class HuobiInverseTradeWebsocketApi(HuobiWebsocketApiBase):
         self.positions: Dict[str, PositionData] = defaultdict(dict)
 
     def connect(
-        self,
-        key: str,
-        secret: str,
-        proxy_host: str,
-        proxy_port: int
+            self,
+            key: str,
+            secret: str,
+            proxy_host: str,
+            proxy_port: int
     ) -> None:
         """连接Websocket交易频道"""
         super().connect(
@@ -670,11 +669,11 @@ class HuobiInverseDataWebsocketApi(HuobiWebsocketApiBase):
         self.subscribed: Dict[str, SubscribeRequest] = {}
 
     def connect(
-        self,
-        key: str,
-        secret: str,
-        proxy_host: str,
-        proxy_port: int
+            self,
+            key: str,
+            secret: str,
+            proxy_host: str,
+            proxy_port: int
     ) -> None:
         """连接Websocket行情频道"""
         super().connect(

@@ -6,16 +6,14 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Callable, Dict, Tuple, Union, Optional
+from typing import Callable, Dict, Tuple, Optional
 from decimal import Decimal
 from math import floor, ceil
 
 import numpy as np
-import talib
 
 from .object import BarData, TickData
 from .constant import Exchange, Interval
-
 
 log_formatter = logging.Formatter('[%(asctime)s] %(message)s')
 
@@ -58,7 +56,7 @@ def _get_trader_dir(temp_name: str) -> Tuple[Path, Path]:
     return home_path, temp_path
 
 
-TRADER_DIR, TEMP_DIR = _get_trader_dir("jiamtrader")
+TRADER_DIR, TEMP_DIR = _get_trader_dir("howtrader")
 sys.path.append(str(TRADER_DIR))
 
 
@@ -175,11 +173,11 @@ class BarGenerator:
     """
 
     def __init__(
-        self,
-        on_bar: Callable,
-        window: int = 0,
-        on_window_bar: Callable = None,
-        interval: Interval = Interval.MINUTE
+            self,
+            on_bar: Callable,
+            window: int = 0,
+            on_window_bar: Callable = None,
+            interval: Interval = Interval.MINUTE
     ):
         """Constructor"""
         self.bar: BarData = None
@@ -211,7 +209,7 @@ class BarGenerator:
 
         if not self.bar:
             new_minute = True
-        elif(self.bar.datetime.minute != tick.datetime.minute) or (self.bar.datetime.hour != tick.datetime.hour):
+        elif (self.bar.datetime.minute != tick.datetime.minute) or (self.bar.datetime.hour != tick.datetime.hour):
             self.bar.datetime = self.bar.datetime.replace(
                 second=0, microsecond=0
             )
@@ -287,7 +285,8 @@ class BarGenerator:
                 finished = True
         elif self.interval == Interval.HOUR:
             # if self.last_bar and bar.datetime.hour != self.last_bar.datetime.hour: # vnpy的判断条件
-            if (bar.datetime.minute == 59 and bar.interval == Interval.MINUTE) or (self.last_bar and bar.datetime.hour != self.last_bar.datetime.hour and bar.interval == Interval.HOUR):
+            if (bar.datetime.minute == 59 and bar.interval == Interval.MINUTE) or (
+                    self.last_bar and bar.datetime.hour != self.last_bar.datetime.hour and bar.interval == Interval.HOUR):
                 # if the bar is one minute, then the 59minute is the last one bar for one hour.
                 # 1-hour bar
                 if self.window == 1:
@@ -404,6 +403,7 @@ class ArrayManager(object):
         Get trading volume time series.
         """
         return self.open_interest_array
+
 
 def virtual(func: Callable) -> Callable:
     """
