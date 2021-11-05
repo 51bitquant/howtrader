@@ -1,7 +1,7 @@
 from jiamtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
 from jiamtrader.trader.object import Interval
 from datetime import datetime
-from jiamtrader.app.cta_strategy.strategies.atr_rsi_strategy import AtrRsiStrategy
+
 
 engine = BacktestingEngine()
 engine.set_parameters(

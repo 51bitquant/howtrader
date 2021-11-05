@@ -11,7 +11,8 @@ from jiamtrader.app.cta_strategy.backtesting import BacktestingEngine
 from jiamtrader.app.cta_strategy.base import StopOrder
 import talib
 
-from strategies.demol_strategy import DemoChannelStrategy
+from strategies.boll_channel_strategy import BollChannelStrategy
+from strategies.double_ma_strategy import DoubleMaStrategy
 
 if __name__ == '__main__':
     # 回测引擎初始化
@@ -21,7 +22,7 @@ if __name__ == '__main__':
     engine.set_parameters(
         vt_symbol="BTCUSDT.BINANCE",  # 交易的标的
         interval=Interval.MINUTE,
-        start=datetime(2018, 1, 1),  # 开始时间
+        start=datetime(2021, 1, 1),  # 开始时间
         rate=7.5 / 10000,  # 手续费
         slippage=0.5,  # 交易滑点
         size=1,  # 合约乘数
@@ -31,7 +32,7 @@ if __name__ == '__main__':
     )
 
     # 添加策略
-    engine.add_strategy(DemoChannelStrategy, {})
+    engine.add_strategy(DoubleMaStrategy, {})
 
     # 加载
     engine.load_data()
