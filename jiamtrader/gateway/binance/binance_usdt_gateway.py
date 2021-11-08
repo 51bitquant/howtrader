@@ -167,7 +167,9 @@ class BinanceUsdtGateway(BaseGateway):
     def query_account(self) -> None:
         """查询资金"""
         pass
-
+    def query_premiumIndexß(self) -> list:
+        """查询资金费率"""
+        return self.rest_api.query_premiumIndexß(self)
     def query_position(self) -> None:
         """查询持仓"""
         pass
@@ -301,7 +303,7 @@ class BinanceUsdtRestApi(RestClient):
         self.query_order()
         self.query_contract()
         self.start_user_stream()
-
+        self.query_premiumIndexß()
     def query_time(self) -> None:
         """查询时间"""
         data: dict = {
@@ -316,6 +318,41 @@ class BinanceUsdtRestApi(RestClient):
             callback=self.on_query_time,
             data=data
         )
+    def query_premiumIndexß(self) -> list:
+        """查询所有"""
+        data: dict = {
+            "security": Security.NONE
+        }
+        # 创建查询参数
+        params: dict = {
+            "symbol": "ADAUSDT"
+        }
+        path: str = "/fapi/v1/premiumIndex"
+
+        resp: Response = self.request(
+            "GET",
+            path=path,
+            data={"security": Security.NONE}
+            # params=params
+        )
+
+        # 如果请求失败则终止循环
+        if resp.status_code // 100 != 2:
+            msg: str = f"获取资金费率数据失败，状态码：{resp.status_code}，信息：{resp.text}"
+            self.gateway.write_log(msg)
+        else:
+            data: dict = resp.json()
+            if not data:
+                msg: str = f"获取资金数据为空"
+                self.gateway.write_log(msg)
+            self.on_query_premiumIndex(data)
+            return data
+        # return self.add_request(
+        #     "GET",
+        #     path,
+        #     callback=self.on_query_premiumIndex,
+        #     data=data
+        # )
 
     def query_account(self) -> None:
         """查询资金"""
@@ -492,7 +529,32 @@ class BinanceUsdtRestApi(RestClient):
         local_time: int = int(time.time() * 1000)
         server_time: int = int(data["serverTime"])
         self.time_offset: int = local_time - server_time
-
+    def on_query_premiumIndex(self, data: dict) -> None:
+        """费率查询回报"""
+        # [
+        #     {
+        #         "symbol": "BTCUSDT", // 交易对
+        #     "markPrice": "11793.63104562", // 标记价格
+        # "indexPrice": "11781.80495970", // 指数价格
+        # "estimatedSettlePrice": "11781.16138815", // 预估结算价, 仅在交割开始前最后一小时有意义
+        # "lastFundingRate": "0.00038246", // 最近更新的资金费率
+        # "nextFundingTime": 1597392000000, // 下次资金费时间
+        # "interestRate": "0.00010000", // 标的资产基础利率
+        # "time": 1597370495002 // 更新时间
+        # }
+        # ]
+        db_sorted = sorted(data, key=lambda row: row['lastFundingRate'], reverse=True)
+        print(f"当前资金费率:", db_sorted)
+        for symbol in db_sorted:
+            now = int(time.time())
+            timeArray = time.localtime(symbol["nextFundingTime"])
+            otherStyleTime = time.strftime("%H:%M:%S", timeArray)
+            print(f"当前symbol:", symbol["symbol"], "当前价格:", symbol["markPrice"], "资金费率:", float(symbol["lastFundingRate"]) * 100, "下一次资金费率时间", otherStyleTime)
+            nama = symbol["symbol"]
+            markPrice = symbol["markPrice"]
+            lastFundingRate = float(symbol["lastFundingRate"]) * 100
+            msg: str = f"当前symbol：{nama}，当前价格：{markPrice}，资金费率：{lastFundingRate}，下一次资金费率时间：{otherStyleTime}"
+            self.gateway.write_log(msg)
     def on_query_account(self, data: dict, request: Request) -> None:
         """资金查询回报"""
         for asset in data["assets"]:

@@ -78,6 +78,7 @@ def init_models(db: Database, driver: Driver):
         interval: str = CharField()
 
         volume: float = FloatField()
+        turnover: float = FloatField()
         open_interest: float = FloatField()
         open_price: float = FloatField()
         high_price: float = FloatField()
@@ -105,6 +106,7 @@ def init_models(db: Database, driver: Driver):
             db_bar.datetime = dt
             db_bar.interval = bar.interval.value
             db_bar.volume = bar.volume
+            db_bar.turnover = bar.turnover
             db_bar.open_interest = bar.open_interest
             db_bar.open_price = bar.open_price
             db_bar.high_price = bar.high_price
@@ -123,6 +125,7 @@ def init_models(db: Database, driver: Driver):
                 datetime=self.datetime.replace(tzinfo=DB_TZ),
                 interval=Interval(self.interval),
                 volume=self.volume,
+                turnover=self.turnover,
                 open_price=self.open_price,
                 high_price=self.high_price,
                 open_interest=self.open_interest,
@@ -173,6 +176,7 @@ def init_models(db: Database, driver: Driver):
         open_interest: float = FloatField()
         last_price: float = FloatField()
         last_volume: float = FloatField()
+        last_turnover: float = FloatField()
         limit_up: float = FloatField()
         limit_down: float = FloatField()
 
@@ -226,6 +230,7 @@ def init_models(db: Database, driver: Driver):
             db_tick.datetime = dt
             db_tick.name = tick.name
             db_tick.volume = tick.volume
+            db_tick.turnover = tick.turnover
             db_tick.open_interest = tick.open_interest
             db_tick.last_price = tick.last_price
             db_tick.last_volume = tick.last_volume
@@ -277,6 +282,7 @@ def init_models(db: Database, driver: Driver):
                 open_interest=self.open_interest,
                 last_price=self.last_price,
                 last_volume=self.last_volume,
+                last_turnover=self.last_turnover,
                 limit_up=self.limit_up,
                 limit_down=self.limit_down,
                 open_price=self.open_price,

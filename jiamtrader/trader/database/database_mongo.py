@@ -48,6 +48,7 @@ class DbBarData(Document):
     interval: str = StringField()
 
     volume: float = FloatField()
+    turnover: float = FloatField()
     open_interest: float = FloatField()
     open_price: float = FloatField()
     high_price: float = FloatField()
@@ -96,6 +97,7 @@ class DbTickData(Document):
 
     name: str = StringField()
     volume: float = FloatField()
+    turnover: float = FloatField()
     open_interest: float = FloatField()
     last_price: float = FloatField()
     last_volume: float = FloatField()
@@ -151,6 +153,7 @@ class DbTickData(Document):
             datetime=self.datetime.replace(tzinfo=DB_TZ),
             name=self.name,
             volume=self.volume,
+            turnover=self.turnover,
             open_interest=self.open_interest,
             last_price=self.last_price,
             last_volume=self.last_volume,

@@ -28,6 +28,8 @@ from jiamtrader.app.cta_backtester import CtaBacktesterApp  # 回测研究
 from jiamtrader.app.risk_manager import RiskManagerApp  # 风控管理
 from jiamtrader.app.spread_trading import SpreadTradingApp  # 价差交易
 
+import sys
+sys.path.append( "path" )
 
 def main():
     """"""

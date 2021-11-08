@@ -8,6 +8,7 @@ from jiamtrader.trader.setting import SETTINGS
 from jiamtrader.trader.engine import MainEngine
 
 from jiamtrader.gateway.binance import BinanceSpotGateway
+from jiamtrader.gateway.binance import BinanceUsdtGateway
 from jiamtrader.gateway.huobi import HuobiSpotGateway
 from jiamtrader.app.cta_strategy import CtaStrategyApp
 from jiamtrader.app.cta_strategy.base import EVENT_CTA_LOG
@@ -27,12 +28,15 @@ binances_setting = {
         "代理地址": "",
         "代理端口": 0,
     }
-huobi_setting = {
-    "key": "3d9cad24-277b2e1a-53f0325e-ntmuw4rrsr",
-    "secret": "b018f7cf-e0845abb-9751fa8d-ea46c",
-    "代理地址": "",
-    "代理端口": ""
-}
+binance_setting = {
+        "key": "BH8dPZ2GNBqIWUwhGRmT9vGOq01SZlQ9BfDluqu5xcLAzyoXi8smWmPuGghOBAgi",
+        "secret": "YkqX0EARMqBZW8H5lRWadHH6HJZCOykMGuglki4NwsMnrkbCbdVRoZ81eWgwNcR0",
+        "会话数": 3,
+        "服务器": "REAL",
+        "合约模式": "正向",
+        "代理地址": "",
+        "代理端口": 0,
+    }
 
 def run():
     """
@@ -43,6 +47,7 @@ def run():
     event_engine = EventEngine()  # 初始化事件引擎
     main_engine = MainEngine(event_engine)  # 初始化主引擎
     main_engine.add_gateway(BinanceSpotGateway)  # 加载币安现货的网关
+    main_engine.add_gateway(BinanceUsdtGateway)  # 加载币安现货的网关
     #main_engine.add_gateway(HuobiSpotGateway)
     cta_engine = main_engine.add_app(CtaStrategyApp) #添加cta策略的app
     # 添加cta引擎, 实际上就是初始化引擎。
@@ -52,7 +57,8 @@ def run():
     main_engine.write_log("注册日志事件监听")
     # 连接到交易所
     #main_engine.connect(binances_setting, "HUOBI_SPOT")
-    main_engine.connect(binances_setting, "BINANCE_SPOT")
+    main_engine.connect(binance_setting, "BINANCE_SPOT")
+    main_engine.connect(binances_setting, "BINANCE_USDT")
     main_engine.write_log("连接BINANCESPOT接口")
 
     sleep(10) # 稍作等待策略启动完成。

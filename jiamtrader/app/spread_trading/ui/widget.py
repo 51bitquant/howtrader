@@ -22,8 +22,8 @@ from ..engine import (
     EVENT_SPREAD_LOG,
     EVENT_SPREAD_ALGO,
     EVENT_SPREAD_STRATEGY
-)
 
+)
 
 class SpreadManager(QtWidgets.QWidget):
     """"""
@@ -36,13 +36,11 @@ class SpreadManager(QtWidgets.QWidget):
         self.event_engine = event_engine
 
         self.spread_engine = main_engine.get_engine(APP_NAME)
-
         self.init_ui()
 
     def init_ui(self):
         """"""
         self.setWindowTitle("价差交易")
-
         self.algo_dialog = SpreadAlgoWidget(self.spread_engine)
         algo_group = self.create_group("交易", self.algo_dialog)
         algo_group.setMaximumWidth(300)
