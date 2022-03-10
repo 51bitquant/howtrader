@@ -124,9 +124,7 @@ def round_to(value: float, target: float) -> Decimal:
     target = Decimal(str(target))
     # rounded = float(int(round(value / target)) * target)
     rounded = Decimal(round(value / target)) * target
-    print(f"round_to: {value}, {target}, rouned:{rounded}")
     return rounded
-
 
 def floor_to(value: float, target: float) -> Decimal:
     """
@@ -136,7 +134,6 @@ def floor_to(value: float, target: float) -> Decimal:
     target = Decimal(str(target))
     # result = float(int(floor(value / target)) * target)
     result = Decimal(int(floor(value / target)) * target)
-    print(f"floor_to: {value}, {target}, result:{result}")
     return result
 
 
