@@ -171,7 +171,7 @@ class FutureNeutralGridStrategy(CtaTemplate):
                 orders = self.short(price, self.trading_size)
                 self.short_orders.extend(orders)
 
-        if (self.short_orders + self.long_orders) > 100:
+        if len(self.short_orders + self.long_orders) > 100:
             self.cancel_all()
 
     def on_order(self, order: OrderData):
