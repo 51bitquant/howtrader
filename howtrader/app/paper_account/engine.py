@@ -223,6 +223,9 @@ class PaperEngine(BaseEngine):
 
     def check_order_valid(self, order: OrderData, contract: ContractData) -> Optional[PositionData]:
         """"""
+        order.volume = float(order.volume)
+        order.price = float(order.price)
+
         # Reject unsupported order type
         if order.type in {OrderType.FAK, OrderType.FOK, OrderType.RFQ}:
             order.status = Status.REJECTED
@@ -263,6 +266,8 @@ class PaperEngine(BaseEngine):
         contract = self.main_engine.get_contract(order.vt_symbol)
 
         trade_price = 0
+        order.volume = float(order.volume)
+        order.price = float(order.price)
 
         # Cross market order immediately after received
         if order.type == OrderType.MARKET:
@@ -311,7 +316,8 @@ class PaperEngine(BaseEngine):
     def update_position(self, trade: TradeData, contract: ContractData):
         """"""
         vt_symbol = trade.vt_symbol
-
+        trade.volume = float(trade.volume)
+        trade.price = float(trade.price)
         # Net position mode
         if contract.net_position:
             position = self.get_position(vt_symbol, Direction.NET)

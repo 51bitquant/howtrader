@@ -149,7 +149,8 @@ class CtaEngine(BaseEngine):
     def process_order_event(self, event: Event):
         """"""
         order = event.data
-
+        order.volume = float(order.volume)
+        order.price = float(order.price)
         self.offset_converter.update_order(order)
 
         strategy = self.orderid_strategy_map.get(order.vt_orderid, None)

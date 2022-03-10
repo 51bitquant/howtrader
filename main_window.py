@@ -18,6 +18,27 @@ from howtrader.app.spread_trading import SpreadTradingApp
 
 def main():
     """"""
+    # from howtrader.trader.utility import round_to, floor_to
+    # from decimal import Decimal
+    # price = 0.00002273
+    # value = round_to(price, 0.00000001)
+    # print(Decimal(value))
+    #
+    # price = 38233.2455
+    # value = round_to(price, 0.1)
+    # print(Decimal(value), type(value))
+    #
+    #
+    # a = Decimal(0)
+    # if a:
+    #     print(a)
+    # else:
+    #     print('a is none', a)
+    #
+    #
+    # value = min(Decimal(a), 10, Decimal(2))
+    # print(value)
+    # return
 
     qapp = create_qapp()
 

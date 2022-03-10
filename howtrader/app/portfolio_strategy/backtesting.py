@@ -523,7 +523,8 @@ class BacktestingEngine:
         """
         for order in list(self.active_limit_orders.values()):
             bar = self.bars[order.vt_symbol]
-
+            order.volume = float(order.volume)
+            order.price = float(order.price)
             long_cross_price = bar.low_price
             short_cross_price = bar.high_price
             long_best_price = bar.open_price

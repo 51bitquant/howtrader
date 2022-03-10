@@ -176,6 +176,8 @@ class SpreadAlgoTemplate:
         # For inverse contract:
         # record coin trading volume as leg trading volume,
         # not contract volume!
+        trade.price = float(trade.price)
+        trade.volume = float(trade.volume)
         if self.spread.is_inverse(trade.vt_symbol):
             size = self.spread.get_leg_size(trade.vt_symbol)
 

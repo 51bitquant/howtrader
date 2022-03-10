@@ -880,6 +880,8 @@ class BacktestingEngine:
             # Create order data.
             self.limit_order_count += 1
 
+            stop_order.volume = float(stop_order.volume)
+            stop_order.price = float(stop_order.price)
             order = OrderData(
                 symbol=self.symbol,
                 exchange=self.exchange,
