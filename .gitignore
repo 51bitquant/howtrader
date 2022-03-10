@@ -33,3 +33,5 @@ _templates
 
 # Misc
 .DS_Store
+
+howtrader/log/*

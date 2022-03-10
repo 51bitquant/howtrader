@@ -28,7 +28,7 @@ def excepthook(exctype: type, value: Exception, tb: types.TracebackType) -> None
     qapp.signal_exception.emit(msg)
 
 
-def create_qapp(app_name: str = "VN Trader") -> QtWidgets.QApplication:
+def create_qapp(app_name: str = "Howtrader") -> QtWidgets.QApplication:
     """
     Create Qt Application.
     """
@@ -64,9 +64,9 @@ class QApplication(QtWidgets.QApplication):
         self.signal_exception.connect(self.show_exception)
 
     def show_exception(self, msg: str) -> None:
-        dialog = ExceptionDialog(msg)
-        dialog.exec_()
-
+        pass
+        # dialog = ExceptionDialog(msg)
+        # dialog.exec_()
 
 class ExceptionDialog(QtWidgets.QDialog):
     """"""

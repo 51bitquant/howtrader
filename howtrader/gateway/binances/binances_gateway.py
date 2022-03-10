@@ -305,6 +305,7 @@ class BinancesRestApi(RestClient):
         self.gateway.write_log("REST API启动成功")
 
         self.query_time()
+        self.set_position_side()
         self.query_account()
         self.query_position()
         self.query_orders()
@@ -353,10 +354,9 @@ class BinancesRestApi(RestClient):
         }
 
         if self.usdt_base:
-            path = "fapi/v1/positionSide/dual"  # /fapi/v1/positionSide/dual
+            path = "/fapi/v1/positionSide/dual"
         else:
             path = "/dapi/v1/positionSide/dual"
-
         self.add_request(
             method="POST",
             path=path,
@@ -367,7 +367,7 @@ class BinancesRestApi(RestClient):
 
     def on_set_position_side(self, data: dict, request: Request) -> None:
         """"""
-        print("on set position side", data)
+        pass
 
     def query_position(self) -> Request:
         """"""
