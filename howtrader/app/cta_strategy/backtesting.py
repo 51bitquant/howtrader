@@ -811,6 +811,7 @@ class BacktestingEngine:
                 continue
 
             # Push order udpate with status "all traded" (filled).
+            order.volume = float(order.volume)
             order.traded = order.volume
             order.status = Status.ALLTRADED
             self.strategy.on_order(order)
