@@ -790,6 +790,8 @@ class BacktestingEngine:
 
         for order in list(self.active_limit_orders.values()):
             # Push order update with status "not traded" (pending).
+            order.volume = float(order.volume)
+            order.price = float(order.price)
             if order.status == Status.SUBMITTING:
                 order.status = Status.NOTTRADED
                 self.strategy.on_order(order)
@@ -811,7 +813,6 @@ class BacktestingEngine:
                 continue
 
             # Push order udpate with status "all traded" (filled).
-            order.volume = float(order.volume)
             order.traded = order.volume
             order.status = Status.ALLTRADED
             self.strategy.on_order(order)
