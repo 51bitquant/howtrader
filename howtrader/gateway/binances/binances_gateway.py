@@ -345,6 +345,30 @@ class BinancesRestApi(RestClient):
             data=data
         )
 
+    def set_position_side(self)-> Request:
+        data = {"security": Security.SIGNED}
+
+        params = {
+            "dualSidePosition": False
+        }
+
+        if self.usdt_base:
+            path = "fapi/v1/positionSide/dual"  # /fapi/v1/positionSide/dual
+        else:
+            path = "/dapi/v1/positionSide/dual"
+
+        self.add_request(
+            method="POST",
+            path=path,
+            params=params,
+            callback=self.on_set_position_side,
+            data=data
+        )
+
+    def on_set_position_side(self, data: dict, request: Request) -> None:
+        """"""
+        print("on set position side", data)
+
     def query_position(self) -> Request:
         """"""
         data = {"security": Security.SIGNED}

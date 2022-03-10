@@ -110,6 +110,9 @@ folder by using the multi-threads for speeding.
 
 12. V2.2.3 添加马丁策略 martingle strategies
 
+13. V2.2.4 修改自动设置单项持仓.
+
+
 ## 联系方式
 微信: bitquant51
 
