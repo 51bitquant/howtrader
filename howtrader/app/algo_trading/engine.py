@@ -5,7 +5,7 @@ from howtrader.trader.event import (
     EVENT_TICK, EVENT_TIMER, EVENT_ORDER, EVENT_TRADE)
 from howtrader.trader.constant import (Direction, Offset, OrderType)
 from howtrader.trader.object import (SubscribeRequest, OrderRequest, LogData)
-from howtrader.trader.utility import load_json, save_json, round_to
+from howtrader.trader.utility import load_json, save_json, floor_to
 from howtrader.trader.setting import SETTINGS
 
 from .template import AlgoTemplate
@@ -179,7 +179,7 @@ class AlgoEngine(BaseEngine):
             self.write_log(f'委托下单失败，找不到合约：{vt_symbol}', algo)
             return
 
-        volume = round_to(volume, contract.min_volume)
+        volume = floor_to(volume, contract.min_volume)
         if not volume:
             return ""
 

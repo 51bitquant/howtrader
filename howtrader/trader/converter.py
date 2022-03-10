@@ -11,7 +11,7 @@ from .object import (
     OrderRequest
 )
 from .constant import Direction, Offset, Exchange
-
+from decimal import Decimal
 
 class OffsetConverter:
     """"""
@@ -101,31 +101,31 @@ class PositionHolding:
 
         self.active_orders: Dict[str, OrderData] = {}
 
-        self.long_pos: float = 0
-        self.long_yd: float = 0
-        self.long_td: float = 0
+        self.long_pos: Decimal = Decimal(0)
+        self.long_yd: Decimal = Decimal(0)
+        self.long_td: Decimal = Decimal(0)
 
-        self.short_pos: float = 0
-        self.short_yd: float = 0
-        self.short_td: float = 0
+        self.short_pos: Decimal = Decimal(0)
+        self.short_yd: Decimal = Decimal(0)
+        self.short_td: Decimal = Decimal(0)
 
-        self.long_pos_frozen: float = 0
-        self.long_yd_frozen: float = 0
-        self.long_td_frozen: float = 0
+        self.long_pos_frozen: Decimal = Decimal(0)
+        self.long_yd_frozen: Decimal = Decimal(0)
+        self.long_td_frozen: Decimal = Decimal(0)
 
-        self.short_pos_frozen: float = 0
-        self.short_yd_frozen: float = 0
-        self.short_td_frozen: float = 0
+        self.short_pos_frozen: Decimal = Decimal(0)
+        self.short_yd_frozen: Decimal = Decimal(0)
+        self.short_td_frozen: Decimal = Decimal(0)
 
     def update_position(self, position: PositionData) -> None:
         """"""
         if position.direction == Direction.LONG:
-            self.long_pos = position.volume
-            self.long_yd = position.yd_volume
+            self.long_pos = Decimal(position.volume)
+            self.long_yd = Decimal(position.yd_volume)
             self.long_td = self.long_pos - self.long_yd
         else:
-            self.short_pos = position.volume
-            self.short_yd = position.yd_volume
+            self.short_pos = Decimal(position.volume)
+            self.short_yd = Decimal(position.yd_volume)
             self.short_td = self.short_pos - self.short_yd
 
     def update_order(self, order: OrderData) -> None:
@@ -147,58 +147,59 @@ class PositionHolding:
 
     def update_trade(self, trade: TradeData) -> None:
         """"""
+        vol = Decimal(trade.volume)
         if trade.direction == Direction.LONG:
             if trade.offset == Offset.OPEN:
-                self.long_td += trade.volume
+                self.long_td += vol
             elif trade.offset == Offset.CLOSETODAY:
-                self.short_td -= trade.volume
+                self.short_td -= vol
             elif trade.offset == Offset.CLOSEYESTERDAY:
-                self.short_yd -= trade.volume
+                self.short_yd -= vol
             elif trade.offset == Offset.CLOSE:
                 if trade.exchange in [Exchange.SHFE, Exchange.INE]:
-                    self.short_yd -= trade.volume
+                    self.short_yd -= vol
                 else:
-                    self.short_td -= trade.volume
+                    self.short_td -= vol
 
                     if self.short_td < 0:
                         self.short_yd += self.short_td
-                        self.short_td = 0
+                        self.short_td = Decimal(0)
         else:
             if trade.offset == Offset.OPEN:
-                self.short_td += trade.volume
+                self.short_td += vol
             elif trade.offset == Offset.CLOSETODAY:
-                self.long_td -= trade.volume
+                self.long_td -= Decimal(0)
             elif trade.offset == Offset.CLOSEYESTERDAY:
-                self.long_yd -= trade.volume
+                self.long_yd -= Decimal(0)
             elif trade.offset == Offset.CLOSE:
                 if trade.exchange in [Exchange.SHFE, Exchange.INE]:
-                    self.long_yd -= trade.volume
+                    self.long_yd -= Decimal(0)
                 else:
-                    self.long_td -= trade.volume
+                    self.long_td -= Decimal(0)
 
                     if self.long_td < 0:
                         self.long_yd += self.long_td
-                        self.long_td = 0
+                        self.long_td = Decimal(0)
 
         self.long_pos = self.long_td + self.long_yd
         self.short_pos = self.short_td + self.short_yd
 
     def calculate_frozen(self) -> None:
         """"""
-        self.long_pos_frozen = 0
-        self.long_yd_frozen = 0
-        self.long_td_frozen = 0
+        self.long_pos_frozen = Decimal(0)
+        self.long_yd_frozen = Decimal(0)
+        self.long_td_frozen = Decimal(0)
 
-        self.short_pos_frozen = 0
-        self.short_yd_frozen = 0
-        self.short_td_frozen = 0
+        self.short_pos_frozen = Decimal(0)
+        self.short_yd_frozen = Decimal(0)
+        self.short_td_frozen = Decimal(0)
 
         for order in self.active_orders.values():
             # Ignore position open orders
             if order.offset == Offset.OPEN:
                 continue
 
-            frozen = order.volume - order.traded
+            frozen = Decimal(order.volume) - Decimal(order.traded)
 
             if order.direction == Direction.LONG:
                 if order.offset == Offset.CLOSETODAY:
@@ -209,8 +210,7 @@ class PositionHolding:
                     self.short_td_frozen += frozen
 
                     if self.short_td_frozen > self.short_td:
-                        self.short_yd_frozen += (self.short_td_frozen
-                                                 - self.short_td)
+                        self.short_yd_frozen += (self.short_td_frozen - self.short_td)
                         self.short_td_frozen = self.short_td
             elif order.direction == Direction.SHORT:
                 if order.offset == Offset.CLOSETODAY:
@@ -279,8 +279,8 @@ class PositionHolding:
         # If no td_volume, we close opposite yd position first
         # then open new position
         else:
-            close_volume = min(req.volume, yd_available)
-            open_volume = max(0, req.volume - yd_available)
+            close_volume = min(Decimal(req.volume), yd_available)
+            open_volume = max(Decimal(0), Decimal(req.volume) - yd_available)
             req_list = []
 
             if yd_available:

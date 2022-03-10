@@ -2,7 +2,7 @@ from typing import Any
 
 from howtrader.trader.constant import Direction, Offset
 from howtrader.trader.object import (TickData, OrderData, TradeData)
-from howtrader.trader.utility import round_to
+from howtrader.trader.utility import floor_to
 
 from .template import SpreadAlgoTemplate
 from .base import SpreadData
@@ -109,7 +109,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Calcualte spread volume to hedge
         active_leg = self.spread.active_leg
         active_traded = self.leg_traded[active_leg.vt_symbol]
-        active_traded = round_to(active_traded, self.spread.min_volume)
+        active_traded = floor_to(active_traded, self.spread.min_volume)
 
         hedge_volume = self.spread.calculate_spread_volume(
             active_leg.vt_symbol,
@@ -119,7 +119,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Calculate passive leg target volume and do hedge
         for leg in self.spread.passive_legs:
             passive_traded = self.leg_traded[leg.vt_symbol]
-            passive_traded = round_to(passive_traded, self.spread.min_volume)
+            passive_traded = floor_to(passive_traded, self.spread.min_volume)
 
             passive_target = self.spread.calculate_leg_volume(
                 leg.vt_symbol,

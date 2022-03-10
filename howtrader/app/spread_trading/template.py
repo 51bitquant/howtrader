@@ -203,7 +203,7 @@ class SpreadAlgoTemplate:
         order = self.orders[trade.vt_orderid]
         contract = self.get_contract(trade.vt_symbol)
 
-        trade_volume = round_to(
+        trade_volume = floor_to(
             self.order_trade_volume[order.vt_orderid],
             contract.min_volume
         )
@@ -282,7 +282,7 @@ class SpreadAlgoTemplate:
 
         # Round order volume to min_volume of contract
         leg = self.spread.legs[vt_symbol]
-        volume = round_to(volume, leg.min_volume)
+        volume = floor_to(volume, leg.min_volume)
 
         # If new order volume is 0, then check if algo finished
         if not volume:
@@ -341,7 +341,7 @@ class SpreadAlgoTemplate:
                 leg.vt_symbol]
 
             adjusted_leg_traded = leg_traded / trading_multiplier
-            adjusted_leg_traded = round_to(
+            adjusted_leg_traded = floor_to(
                 adjusted_leg_traded, self.spread.min_volume)
 
             if adjusted_leg_traded > 0:

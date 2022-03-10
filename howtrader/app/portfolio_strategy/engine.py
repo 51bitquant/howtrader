@@ -37,7 +37,7 @@ from howtrader.trader.constant import (
     Exchange,
     Offset
 )
-from howtrader.trader.utility import load_json, save_json, extract_vt_symbol, round_to
+from howtrader.trader.utility import load_json, save_json, extract_vt_symbol, round_to, floor_to
 from howtrader.trader.database import database_manager
 from howtrader.trader.converter import OffsetConverter
 
@@ -160,7 +160,7 @@ class StrategyEngine(BaseEngine):
 
         # Round order price and volume to nearest incremental value
         price = round_to(price, contract.pricetick)
-        volume = round_to(volume, contract.min_volume)
+        volume = floor_to(volume, contract.min_volume)
 
         # Create request and send order.
         original_req = OrderRequest(

@@ -3,7 +3,7 @@ from random import uniform
 from howtrader.trader.constant import Offset, Direction
 from howtrader.trader.object import TradeData, OrderData, TickData
 from howtrader.trader.engine import BaseEngine
-from howtrader.trader.utility import round_to
+from howtrader.trader.utility import floor_to
 
 from howtrader.app.algo_trading import AlgoTemplate
 
@@ -155,7 +155,7 @@ class BestLimitAlgo(AlgoTemplate):
     def generate_rand_volume(self):
         """"""
         rand_volume = uniform(self.min_volume, self.max_volume)
-        rand_volume = round_to(rand_volume, self.volume_change)
+        rand_volume = floor_to(rand_volume, self.volume_change)
 
         if self.volume_change == 1:
             rand_volume = int(rand_volume)

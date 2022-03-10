@@ -1,7 +1,7 @@
 """
 Basic widgets for VN Trader.
 """
-
+from decimal import Decimal
 import csv
 import platform
 from enum import Enum
@@ -869,13 +869,13 @@ class TradingWidget(QtWidgets.QWidget):
         if not volume_text:
             QtWidgets.QMessageBox.critical(self, "委托失败", "请输入委托数量")
             return
-        volume = float(volume_text)
+        volume = Decimal(volume_text)
 
         price_text = str(self.price_line.text())
         if not price_text:
             price = 0
         else:
-            price = float(price_text)
+            price = Decimal(price_text)
 
         req = OrderRequest(
             symbol=symbol,

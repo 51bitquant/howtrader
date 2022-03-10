@@ -116,23 +116,27 @@ def save_json(filename: str, data: dict) -> None:
         )
 
 
-def round_to(value: float, target: float) -> float:
+def round_to(value: float, target: float) -> Decimal:
     """
     Round price to price tick value.
     """
     value = Decimal(str(value))
     target = Decimal(str(target))
-    rounded = float(int(round(value / target)) * target)
+    # rounded = float(int(round(value / target)) * target)
+    rounded = Decimal(round(value / target)) * target
+    print(f"round_to: {value}, {target}, rouned:{rounded}")
     return rounded
 
 
-def floor_to(value: float, target: float) -> float:
+def floor_to(value: float, target: float) -> Decimal:
     """
     Similar to math.floor function, but to target float number.
     """
     value = Decimal(str(value))
     target = Decimal(str(target))
-    result = float(int(floor(value / target)) * target)
+    # result = float(int(floor(value / target)) * target)
+    result = Decimal(int(floor(value / target)) * target)
+    print(f"floor_to: {value}, {target}, result:{result}")
     return result
 
 

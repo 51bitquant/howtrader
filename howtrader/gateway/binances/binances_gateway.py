@@ -685,6 +685,7 @@ class BinancesRestApi(RestClient):
                 min_volume=min_volume,
                 product=Product.FUTURES,
                 history_data=True,
+                net_position=True,
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_contract(contract)
