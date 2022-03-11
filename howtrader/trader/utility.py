@@ -7,7 +7,7 @@ import logging
 import sys
 from pathlib import Path
 from typing import Callable, Dict, Tuple, Optional
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN, ROUND_UP
 from math import floor, ceil
 
 import numpy as np
@@ -122,8 +122,9 @@ def round_to(value: float, target: float) -> Decimal:
     """
     value = Decimal(str(value))
     target = Decimal(str(target))
-    rounded = float(int(round(value / target)) * target)
+    # rounded = float(int(round(value / target)) * target)
     # rounded = Decimal(round(value / target)) * target
+    rounded = value.quantize(target)
     return rounded
 
 def floor_to(value: float, target: float) -> Decimal:
@@ -132,8 +133,9 @@ def floor_to(value: float, target: float) -> Decimal:
     """
     value = Decimal(str(value))
     target = Decimal(str(target))
-    result = float(int(floor(value / target)) * target)
+    # result = float(int(floor(value / target)) * target)
     # result = Decimal(int(floor(value / target)) * target)
+    result = value.quantize(target, rounding=ROUND_DOWN)
     return result
 
 
