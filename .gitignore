@@ -35,3 +35,4 @@ _templates
 .DS_Store
 
 howtrader/log/*
+main_window.spec

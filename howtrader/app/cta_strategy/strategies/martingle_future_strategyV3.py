@@ -530,7 +530,7 @@ class MyArrayManager(object):
         return result[-1]
 
 
-class MartingleLiveStrategyV3(CtaTemplate):
+class MartingleFutureStrategyV3(CtaTemplate):
     """
     1. 马丁策略.
     币安邀请链接: https://www.binancezh.pro/cn/futures/ref/51bitquant
