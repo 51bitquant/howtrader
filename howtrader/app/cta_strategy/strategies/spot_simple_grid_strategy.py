@@ -48,7 +48,7 @@ class SpotSimpleGridStrategy(CtaTemplate):
         # self.cta_engine.event_engine.register(EVENT_ACCOUNT + "BINANCE.USDT", self.process_account_event)
 
         # # 订阅合约的资产信息
-        # self.cta_engine.event_engine.register(EVENT_ACCOUNT + "BINANCE.USDT", self.process_account_event)
+        # self.cta_engine.event_engine.register(EVENT_ACCOUNT + "BINANCES.USDT", self.process_account_event)
 
     def on_init(self):
         """

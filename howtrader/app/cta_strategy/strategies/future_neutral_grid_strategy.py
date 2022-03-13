@@ -83,7 +83,7 @@ class FutureNeutralGridStrategy(CtaTemplate):
     high_price = 0.0  # 执行策略的最高价.
     low_price = 0.0  # 执行策略的最低价.
     grid_count = 100  # 网格的数量.
-    trading_size = 0.05  # 每次下单的数量.
+    order_volume = 0.05  # 每次下单的数量.
     max_open_orders = 5  # 一边订单的数量.
 
 
@@ -93,7 +93,7 @@ class FutureNeutralGridStrategy(CtaTemplate):
     step_price = 0.0  # 网格的间隔
     trade_count = 0
 
-    parameters = ["high_price", "low_price", "grid_count", "trading_size", "max_open_orders"]
+    parameters = ["high_price", "low_price", "grid_count", "order_volume", "max_open_orders"]
 
     variables = ["avg_price", "current_pos", "step_price", "trade_count"]
 
@@ -159,7 +159,7 @@ class FutureNeutralGridStrategy(CtaTemplate):
                 if price < self.low_price:
                     return
 
-                orders = self.buy(price, self.trading_size)
+                orders = self.buy(price, self.order_volume)
                 self.long_orders.extend(orders)
 
         if len(self.short_orders) == 0:
@@ -168,7 +168,7 @@ class FutureNeutralGridStrategy(CtaTemplate):
                 if price > self.high_price:
                     return
 
-                orders = self.short(price, self.trading_size)
+                orders = self.short(price, self.order_volume)
                 self.short_orders.extend(orders)
 
         if len(self.short_orders + self.long_orders) > 100:
@@ -195,13 +195,13 @@ class FutureNeutralGridStrategy(CtaTemplate):
 
                 short_price = order.price + self.step_price
                 if short_price <= self.high_price:
-                    orders = self.short(short_price, self.trading_size)
+                    orders = self.short(short_price, self.order_volume)
                     self.short_orders.extend(orders)
 
                 if len(self.long_orders) < self.max_open_orders:
                     long_price = order.price - self.step_price * self.max_open_orders
                     if long_price >= self.low_price:
-                        orders = self.buy(long_price, self.trading_size)
+                        orders = self.buy(long_price, self.order_volume)
                         self.long_orders.extend(orders)
 
             if order.vt_orderid in self.short_orders:
@@ -209,13 +209,13 @@ class FutureNeutralGridStrategy(CtaTemplate):
                 self.trade_count += 1
                 long_price = order.price - self.step_price
                 if long_price >= self.low_price:
-                    orders = self.buy(long_price, self.trading_size)
+                    orders = self.buy(long_price, self.order_volume)
                     self.long_orders.extend(orders)
 
                 if len(self.short_orders) < self.max_open_orders:
                     short_price = order.price + self.step_price * self.max_open_orders
                     if short_price <= self.high_price:
-                        orders = self.short(short_price, self.trading_size)
+                        orders = self.short(short_price, self.order_volume)
                         self.short_orders.extend(orders)
 
         if not order.is_active():
