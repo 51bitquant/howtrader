@@ -27,7 +27,6 @@ from ..object import OrderRequest, SubscribeRequest, PositionData
 from ..utility import load_json, save_json, get_digits
 from ..setting import SETTING_FILENAME, SETTINGS
 
-
 COLOR_LONG = QtGui.QColor("red")
 COLOR_SHORT = QtGui.QColor("green")
 COLOR_BID = QtGui.QColor(255, 174, 201)
@@ -722,9 +721,9 @@ class TradingWidget(QtWidgets.QWidget):
         self.setLayout(vbox)
 
     def create_label(
-        self,
-        color: str = "",
-        alignment: int = QtCore.Qt.AlignLeft
+            self,
+            color: str = "",
+            alignment: int = QtCore.Qt.AlignLeft
     ) -> QtWidgets.QLabel:
         """
         Create label with certain font color.
@@ -917,7 +916,7 @@ class TradingWidget(QtWidgets.QWidget):
                 direction = Direction.LONG
             elif data.direction == Direction.LONG:
                 direction = Direction.SHORT
-            else:       # Net position mode
+            else:  # Net position mode
                 if data.volume > 0:
                     direction = Direction.SHORT
                 else:
@@ -1059,15 +1058,13 @@ class AboutDialog(QtWidgets.QDialog):
         self.setWindowTitle(f"关于VN Trader")
 
         text = f"""
-            By Traders, For Traders.
+            具体相关教程请看网易云课堂，搜索51bitquant
+
+            Github代码：https://github.com/51bitquant/howtrader
+            课程代码: https://github.com/51bitquant/course_codes
 
 
-            License：MIT
-            Website：www.vnpy.com
-            Github：www.github.com/vnpy/vnpy
-
-
-            vn.py - {howtrader.__version__}
+            howtrader - {howtrader.__version__}
             Python - {platform.python_version()}
             PyQt5 - {Qt.PYQT_VERSION_STR}
             Numpy - {np.__version__}
