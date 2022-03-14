@@ -11,6 +11,11 @@ the other part not related to cryptocurrency.
 而且很多部分我们是用不到的。
 
 # 安装 installation 
+
+1. 直接安装该软件的安装包,下载地址: https://share.weiyun.com/LhKEc3cQ
+
+2. 或者通过一下方式安装源码:
+
 直接在终端输入:
 > pip install git+https://github.com/51bitquant/howtrader.git
 
