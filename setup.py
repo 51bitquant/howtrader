@@ -39,7 +39,7 @@ def get_install_requires():
         "matplotlib",
         "seaborn",
         "deap",
-        "tzlocal",
+        "tzlocal==2.1",
         "plotly",
         "pandas_ta"
     ]

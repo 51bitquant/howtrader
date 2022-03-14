@@ -13,6 +13,7 @@ the other part not related to cryptocurrency.
 # 安装 installation 
 
 1. 直接安装该软件的安装包,下载地址: https://share.weiyun.com/LhKEc3cQ
+   
    安装软件后相应配置文件和数据库放在用户目录下面，对于MacOS系统，配置文件在:
    /Users/你的电脑用户名/howtrader, Window系统在: C:\Users\你电脑用户名\howtrader
 
