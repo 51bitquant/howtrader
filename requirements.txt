@@ -16,3 +16,4 @@ deap
 plotly
 tzlocal==2.1
 pandas_ta
+
