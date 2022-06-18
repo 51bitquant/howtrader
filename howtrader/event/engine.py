@@ -1,7 +1,7 @@
 """
-Event-driven framework of vn.py framework.
+Event-driven framework of Howtrader framework.
 """
-import sys
+
 from collections import defaultdict
 from queue import Empty, Queue
 from threading import Thread
@@ -18,14 +18,14 @@ class Event:
     object which contains the real data.
     """
 
-    def __init__(self, type: str, data: Any = None):
+    def __init__(self, type: str, data: Any = None) -> None:
         """"""
         self.type: str = type
         self.data: Any = data
 
 
 # Defines handler function to be used in event engine.
-HandlerType = Callable[[Event], None]
+HandlerType: callable = Callable[[Event], None]
 
 
 class EventEngine:
@@ -37,7 +37,7 @@ class EventEngine:
     which can be used for timing purpose.
     """
 
-    def __init__(self, interval: int = 1):
+    def __init__(self, interval: int = 1) -> None:
         """
         Timer event is generated every 1 second by default, if
         interval not specified.
@@ -56,7 +56,7 @@ class EventEngine:
         """
         while self._active:
             try:
-                event = self._queue.get(block=True, timeout=1)
+                event: Event = self._queue.get(block=True, timeout=1)
                 self._process(event)
             except Empty:
                 pass
@@ -69,15 +69,11 @@ class EventEngine:
         Then distribute event to those general handlers which listens
         to all types.
         """
-        try:
-            if event.type in self._handlers:
-                [handler(event) for handler in self._handlers[event.type]]
+        if event.type in self._handlers:
+            [handler(event) for handler in self._handlers[event.type]]
 
-            if self._general_handlers:
-                [handler(event) for handler in self._general_handlers]
-        except Exception:
-            et, ev, tb = sys.exc_info()
-            sys.excepthook(et, ev, tb)
+        if self._general_handlers:
+            [handler(event) for handler in self._general_handlers]
 
     def _run_timer(self) -> None:
         """
@@ -85,7 +81,7 @@ class EventEngine:
         """
         while self._active:
             sleep(self._interval)
-            event = Event(EVENT_TIMER)
+            event: Event = Event(EVENT_TIMER)
             self.put(event)
 
     def start(self) -> None:
@@ -115,7 +111,7 @@ class EventEngine:
         Register a new handler function for a specific event type. Every
         function can only be registered once for each event type.
         """
-        handler_list = self._handlers[type]
+        handler_list: list = self._handlers[type]
         if handler not in handler_list:
             handler_list.append(handler)
 
@@ -123,7 +119,7 @@ class EventEngine:
         """
         Unregister an existing handler function from event engine.
         """
-        handler_list = self._handlers[type]
+        handler_list: list = self._handlers[type]
 
         if handler in handler_list:
             handler_list.remove(handler)
