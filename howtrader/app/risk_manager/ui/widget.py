@@ -1,23 +1,24 @@
 from howtrader.event import EventEngine
 from howtrader.trader.engine import MainEngine
 from howtrader.trader.ui import QtWidgets
-from ..engine import APP_NAME
+
+from ..engine import APP_NAME, RiskEngine
 
 
 class RiskManager(QtWidgets.QDialog):
     """"""
 
-    def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
+    def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
         super().__init__()
 
-        self.main_engine = main_engine
-        self.event_engine = event_engine
-        self.rm_engine = main_engine.get_engine(APP_NAME)
+        self.main_engine: MainEngine = main_engine
+        self.event_engine: EventEngine = event_engine
+        self.rm_engine: RiskEngine = main_engine.get_engine(APP_NAME)
 
         self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         """"""
         self.setWindowTitle("交易风控")
 
@@ -50,9 +51,9 @@ class RiskManager(QtWidgets.QDialog):
 
         # Set Fix Size
         hint = self.sizeHint()
-        self.setFixedSize(hint.width() * 1.2, hint.height())
+        self.setFixedSize(int(hint.width() * 1.2), hint.height())
 
-    def save_setting(self):
+    def save_setting(self) -> None:
         """"""
         active_text = self.active_combo.currentText()
         if active_text == "启动":
@@ -75,7 +76,7 @@ class RiskManager(QtWidgets.QDialog):
 
         self.close()
 
-    def update_setting(self):
+    def update_setting(self) -> None:
         """"""
         setting = self.rm_engine.get_setting()
         if setting["active"]:
@@ -90,7 +91,7 @@ class RiskManager(QtWidgets.QDialog):
         self.active_limit_spin.setValue(setting["active_order_limit"])
         self.cancel_limit_spin.setValue(setting["order_cancel_limit"])
 
-    def exec_(self):
+    def exec_(self) -> None:
         """"""
         self.update_setting()
         super().exec_()
@@ -99,9 +100,10 @@ class RiskManager(QtWidgets.QDialog):
 class RiskManagerSpinBox(QtWidgets.QSpinBox):
     """"""
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int = 0) -> None:
         """"""
         super().__init__()
+
         self.setMinimum(0)
         self.setMaximum(1000000)
         self.setValue(value)

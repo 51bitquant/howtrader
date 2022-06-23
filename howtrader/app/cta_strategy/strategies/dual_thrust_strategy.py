@@ -1,14 +1,12 @@
 from datetime import time
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData,
-    BarGenerator,
-    ArrayManager,
+    StopOrder
 )
+
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
+from howtrader.trader.utility import BarGenerator, ArrayManager
+from decimal import Decimal
 
 
 class DualThrustStrategy(CtaTemplate):
@@ -106,33 +104,34 @@ class DualThrustStrategy(CtaTemplate):
             if self.pos == 0:
                 if bar.close_price > self.day_open:
                     if not self.long_entered:
-                        self.buy(self.long_entry, self.fixed_size, stop=True)
+                        self.buy(Decimal(self.long_entry), Decimal(self.fixed_size), stop=True)
                 else:
                     if not self.short_entered:
-                        self.short(self.short_entry,
-                                   self.fixed_size, stop=True)
+                        self.short(Decimal(self.short_entry), Decimal(self.fixed_size), stop=True)
 
             elif self.pos > 0:
                 self.long_entered = True
 
-                self.sell(self.short_entry, self.fixed_size, stop=True)
+                self.sell(Decimal(self.short_entry), Decimal(self.fixed_size), stop=True)
 
                 if not self.short_entered:
-                    self.short(self.short_entry, self.fixed_size, stop=True)
+                    self.short(Decimal(self.short_entry), Decimal(self.fixed_size), stop=True)
 
             elif self.pos < 0:
                 self.short_entered = True
 
-                self.cover(self.long_entry, self.fixed_size, stop=True)
+                self.cover(Decimal(self.long_entry), Decimal(self.fixed_size), stop=True)
 
                 if not self.long_entered:
-                    self.buy(self.long_entry, self.fixed_size, stop=True)
+                    self.buy(Decimal(self.long_entry), Decimal(self.fixed_size), stop=True)
 
         else:
             if self.pos > 0:
-                self.sell(bar.close_price * 0.99, abs(self.pos))
+                price = bar.close_price * 0.99
+                self.sell(Decimal(price), Decimal(abs(self.pos)))
             elif self.pos < 0:
-                self.cover(bar.close_price * 1.01, abs(self.pos))
+                price = bar.close_price * 1.01
+                self.cover(Decimal(price), Decimal(abs(self.pos)))
 
         self.put_event()
 

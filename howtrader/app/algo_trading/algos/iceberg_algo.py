@@ -2,7 +2,7 @@ from howtrader.trader.constant import Offset, Direction
 from howtrader.trader.object import TradeData, OrderData, TickData
 from howtrader.trader.engine import BaseEngine
 
-from howtrader.app.algo_trading import AlgoTemplate
+from ..template import AlgoTemplate
 
 
 class IcebergAlgo(AlgoTemplate):
@@ -41,7 +41,7 @@ class IcebergAlgo(AlgoTemplate):
         """"""
         super().__init__(algo_engine, algo_name, setting)
 
-        # Parameters
+        # 参数
         self.vt_symbol = setting["vt_symbol"]
         self.direction = Direction(setting["direction"])
         self.price = setting["price"]
@@ -50,7 +50,7 @@ class IcebergAlgo(AlgoTemplate):
         self.interval = setting["interval"]
         self.offset = Offset(setting["offset"])
 
-        # Variables
+        # 变量
         self.timer_count = 0
         self.vt_orderid = ""
         self.traded = 0
@@ -102,7 +102,7 @@ class IcebergAlgo(AlgoTemplate):
         if not contract:
             return
 
-        # If order already finished, just send new order
+        # 当委托完成后，发起新的委托
         if not self.vt_orderid:
             order_volume = self.volume - self.traded
             order_volume = min(order_volume, self.display_volume)
@@ -121,7 +121,7 @@ class IcebergAlgo(AlgoTemplate):
                     order_volume,
                     offset=self.offset
                 )
-        # Otherwise check for cancel
+        # 否则检查撤单
         else:
             if self.direction == Direction.LONG:
                 if self.last_tick.ask_price_1 <= self.price:

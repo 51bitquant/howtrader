@@ -1,16 +1,11 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData,
-    BarGenerator,
-    ArrayManager,
+    StopOrder
 )
 
-import pandas as pd
-import pandas_ta as ta
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
+from howtrader.trader.utility import BarGenerator, ArrayManager
+from decimal import Decimal
 
 class BollChannelStrategy(CtaTemplate):
     """"""
@@ -100,41 +95,32 @@ class BollChannelStrategy(CtaTemplate):
         if not am.inited:
             return
 
-        close = pd.Series(am.close_array)
-        high = pd.Series(am.high_array)
-        low = pd.Series(am.low_array)
-
-        standard_deviation = ta.stdev(close=close, length=self.boll_window)
-        deviations = self.boll_dev * standard_deviation
-
-        mid = ta.sma(close=close, length=self.boll_window)
-
-        self.boll_up, self.boll_down = (mid + deviations).iloc[-1],  (mid - deviations).iloc[-1]
-        self.cci_value = ta.cci(high, low, close, self.cci_window).iloc[-1]
-        self.atr_value = ta.atr(high, low, close, self.atr_window).iloc[-1]
+        self.boll_up, self.boll_down = am.boll(self.boll_window, self.boll_dev)
+        self.cci_value = am.cci(self.cci_window)
+        self.atr_value = am.atr(self.atr_window)
 
         if self.pos == 0:
             self.intra_trade_high = bar.high_price
             self.intra_trade_low = bar.low_price
 
             if self.cci_value > 0:
-                self.buy(self.boll_up, self.fixed_size, True)
+                self.buy(Decimal(self.boll_up), Decimal(self.fixed_size), True)
             elif self.cci_value < 0:
-                self.short(self.boll_down, self.fixed_size, True)
+                self.short(Decimal(self.boll_down), Decimal(self.fixed_size), True)
 
         elif self.pos > 0:
             self.intra_trade_high = max(self.intra_trade_high, bar.high_price)
             self.intra_trade_low = bar.low_price
 
             self.long_stop = self.intra_trade_high - self.atr_value * self.sl_multiplier
-            self.sell(self.long_stop, abs(self.pos), True)
+            self.sell(Decimal(self.long_stop), Decimal(abs(self.pos)), True)
 
         elif self.pos < 0:
             self.intra_trade_high = bar.high_price
             self.intra_trade_low = min(self.intra_trade_low, bar.low_price)
 
             self.short_stop = self.intra_trade_low + self.atr_value * self.sl_multiplier
-            self.cover(self.short_stop, abs(self.pos), True)
+            self.cover(Decimal(self.short_stop), Decimal(abs(self.pos)), True)
 
         self.put_event()
 

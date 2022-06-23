@@ -1,16 +1,12 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData,
-    BarGenerator,
-    ArrayManager,
+    StopOrder
 )
 
-import pandas_ta as ta
-import pandas as pd
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
+from howtrader.trader.utility import BarGenerator, ArrayManager
+from decimal import Decimal
+
 
 class MultiTimeframeStrategy(CtaTemplate):
     """"""
@@ -92,22 +88,25 @@ class MultiTimeframeStrategy(CtaTemplate):
         if not self.ma_trend:
             return
 
-        close_5 = pd.Series(self.am5.close_array)
-        self.rsi_value = ta.rsi(close_5, self.rsi_window).iloc[-1]
+        self.rsi_value = self.am5.rsi(self.rsi_window)
 
         if self.pos == 0:
             if self.ma_trend > 0 and self.rsi_value >= self.rsi_long:
-                self.buy(bar.close_price + 5, self.fixed_size)
+                price = bar.close_price * 1.01
+                self.buy(Decimal(price), Decimal(self.fixed_size))
             elif self.ma_trend < 0 and self.rsi_value <= self.rsi_short:
-                self.short(bar.close_price - 5, self.fixed_size)
+                price = bar.close_price * 0.99
+                self.short(Decimal(price), Decimal(self.fixed_size))
 
         elif self.pos > 0:
             if self.ma_trend < 0 or self.rsi_value < 50:
-                self.sell(bar.close_price - 5, abs(self.pos))
+                price = bar.close_price * 0.99
+                self.sell(Decimal(price), Decimal(abs(self.pos)))
 
         elif self.pos < 0:
             if self.ma_trend > 0 or self.rsi_value > 50:
-                self.cover(bar.close_price + 5, abs(self.pos))
+                price = bar.close_price * 1.01
+                self.cover(Decimal(price), Decimal(abs(self.pos)))
 
         self.put_event()
 
@@ -117,10 +116,8 @@ class MultiTimeframeStrategy(CtaTemplate):
         if not self.am15.inited:
             return
 
-        close_15 = pd.Series(self.am15.close_array)
-
-        self.fast_ma = ta.sma(close_15, self.fast_window).iloc[-1]
-        self.slow_ma = ta.sma(close_15, self.slow_window).iloc[-1]
+        self.fast_ma = self.am15.sma(self.fast_window)
+        self.slow_ma = self.am15.sma(self.slow_window)
 
         if self.fast_ma > self.slow_ma:
             self.ma_trend = 1

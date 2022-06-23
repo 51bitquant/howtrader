@@ -3,9 +3,10 @@ from random import uniform
 from howtrader.trader.constant import Offset, Direction
 from howtrader.trader.object import TradeData, OrderData, TickData
 from howtrader.trader.engine import BaseEngine
-from howtrader.trader.utility import floor_to
+from howtrader.trader.utility import round_to
+from decimal import Decimal
 
-from howtrader.app.algo_trading import AlgoTemplate
+from ..template import AlgoTemplate
 
 
 class BestLimitAlgo(AlgoTemplate):
@@ -52,7 +53,7 @@ class BestLimitAlgo(AlgoTemplate):
         """"""
         super().__init__(algo_engine, algo_name, setting)
 
-        # Parameters
+        # 参数
         self.vt_symbol = setting["vt_symbol"]
         self.direction = Direction(setting["direction"])
         self.volume = setting["volume"]
@@ -66,7 +67,7 @@ class BestLimitAlgo(AlgoTemplate):
         else:
             self.volume_change = int(setting["volume_change"])
 
-        # Variables
+        # 变量
         self.vt_orderid = ""
         self.traded = 0
         self.last_tick = None
@@ -75,7 +76,7 @@ class BestLimitAlgo(AlgoTemplate):
         self.put_parameters_event()
         self.put_variables_event()
 
-        # Check if min/max volume met
+        # 检查最大/最小挂单量
         if self.min_volume <= 0:
             self.write_log("最小挂单量必须大于0，算法启动失败")
             self.stop()
@@ -155,7 +156,7 @@ class BestLimitAlgo(AlgoTemplate):
     def generate_rand_volume(self):
         """"""
         rand_volume = uniform(self.min_volume, self.max_volume)
-        rand_volume = floor_to(rand_volume, self.volume_change)
+        rand_volume = round_to(rand_volume, Decimal(self.volume_change))
 
         if self.volume_change == 1:
             rand_volume = int(rand_volume)

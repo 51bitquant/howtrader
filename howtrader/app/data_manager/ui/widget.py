@@ -1,11 +1,13 @@
 from typing import Tuple, Dict
 from functools import partial
 from datetime import datetime, timedelta
-from tzlocal import get_localzone
+
+from pytz import all_timezones
 
 from howtrader.trader.ui import QtWidgets, QtCore
 from howtrader.trader.engine import MainEngine, EventEngine
 from howtrader.trader.constant import Interval, Exchange
+from howtrader.trader.database import DB_TZ
 
 from ..engine import APP_NAME, ManagerEngine
 
@@ -102,6 +104,7 @@ class ManagerWidget(QtWidgets.QWidget):
             "最低价",
             "收盘价",
             "成交量",
+            "成交额",
             "持仓量"
         ]
 
@@ -131,23 +134,26 @@ class ManagerWidget(QtWidgets.QWidget):
         """"""
         self.clear_tree()
 
-        data = self.engine.get_bar_data_available()
+        overviews = self.engine.get_bar_overview()
 
-        for d in data:
-            key = (d["symbol"], d["exchange"], d["interval"])
+        # 基于合约代码进行排序
+        overviews.sort(key=lambda x: x.symbol)
+
+        for overview in overviews:
+            key = (overview.symbol, overview.exchange, overview.interval)
             item = self.tree_items.get(key, None)
 
             if not item:
                 item = QtWidgets.QTreeWidgetItem()
                 self.tree_items[key] = item
 
-                item.setText(1, ".".join([d["symbol"], d["exchange"]]))
-                item.setText(2, d["symbol"])
-                item.setText(3, d["exchange"])
+                item.setText(1, f"{overview.symbol}.{overview.exchange.value}")
+                item.setText(2, overview.symbol)
+                item.setText(3, overview.exchange.value)
 
-                if d["interval"] == Interval.MINUTE.value:
+                if overview.interval == Interval.MINUTE:
                     self.minute_child.addChild(item)
-                elif d["interval"] == Interval.HOUR.value:
+                elif overview.interval == Interval.HOUR:
                     self.hour_child.addChild(item)
                 else:
                     self.daily_child.addChild(item)
@@ -155,31 +161,31 @@ class ManagerWidget(QtWidgets.QWidget):
                 output_button = QtWidgets.QPushButton("导出")
                 output_func = partial(
                     self.output_data,
-                    d["symbol"],
-                    Exchange(d["exchange"]),
-                    Interval(d["interval"]),
-                    d["start"],
-                    d["end"]
+                    overview.symbol,
+                    overview.exchange,
+                    overview.interval,
+                    overview.start,
+                    overview.end
                 )
                 output_button.clicked.connect(output_func)
 
                 show_button = QtWidgets.QPushButton("查看")
                 show_func = partial(
                     self.show_data,
-                    d["symbol"],
-                    Exchange(d["exchange"]),
-                    Interval(d["interval"]),
-                    d["start"],
-                    d["end"]
+                    overview.symbol,
+                    overview.exchange,
+                    overview.interval,
+                    overview.start,
+                    overview.end
                 )
                 show_button.clicked.connect(show_func)
 
                 delete_button = QtWidgets.QPushButton("删除")
                 delete_func = partial(
                     self.delete_data,
-                    d["symbol"],
-                    Exchange(d["exchange"]),
-                    Interval(d["interval"]),
+                    overview.symbol,
+                    overview.exchange,
+                    overview.interval
                 )
                 delete_button.clicked.connect(delete_func)
 
@@ -187,9 +193,9 @@ class ManagerWidget(QtWidgets.QWidget):
                 self.tree.setItemWidget(item, 8, output_button)
                 self.tree.setItemWidget(item, 9, delete_button)
 
-            item.setText(4, str(d["count"]))
-            item.setText(5, d["start"].strftime("%Y-%m-%d %H:%M:%S"))
-            item.setText(6, d["end"].strftime("%Y-%m-%d %H:%M:%S"))
+            item.setText(4, str(overview.count))
+            item.setText(5, overview.start.strftime("%Y-%m-%d %H:%M:%S"))
+            item.setText(6, overview.end.strftime("%Y-%m-%d %H:%M:%S"))
 
         self.minute_child.setExpanded(True)
         self.hour_child.setExpanded(True)
@@ -206,12 +212,14 @@ class ManagerWidget(QtWidgets.QWidget):
         symbol = dialog.symbol_edit.text()
         exchange = dialog.exchange_combo.currentData()
         interval = dialog.interval_combo.currentData()
+        tz_name = dialog.tz_combo.currentText()
         datetime_head = dialog.datetime_edit.text()
         open_head = dialog.open_edit.text()
         low_head = dialog.low_edit.text()
         high_head = dialog.high_edit.text()
         close_head = dialog.close_edit.text()
         volume_head = dialog.volume_edit.text()
+        turnover_head = dialog.turnover_edit.text()
         open_interest_head = dialog.open_interest_edit.text()
         datetime_format = dialog.format_edit.text()
 
@@ -220,12 +228,14 @@ class ManagerWidget(QtWidgets.QWidget):
             symbol,
             exchange,
             interval,
+            tz_name,
             datetime_head,
             open_head,
             high_head,
             low_head,
             close_head,
             volume_head,
+            turnover_head,
             open_interest_head,
             datetime_format
         )
@@ -317,7 +327,8 @@ class ManagerWidget(QtWidgets.QWidget):
             self.table.setItem(row, 3, DataCell(str(bar.low_price)))
             self.table.setItem(row, 4, DataCell(str(bar.close_price)))
             self.table.setItem(row, 5, DataCell(str(bar.volume)))
-            self.table.setItem(row, 6, DataCell(str(bar.open_interest)))
+            self.table.setItem(row, 6, DataCell(str(bar.turnover)))
+            self.table.setItem(row, 7, DataCell(str(bar.open_interest)))
 
     def delete_data(
         self,
@@ -352,8 +363,8 @@ class ManagerWidget(QtWidgets.QWidget):
 
     def update_data(self) -> None:
         """"""
-        data = self.engine.get_bar_data_available()
-        total = len(data)
+        overviews = self.engine.get_bar_overview()
+        total = len(overviews)
         count = 0
 
         dialog = QtWidgets.QProgressDialog(
@@ -366,15 +377,15 @@ class ManagerWidget(QtWidgets.QWidget):
         dialog.setWindowModality(QtCore.Qt.WindowModal)
         dialog.setValue(0)
 
-        for d in data:
+        for overview in overviews:
             if dialog.wasCanceled():
                 break
 
             self.engine.download_bar_data(
-                d["symbol"],
-                Exchange(d["exchange"]),
-                Interval(d["interval"]),
-                d["end"]
+                overview.symbol,
+                overview.exchange,
+                overview.interval,
+                overview.end
             )
             count += 1
             progress = int(round(count / total * 100, 0))
@@ -437,8 +448,8 @@ class DateRangeDialog(QtWidgets.QDialog):
 
     def get_date_range(self) -> Tuple[datetime, datetime]:
         """"""
-        start = self.start_edit.date().toPyDate()
-        end = self.end_edit.date().toPyDate() + timedelta(days=1)
+        start = self.start_edit.dateTime().toPython()
+        end = self.end_edit.dateTime().toPython() + timedelta(days=1)
         return start, end
 
 
@@ -474,12 +485,17 @@ class ImportDialog(QtWidgets.QDialog):
             if i != Interval.TICK:
                 self.interval_combo.addItem(str(i.name), i)
 
+        self.tz_combo = QtWidgets.QComboBox()
+        self.tz_combo.addItems(all_timezones)
+        self.tz_combo.setCurrentIndex(self.tz_combo.findText("Asia/Shanghai"))
+
         self.datetime_edit = QtWidgets.QLineEdit("datetime")
         self.open_edit = QtWidgets.QLineEdit("open")
         self.high_edit = QtWidgets.QLineEdit("high")
         self.low_edit = QtWidgets.QLineEdit("low")
         self.close_edit = QtWidgets.QLineEdit("close")
         self.volume_edit = QtWidgets.QLineEdit("volume")
+        self.turnover_edit = QtWidgets.QLineEdit("turnover")
         self.open_interest_edit = QtWidgets.QLineEdit("open_interest")
 
         self.format_edit = QtWidgets.QLineEdit("%Y-%m-%d %H:%M:%S")
@@ -500,6 +516,7 @@ class ImportDialog(QtWidgets.QDialog):
         form.addRow("代码", self.symbol_edit)
         form.addRow("交易所", self.exchange_combo)
         form.addRow("周期", self.interval_combo)
+        form.addRow("时区", self.tz_combo)
         form.addRow(QtWidgets.QLabel())
         form.addRow(head_label)
         form.addRow("时间戳", self.datetime_edit)
@@ -508,6 +525,7 @@ class ImportDialog(QtWidgets.QDialog):
         form.addRow("最低价", self.low_edit)
         form.addRow("收盘价", self.close_edit)
         form.addRow("成交量", self.volume_edit)
+        form.addRow("成交额", self.turnover_edit)
         form.addRow("持仓量", self.open_interest_edit)
         form.addRow(QtWidgets.QLabel())
         form.addRow(format_label)
@@ -582,7 +600,8 @@ class DownloadDialog(QtWidgets.QDialog):
         interval = Interval(self.interval_combo.currentData())
 
         start_date = self.start_date_edit.date()
-        start = datetime(start_date.year(), start_date.month(), start_date.day(), tzinfo=get_localzone())
+        start = datetime(start_date.year(), start_date.month(), start_date.day())
+        start = DB_TZ.localize(start)
 
         if interval == Interval.TICK:
             count = self.engine.download_tick_data(symbol, exchange, start)

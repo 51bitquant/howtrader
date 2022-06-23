@@ -1,17 +1,16 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData
+    StopOrder
 )
+
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 
 from howtrader.app.cta_strategy.engine import CtaEngine
 from howtrader.trader.event import EVENT_TIMER, EVENT_ACCOUNT
 from howtrader.event import Event
 from howtrader.trader.object import Status
-from typing import Union
+from typing import Optional
+from decimal import Decimal
 
 BINANCE_SPOT_GRID_TIMER_WAITING_INTERVAL = 30
 
@@ -41,8 +40,8 @@ class SpotSimpleGridStrategy(CtaTemplate):
 
         self.timer_interval = 0
 
-        self.last_filled_order: Union[OrderData, None] = None  # 联合类型, 或者叫可选类型，二选一那种.
-        self.tick: Union[TickData, None] = None  #
+        self.last_filled_order: Optional[OrderData] = None  # 联合类型, 或者叫可选类型，二选一那种.
+        self.tick: Optional[TickData] = None  #
 
         # # 订阅现货的资产信息. BINANCE.资产名, 或者BINANCES.资产名
         # self.cta_engine.event_engine.register(EVENT_ACCOUNT + "BINANCE.USDT", self.process_account_event)
@@ -93,8 +92,8 @@ class SpotSimpleGridStrategy(CtaTemplate):
                 buy_price = self.tick.bid_price_1 - self.grid_step / 2
                 sell_price = self.tick.ask_price_1 + self.grid_step / 2
 
-                buy_orders_ids = self.buy(buy_price, self.trading_size)
-                sell_orders_ids = self.sell(sell_price, self.trading_size)
+                buy_orders_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                sell_orders_ids = self.sell(Decimal(sell_price), Decimal(self.trading_size))
 
                 self.buy_orders.extend(buy_orders_ids)
                 self.sell_orders.extend(sell_orders_ids)
@@ -136,14 +135,14 @@ class SpotSimpleGridStrategy(CtaTemplate):
             if self.tick and abs(self.pos) < self.max_size * self.trading_size:
                 step = self.get_step()
 
-                buy_price = order.price - step * self.grid_step
-                sell_price = order.price + step * self.grid_step
+                buy_price = float(order.price) - step * self.grid_step
+                sell_price = float(order.price) + step * self.grid_step
 
                 buy_price = min(self.tick.bid_price_1 * (1 - 0.0001), buy_price)
                 sell_price = max(self.tick.ask_price_1 * (1 + 0.0001), sell_price)
 
-                buy_ids = self.buy(buy_price, self.trading_size)
-                sell_ids = self.sell(sell_price, self.trading_size)
+                buy_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                sell_ids = self.sell(Decimal(sell_price), Decimal(self.trading_size))
 
                 self.buy_orders.extend(buy_ids)
                 self.sell_orders.extend(sell_ids)

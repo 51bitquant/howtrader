@@ -8,24 +8,27 @@ from howtrader.chart import ChartWidget, CandleItem, VolumeItem
 from howtrader.trader.engine import MainEngine
 from howtrader.trader.ui import QtWidgets, QtCore
 from howtrader.trader.event import EVENT_TICK
-from howtrader.trader.object import TickData, BarData, SubscribeRequest
+from howtrader.trader.object import ContractData, TickData, BarData, SubscribeRequest
 from howtrader.trader.utility import BarGenerator
 from howtrader.trader.constant import Interval
+from vnpy_spreadtrading.base import SpreadData, EVENT_SPREAD_DATA
 
 from ..engine import APP_NAME, EVENT_CHART_HISTORY, ChartWizardEngine
 
 
 class ChartWizardWidget(QtWidgets.QWidget):
     """"""
+
     signal_tick = QtCore.pyqtSignal(Event)
+    signal_spread = QtCore.pyqtSignal(Event)
     signal_history = QtCore.pyqtSignal(Event)
 
-    def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
+    def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
         super().__init__()
 
-        self.main_engine = main_engine
-        self.event_engine = event_engine
+        self.main_engine: MainEngine = main_engine
+        self.event_engine: EventEngine = event_engine
         self.chart_engine: ChartWizardEngine = main_engine.get_engine(APP_NAME)
 
         self.bgs: Dict[str, BarGenerator] = {}
@@ -66,31 +69,36 @@ class ChartWizardWidget(QtWidgets.QWidget):
         chart.add_cursor()
         return chart
 
+    def show(self) -> None:
+        """"""
+        self.showMaximized()
+
     def new_chart(self) -> None:
         """"""
         # Filter invalid vt_symbol
-        vt_symbol = self.symbol_line.text()
+        vt_symbol: str = self.symbol_line.text()
         if not vt_symbol:
             return
 
         if vt_symbol in self.charts:
             return
 
-        contract = self.main_engine.get_contract(vt_symbol)
-        if not contract:
-            return
+        if "LOCAL" not in vt_symbol:
+            contract: ContractData = self.main_engine.get_contract(vt_symbol)
+            if not contract:
+                return
 
         # Create new chart
         self.bgs[vt_symbol] = BarGenerator(self.on_bar)
 
-        chart = self.create_chart()
+        chart: ChartWidget = self.create_chart()
         self.charts[vt_symbol] = chart
 
         self.tab.addTab(chart, vt_symbol)
 
         # Query history data
-        end = datetime.now(get_localzone())
-        start = end - timedelta(days=5)
+        end: datetime = datetime.now(get_localzone())
+        start: datetime = end - timedelta(days=5)
 
         self.chart_engine.query_history(
             vt_symbol,
@@ -103,20 +111,22 @@ class ChartWizardWidget(QtWidgets.QWidget):
         """"""
         self.signal_tick.connect(self.process_tick_event)
         self.signal_history.connect(self.process_history_event)
+        self.signal_spread.connect(self.process_spread_event)
 
         self.event_engine.register(EVENT_CHART_HISTORY, self.signal_history.emit)
         self.event_engine.register(EVENT_TICK, self.signal_tick.emit)
+        self.event_engine.register(EVENT_SPREAD_DATA, self.signal_spread.emit)
 
     def process_tick_event(self, event: Event) -> None:
         """"""
         tick: TickData = event.data
-        bg = self.bgs.get(tick.vt_symbol, None)
+        bg: BarGenerator = self.bgs.get(tick.vt_symbol, None)
 
         if bg:
             bg.update_tick(tick)
 
-            chart = self.charts[tick.vt_symbol]
-            bar = copy(bg.bar)
+            chart: ChartWidget = self.charts[tick.vt_symbol]
+            bar: BarData = copy(bg.bar)
             bar.datetime = bar.datetime.replace(second=0, microsecond=0)
             chart.update_bar(bar)
 
@@ -126,20 +136,34 @@ class ChartWizardWidget(QtWidgets.QWidget):
         if not history:
             return
 
-        bar = history[0]
-        chart = self.charts[bar.vt_symbol]
+        bar: BarData = history[0]
+        chart: ChartWidget = self.charts[bar.vt_symbol]
         chart.update_history(history)
 
         # Subscribe following data update
-        contract = self.main_engine.get_contract(bar.vt_symbol)
+        contract: ContractData = self.main_engine.get_contract(bar.vt_symbol)
+        if contract:
+            req: SubscribeRequest = SubscribeRequest(
+                contract.symbol,
+                contract.exchange
+            )
+            self.main_engine.subscribe(req, contract.gateway_name)
 
-        req = SubscribeRequest(
-            contract.symbol,
-            contract.exchange
-        )
-        self.main_engine.subscribe(req, contract.gateway_name)
-
-    def on_bar(self, bar: BarData):
+    def process_spread_event(self, event: Event) -> None:
         """"""
-        chart = self.charts[bar.vt_symbol]
+        spread: SpreadData = event.data
+        tick: TickData = spread.to_tick()
+
+        bg: BarGenerator = self.bgs.get(tick.vt_symbol, None)
+        if bg:
+            bg.update_tick(tick)
+
+            chart: ChartWidget = self.charts[tick.vt_symbol]
+            bar: BarData = copy(bg.bar)
+            bar.datetime = bar.datetime.replace(second=0, microsecond=0)
+            chart.update_bar(bar)
+
+    def on_bar(self, bar: BarData) -> None:
+        """"""
+        chart: ChartWidget = self.charts[bar.vt_symbol]
         chart.update_bar(bar)

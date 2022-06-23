@@ -1,11 +1,13 @@
 import csv
 from datetime import datetime
-from typing import List, Dict, Tuple
+from typing import List, Tuple
+
+from pytz import timezone
 
 from howtrader.trader.engine import BaseEngine, MainEngine, EventEngine
 from howtrader.trader.constant import Interval, Exchange
 from howtrader.trader.object import BarData, HistoryRequest
-from howtrader.trader.database import database_manager
+from howtrader.trader.database import BaseDatabase, get_database, BarOverview, DB_TZ
 
 APP_NAME = "DataManager"
 
@@ -21,18 +23,22 @@ class ManagerEngine(BaseEngine):
         """"""
         super().__init__(main_engine, event_engine, APP_NAME)
 
+        self.database: BaseDatabase = get_database()
+
     def import_data_from_csv(
         self,
         file_path: str,
         symbol: str,
         exchange: Exchange,
         interval: Interval,
+        tz_name: str,
         datetime_head: str,
         open_head: str,
         high_head: str,
         low_head: str,
         close_head: str,
         volume_head: str,
+        turnover_head: str,
         open_interest_head: str,
         datetime_format: str
     ) -> Tuple:
@@ -45,13 +51,16 @@ class ManagerEngine(BaseEngine):
         bars = []
         start = None
         count = 0
+        tz = timezone(tz_name)
 
         for item in reader:
             if datetime_format:
                 dt = datetime.strptime(item[datetime_head], datetime_format)
             else:
                 dt = datetime.fromisoformat(item[datetime_head])
+            dt = tz.localize(dt)
 
+            turnover = item.get(turnover_head, 0)
             open_interest = item.get(open_interest_head, 0)
 
             bar = BarData(
@@ -64,6 +73,7 @@ class ManagerEngine(BaseEngine):
                 high_price=float(item[high_head]),
                 low_price=float(item[low_head]),
                 close_price=float(item[close_head]),
+                turnover=float(turnover),
                 open_interest=float(open_interest),
                 gateway_name="DB",
             )
@@ -75,10 +85,11 @@ class ManagerEngine(BaseEngine):
             if not start:
                 start = bar.datetime
 
-        # insert into database
-        database_manager.save_bar_data(bars)
-
         end = bar.datetime
+
+        # insert into database
+        self.database.save_bar_data(bars)
+
         return start, end, count
 
     def output_data_to_csv(
@@ -102,6 +113,7 @@ class ManagerEngine(BaseEngine):
             "low",
             "close",
             "volume",
+            "turnover",
             "open_interest"
         ]
 
@@ -119,6 +131,7 @@ class ManagerEngine(BaseEngine):
                         "high": bar.high_price,
                         "low": bar.low_price,
                         "close": bar.close_price,
+                        "turnover": bar.turnover,
                         "volume": bar.volume,
                         "open_interest": bar.open_interest,
                     }
@@ -128,22 +141,9 @@ class ManagerEngine(BaseEngine):
         except PermissionError:
             return False
 
-    def get_bar_data_available(self) -> List[Dict]:
+    def get_bar_overview(self) -> List[BarOverview]:
         """"""
-        data = database_manager.get_bar_data_statistics()
-
-        for d in data:
-            oldest_bar = database_manager.get_oldest_bar_data(
-                d["symbol"], Exchange(d["exchange"]), Interval(d["interval"])
-            )
-            d["start"] = oldest_bar.datetime
-
-            newest_bar = database_manager.get_newest_bar_data(
-                d["symbol"], Exchange(d["exchange"]), Interval(d["interval"])
-            )
-            d["end"] = newest_bar.datetime
-
-        return data
+        return self.database.get_bar_overview()
 
     def load_bar_data(
         self,
@@ -154,7 +154,7 @@ class ManagerEngine(BaseEngine):
         end: datetime
     ) -> List[BarData]:
         """"""
-        bars = database_manager.load_bar_data(
+        bars = self.database.load_bar_data(
             symbol,
             exchange,
             interval,
@@ -171,7 +171,7 @@ class ManagerEngine(BaseEngine):
         interval: Interval
     ) -> int:
         """"""
-        count = database_manager.delete_bar_data(
+        count = self.database.delete_bar_data(
             symbol,
             exchange,
             interval
@@ -187,14 +187,14 @@ class ManagerEngine(BaseEngine):
         start: datetime
     ) -> int:
         """
-        Query bar data from RQData.
+        Query bar data from datafeed.
         """
         req = HistoryRequest(
             symbol=symbol,
             exchange=exchange,
             interval=Interval(interval),
             start=start,
-            end=datetime.now()
+            end=datetime.now(DB_TZ)
         )
 
         vt_symbol = f"{symbol}.{exchange.value}"
@@ -207,7 +207,7 @@ class ManagerEngine(BaseEngine):
             )
 
             if data:
-                database_manager.save_bar_data(data)
+                self.database.save_bar_data(data)
                 return(len(data))
 
         return 0
@@ -219,22 +219,14 @@ class ManagerEngine(BaseEngine):
         start: datetime
     ) -> int:
         """
-        Query tick data from RQData.
+        Query tick data from datafeed.
         """
         req = HistoryRequest(
             symbol=symbol,
             exchange=exchange,
             start=start,
-            end=datetime.now()
+            end=datetime.now(DB_TZ)
         )
 
-        # if not rqdata_client.inited:
-        #     rqdata_client.init()
-        #
-        # data = rqdata_client.query_tick_history(req)
-        #
-        # if data:
-        #     database_manager.save_tick_data(data)
-        #     return(len(data))
-
+        print("not support download tick data")
         return 0

@@ -8,10 +8,10 @@ from .engine import BacktesterEngine, APP_NAME
 class CtaBacktesterApp(BaseApp):
     """"""
 
-    app_name = APP_NAME
-    app_module = __module__
-    app_path = Path(__file__).parent
-    display_name = "CTA回测"
-    engine_class = BacktesterEngine
-    widget_name = "BacktesterManager"
-    icon_name = "backtester.ico"
+    app_name: str = APP_NAME
+    app_module: str = __module__
+    app_path: Path = Path(__file__).parent
+    display_name: str = "CTA回测"
+    engine_class: BacktesterEngine = BacktesterEngine
+    widget_name: str = "BacktesterManager"
+    icon_name: str = str(app_path.joinpath("ui", "backtester.ico"))

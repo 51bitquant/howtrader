@@ -27,4 +27,4 @@ class SpreadTradingApp(BaseApp):
     display_name = "价差交易"
     engine_class = SpreadEngine
     widget_name = "SpreadManager"
-    icon_name = "spread.ico"
+    icon_name = str(app_path.joinpath("ui", "spread.ico"))

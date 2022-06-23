@@ -1,7 +1,7 @@
 """"""
 from abc import ABC
 from copy import copy
-from typing import Dict, Set, List, TYPE_CHECKING
+from typing import Dict, Set, List, TYPE_CHECKING, Optional
 from collections import defaultdict
 
 from howtrader.trader.constant import Interval, Direction, Offset
@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 class StrategyTemplate(ABC):
     """"""
 
-    author = ""
-    parameters = []
-    variables = []
+    author: str = ""
+    parameters: list = []
+    variables: list = []
 
     def __init__(
         self,
@@ -25,7 +25,7 @@ class StrategyTemplate(ABC):
         strategy_name: str,
         vt_symbols: List[str],
         setting: dict,
-    ):
+    ) -> None:
         """"""
         self.strategy_engine: "StrategyEngine" = strategy_engine
         self.strategy_name: str = strategy_name
@@ -40,7 +40,7 @@ class StrategyTemplate(ABC):
 
         # Copy a new variables list here to avoid duplicate insert when multiple
         # strategy instances are created with the same strategy class.
-        self.variables: List = copy(self.variables)
+        self.variables: list = copy(self.variables)
         self.variables.insert(0, "inited")
         self.variables.insert(1, "trading")
         self.variables.insert(2, "pos")
@@ -60,7 +60,7 @@ class StrategyTemplate(ABC):
         """
         Get default parameters dict of strategy class.
         """
-        class_parameters = {}
+        class_parameters: dict = {}
         for name in cls.parameters:
             class_parameters[name] = getattr(cls, name)
         return class_parameters
@@ -69,7 +69,7 @@ class StrategyTemplate(ABC):
         """
         Get strategy parameters dict.
         """
-        strategy_parameters = {}
+        strategy_parameters: dict = {}
         for name in self.parameters:
             strategy_parameters[name] = getattr(self, name)
         return strategy_parameters
@@ -78,7 +78,7 @@ class StrategyTemplate(ABC):
         """
         Get strategy variables dict.
         """
-        strategy_variables = {}
+        strategy_variables: dict = {}
         for name in self.variables:
             strategy_variables[name] = getattr(self, name)
         return strategy_variables
@@ -87,7 +87,7 @@ class StrategyTemplate(ABC):
         """
         Get strategy data.
         """
-        strategy_data = {
+        strategy_data: dict = {
             "strategy_name": self.strategy_name,
             "vt_symbols": self.vt_symbols,
             "class_name": self.__class__.__name__,
@@ -150,29 +150,29 @@ class StrategyTemplate(ABC):
         if not order.is_active() and order.vt_orderid in self.active_orderids:
             self.active_orderids.remove(order.vt_orderid)
 
-    def buy(self, vt_symbol: str, price: float, volume: float, lock: bool = False) -> List[str]:
+    def buy(self, vt_symbol: str, price: float, volume: float, lock: bool = False, net: bool = False) -> List[str]:
         """
         Send buy order to open a long position.
         """
-        return self.send_order(vt_symbol, Direction.LONG, Offset.OPEN, price, volume, lock)
+        return self.send_order(vt_symbol, Direction.LONG, Offset.OPEN, price, volume, lock, net)
 
-    def sell(self, vt_symbol: str, price: float, volume: float, lock: bool = False) -> List[str]:
+    def sell(self, vt_symbol: str, price: float, volume: float, lock: bool = False, net: bool = False) -> List[str]:
         """
         Send sell order to close a long position.
         """
-        return self.send_order(vt_symbol, Direction.SHORT, Offset.CLOSE, price, volume, lock)
+        return self.send_order(vt_symbol, Direction.SHORT, Offset.CLOSE, price, volume, lock, net)
 
-    def short(self, vt_symbol: str, price: float, volume: float, lock: bool = False) -> List[str]:
+    def short(self, vt_symbol: str, price: float, volume: float, lock: bool = False, net: bool = False) -> List[str]:
         """
         Send short order to open as short position.
         """
-        return self.send_order(vt_symbol, Direction.SHORT, Offset.OPEN, price, volume, lock)
+        return self.send_order(vt_symbol, Direction.SHORT, Offset.OPEN, price, volume, lock, net)
 
-    def cover(self, vt_symbol: str, price: float, volume: float, lock: bool = False) -> List[str]:
+    def cover(self, vt_symbol: str, price: float, volume: float, lock: bool = False, net: bool = False) -> List[str]:
         """
         Send cover order to close a short position.
         """
-        return self.send_order(vt_symbol, Direction.LONG, Offset.CLOSE, price, volume, lock)
+        return self.send_order(vt_symbol, Direction.LONG, Offset.CLOSE, price, volume, lock, net)
 
     def send_order(
         self,
@@ -181,14 +181,15 @@ class StrategyTemplate(ABC):
         offset: Offset,
         price: float,
         volume: float,
-        lock: bool = False
+        lock: bool = False,
+        net: bool = False,
     ) -> List[str]:
         """
         Send a new order.
         """
         if self.trading:
-            vt_orderids = self.strategy_engine.send_order(
-                self, vt_symbol, direction, offset, price, volume, lock
+            vt_orderids: list = self.strategy_engine.send_order(
+                self, vt_symbol, direction, offset, price, volume, lock, net
             )
 
             for vt_orderid in vt_orderids:
@@ -216,7 +217,7 @@ class StrategyTemplate(ABC):
         """"""
         return self.pos.get(vt_symbol, 0)
 
-    def get_order(self, vt_orderid: str) -> OrderData:
+    def get_order(self, vt_orderid: str) -> Optional[OrderData]:
         """"""
         return self.orders.get(vt_orderid, None)
 
@@ -229,6 +230,12 @@ class StrategyTemplate(ABC):
         Write a log message.
         """
         self.strategy_engine.write_log(msg, self)
+
+    def get_pricetick(self, vt_symbol) -> float:
+        """
+        Return pricetick data of trading contract.
+        """
+        return self.strategy_engine.get_pricetick(self, vt_symbol)
 
     def load_bars(self, days: int, interval: Interval = Interval.MINUTE) -> None:
         """

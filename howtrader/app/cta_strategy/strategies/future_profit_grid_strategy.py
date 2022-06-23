@@ -1,17 +1,16 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData
+    StopOrder
 )
 
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 from howtrader.app.cta_strategy.engine import CtaEngine
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event
 from howtrader.trader.object import Status, Direction
 from howtrader.trader.object import GridPositionCalculator
+
+from decimal import Decimal
 
 NORMAL_TIMER = 5
 PROFIT_TIMER_INTERVAL = 5
@@ -20,6 +19,9 @@ STOP_TIMER_INTERVAL = 60
 
 class FutureProfitGridStrategy(CtaTemplate):
     """
+    @description
+
+    @描述
     币安合约网格策略，里面有止盈止损的功能。
     策略在震荡行情下表现很好，但是如果发生趋势行情，单次止损会比较大，导致亏损过多。
 
@@ -121,8 +123,8 @@ class FutureProfitGridStrategy(CtaTemplate):
 
                     buy_price = self.tick.bid_price_1 - self.grid_step / 2
                     sell_price = self.tick.bid_price_1 + self.grid_step / 2
-                    long_ids = self.buy(buy_price, self.trading_size)
-                    short_ids = self.short(sell_price, self.trading_size)
+                    long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                    short_ids = self.short(Decimal(sell_price), Decimal(self.trading_size))
 
                     self.long_orders.extend(long_ids)
                     self.short_orders.extend(short_ids)
@@ -142,7 +144,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                 if self.last_filled_order:
                     price = self.last_filled_order.price
                 else:
-                    price = self.tick.bid_price_1
+                    price = Decimal(self.tick.bid_price_1)
 
                 buy_step = self.get_step()
                 sell_step = self.get_step()
@@ -152,8 +154,8 @@ class FutureProfitGridStrategy(CtaTemplate):
 
                 buy_price = min(self.tick.bid_price_1, buy_price)
                 sell_price = max(self.tick.ask_price_1, sell_price)
-                long_ids = self.buy(buy_price, self.trading_size)
-                short_ids = self.short(sell_price, self.trading_size)
+                long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                short_ids = self.short(Decimal(sell_price), Decimal(self.trading_size))
 
                 self.long_orders.extend(long_ids)
                 self.short_orders.extend(short_ids)
@@ -170,14 +172,14 @@ class FutureProfitGridStrategy(CtaTemplate):
 
                 if self.position_calculator.pos > 0:
                     price = max(self.tick.ask_price_1 * (1 + 0.0001),
-                                self.position_calculator.avg_price + self.profit_step)
-                    order_ids = self.short(price, abs(self.position_calculator.pos))
+                                self.position_calculator.avg_price + Decimal(self.profit_step))
+                    order_ids = self.short(Decimal(price), abs(self.position_calculator.pos))
                     self.profit_orders.extend(order_ids)
                     print(f"多头止盈情况: {self.position_calculator.pos}@{price}")
                 elif self.position_calculator.pos < 0:
                     price = min(self.tick.bid_price_1 * (1 - 0.0001),
-                                self.position_calculator.avg_price - self.profit_step)
-                    order_ids = self.buy(price, abs(self.position_calculator.pos))
+                                self.position_calculator.avg_price - Decimal(self.profit_step))
+                    order_ids = self.buy(Decimal(price), abs(self.position_calculator.pos))
                     self.profit_orders.extend(order_ids)
                     print(f"空头止盈情况: {self.position_calculator.pos}@{price}")
 
@@ -194,23 +196,23 @@ class FutureProfitGridStrategy(CtaTemplate):
                 if self.last_filled_order:
                     if self.position_calculator.pos > 0:
                         if self.tick.bid_price_1 < self.last_filled_order.price - self.trailing_stop_multiplier * self.grid_step:
-                            vt_ids = self.short(self.tick.bid_price_1, abs(self.position_calculator.pos))
+                            vt_ids = self.short(Decimal(self.tick.bid_price_1), abs(self.position_calculator.pos))
                             self.stop_orders.extend(vt_ids)
 
                     elif self.position_calculator.pos < 0:
                         if self.tick.ask_price_1 > self.last_filled_order.price + self.trailing_stop_multiplier * self.grid_step:
-                            vt_ids = self.buy(self.tick.ask_price_1, abs(self.position_calculator.pos))
+                            vt_ids = self.buy(Decimal(self.tick.ask_price_1), abs(self.position_calculator.pos))
                             self.stop_orders.extend(vt_ids)
 
                 else:
                     if self.position_calculator.pos > 0:
                         if self.tick.bid_price_1 < self.position_calculator.avg_price - self.max_pos * self.grid_step:
-                            vt_ids = self.short(self.tick.bid_price_1, abs(self.position_calculator.pos))
+                            vt_ids = self.short(Decimal(self.tick.bid_price_1), abs(self.position_calculator.pos))
                             self.stop_orders.extend(vt_ids)
 
                     elif self.position_calculator.pos < 0:
                         if self.tick.ask_price_1 > self.position_calculator.avg_price + self.max_pos * self.grid_step:
-                            vt_ids = self.buy(self.tick.ask_price_1, abs(self.position_calculator.pos))
+                            vt_ids = self.buy(Decimal(self.tick.ask_price_1), abs(self.position_calculator.pos))
                             self.stop_orders.extend(vt_ids)
 
     def on_tick(self, tick: TickData):
@@ -254,18 +256,18 @@ class FutureProfitGridStrategy(CtaTemplate):
 
                 # tick 存在且仓位数量还没有达到设置的最大值.
                 if self.tick and abs(self.position_calculator.pos) < self.max_pos * self.trading_size:
-                    buy_step = self.get_step()
-                    sell_step = self.get_step()
+                    buy_step = Decimal(self.get_step())
+                    sell_step = Decimal(self.get_step())
 
                     # 解决步长的问题.
-                    buy_price = order.price - buy_step * self.grid_step
-                    sell_price = order.price + sell_step * self.grid_step
+                    buy_price = order.price - buy_step * Decimal(self.grid_step)
+                    sell_price = order.price + sell_step * Decimal(self.grid_step)
 
                     buy_price = min(self.tick.bid_price_1 * (1 - 0.0001), buy_price)
                     sell_price = max(self.tick.ask_price_1 * (1 + 0.0001), sell_price)
 
-                    long_ids = self.buy(buy_price, self.trading_size)
-                    short_ids = self.short(sell_price, self.trading_size)
+                    long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                    short_ids = self.short(Decimal(sell_price), Decimal(self.trading_size))
 
                     self.long_orders.extend(long_ids)
                     self.short_orders.extend(short_ids)

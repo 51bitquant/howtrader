@@ -1,306 +1,153 @@
 import json
-import logging
-import socket
-import ssl
 import sys
 import traceback
 from datetime import datetime
-from threading import Lock, Thread
-from time import sleep
-from typing import Optional
+from types import coroutine
+from threading import Thread
+from asyncio import (
+    get_event_loop,
+    set_event_loop,
+    run_coroutine_threadsafe,
+    AbstractEventLoop
+)
 
-import websocket
-
-from howtrader.trader.utility import get_file_logger
-
+from aiohttp import ClientSession, ClientWebSocketResponse
 
 class WebsocketClient:
     """
-    Websocket API
+    针对各类Websocket API的异步客户端
 
-    After creating the client object, use start() to run worker and ping threads.
-    The worker thread connects websocket automatically.
-
-    Use stop to stop threads and disconnect websocket before destroying the client
-    object (especially when exiting the programme).
-
-    Default serialization format is json.
-
-    Callbacks to overrides:
-    * unpack_data
-    * on_connected
-    * on_disconnected
-    * on_packet
-    * on_error
-
-    After start() is called, the ping thread will ping server every 60 seconds.
-
-    If you want to send anything other than JSON, override send_packet.
+    * 重载unpack_data方法来实现数据解包逻辑
+    * 重载on_connected方法来实现连接成功回调处理
+    * 重载on_disconnected方法来实现连接断开回调处理
+    * 重载on_packet方法来实现数据推送回调处理
+    * 重载on_error方法来实现异常捕捉回调处理
     """
 
     def __init__(self):
         """Constructor"""
-        self.host = None
+        self._active: bool = False
+        self._host: str = ""
 
-        self._ws_lock = Lock()
-        self._ws = None
+        self._session: ClientSession = ClientSession()
+        self._ws: ClientWebSocketResponse = None
+        self._loop: AbstractEventLoop = None
 
-        self._worker_thread = None
-        self._ping_thread = None
-        self._active = False
+        self._proxy: str = ""
+        self._ping_interval: int = 60  # 秒
+        self._header: dict = {}
 
-        self.proxy_host = None
-        self.proxy_port = None
-        self.ping_interval = 60  # seconds
-        self.header = {}
+        self._last_sent_text: str = ""
+        self._last_received_text: str = ""
 
-        self.logger: Optional[logging.Logger] = None
-
-        # For debugging
-        self._last_sent_text = None
-        self._last_received_text = None
-
-    def init(self,
-             host: str,
-             proxy_host: str = "",
-             proxy_port: int = 0,
-             ping_interval: int = 60,
-             header: dict = None,
-             log_path: Optional[str] = None,
-             ):
+    def init(
+        self,
+        host: str,
+        proxy_host: str = "",
+        proxy_port: int = 0,
+        ping_interval: int = 60,
+        header: dict = None
+    ):
         """
-        :param host:
-        :param proxy_host:
-        :param proxy_port:
-        :param header:
-        :param ping_interval: unit: seconds, type: int
-        :param log_path: optional. file to save log.
+        初始化客户端
         """
-        self.host = host
-        self.ping_interval = ping_interval  # seconds
-        if log_path is not None:
-            self.logger = get_file_logger(log_path)
-            self.logger.setLevel(logging.DEBUG)
+        self._host = host
+        self._ping_interval = ping_interval
 
         if header:
-            self.header = header
+            self._header = header
 
         if proxy_host and proxy_port:
-            self.proxy_host = proxy_host
-            self.proxy_port = proxy_port
+            self._proxy = f"http://{proxy_host}:{proxy_port}"
 
     def start(self):
         """
-        Start the client and on_connected function is called after webscoket
-        is connected succesfully.
+        启动客户端
 
-        Please don't send packet untill on_connected fucntion is called.
+        连接成功后会自动调用on_connected回调函数，
+
+        请等待on_connected被调用后，再发送数据包。
         """
-
         self._active = True
-        self._worker_thread = Thread(target=self._run)
-        self._worker_thread.start()
 
-        self._ping_thread = Thread(target=self._run_ping)
-        self._ping_thread.start()
+        if not self._loop:
+            self._loop = get_event_loop()
+        start_event_loop(self._loop)
+
+        run_coroutine_threadsafe(self._run(), self._loop)
 
     def stop(self):
         """
-        Stop the client.
+        停止客户端。
         """
         self._active = False
-        self._disconnect()
+
+        if self._ws:
+            coro = self._ws.close()
+            run_coroutine_threadsafe(coro, self._loop)
+
+        if self._loop and self._loop.is_running():
+            self._loop.stop()
 
     def join(self):
         """
-        Wait till all threads finish.
-
-        This function cannot be called from worker thread or callback function.
+        等待后台线程退出。
         """
-        self._ping_thread.join()
-        self._worker_thread.join()
+        pass
 
     def send_packet(self, packet: dict):
         """
-        Send a packet (dict data) to server
+        发送数据包字典到服务器。
 
-        override this if you want to send non-json packet
+        如果需要发送非json数据，请重载实现本函数。
         """
-        text = json.dumps(packet)
-        self._record_last_sent_text(text)
-        return self._send_text(text)
+        if self._ws:
+            text: str = json.dumps(packet)
+            self._record_last_sent_text(text)
 
-    def _log(self, msg, *args):
-        logger = self.logger
-        if logger:
-            logger.debug(msg, *args)
+            coro: coroutine = self._ws.send_str(text)
+            run_coroutine_threadsafe(coro, self._loop)
 
-    def _send_text(self, text: str):
+    def unpack_data(self, data: str):
         """
-        Send a text string to server.
-        """
-        ws = self._ws
-        if ws:
-            ws.send(text, opcode=websocket.ABNF.OPCODE_TEXT)
-            self._log('sent text: %s', text)
+        对字符串数据进行json格式解包
 
-    def _send_binary(self, data: bytes):
-        """
-        Send bytes data to server.
-        """
-        ws = self._ws
-        if ws:
-            ws._send_binary(data)
-            self._log('sent binary: %s', data)
-
-    def _create_connection(self, *args, **kwargs):
-        """"""
-        return websocket.create_connection(*args, **kwargs)
-
-    def _ensure_connection(self):
-        """"""
-        triggered = False
-        with self._ws_lock:
-            if self._ws is None:
-                self._ws = self._create_connection(
-                    self.host,
-                    sslopt={"cert_reqs": ssl.CERT_NONE},
-                    http_proxy_host=self.proxy_host,
-                    http_proxy_port=self.proxy_port,
-                    header=self.header
-                )
-                triggered = True
-        if triggered:
-            self.on_connected()
-
-    def _disconnect(self):
-        """
-        """
-        triggered = False
-        with self._ws_lock:
-            if self._ws:
-                ws: websocket.WebSocket = self._ws
-                self._ws = None
-
-                triggered = True
-        if triggered:
-            ws.close()
-            self.on_disconnected()
-
-    def _run(self):
-        """
-        Keep running till stop is called.
-        """
-        try:
-            while self._active:
-                try:
-                    self._ensure_connection()
-                    ws = self._ws
-                    if ws:
-                        text = ws.recv()
-
-                        # ws object is closed when recv function is blocking
-                        if not text:
-                            self._disconnect()
-                            continue
-
-                        self._record_last_received_text(text)
-
-                        try:
-                            data = self.unpack_data(text)
-                        except ValueError as e:
-                            print("websocket unable to parse data: " + text)
-                            raise e
-
-                        self._log('recv data: %s', data)
-                        self.on_packet(data)
-                # ws is closed before recv function is called
-                # For socket.error, see Issue #1608
-                except (
-                    websocket.WebSocketConnectionClosedException,
-                    websocket.WebSocketBadStatusException,
-                    socket.error
-                ):
-                    self._disconnect()
-
-                # other internal exception raised in on_packet
-                except:  # noqa
-                    et, ev, tb = sys.exc_info()
-                    self.on_error(et, ev, tb)
-                    self._disconnect()
-        except:  # noqa
-            et, ev, tb = sys.exc_info()
-            self.on_error(et, ev, tb)
-        self._disconnect()
-
-    @staticmethod
-    def unpack_data(data: str):
-        """
-        Default serialization format is json.
-
-        override this method if you want to use other serialization format.
+        如果需要使用json以外的解包格式，请重载实现本函数。
         """
         return json.loads(data)
 
-    def _run_ping(self):
-        """"""
-        while self._active:
-            try:
-                self._ping()
-            except:  # noqa
-                et, ev, tb = sys.exc_info()
-                self.on_error(et, ev, tb)
-
-                # self._run() will reconnect websocket
-                sleep(1)
-
-            for i in range(self.ping_interval):
-                if not self._active:
-                    break
-                sleep(1)
-
-    def _ping(self):
-        """"""
-        ws = self._ws
-        if ws:
-            ws.send("ping", websocket.ABNF.OPCODE_PING)
-
-    @staticmethod
-    def on_connected():
-        """
-        Callback when websocket is connected successfully.
-        """
+    def on_connected(self):
+        """连接成功回调"""
         pass
 
-    @staticmethod
-    def on_disconnected():
-        """
-        Callback when websocket connection is lost.
-        """
+    def on_disconnected(self):
+        """连接断开回调"""
         pass
 
-    @staticmethod
-    def on_packet(packet: dict):
-        """
-        Callback when receiving data from server.
-        """
+    def on_packet(self, packet: dict):
+        """收到数据回调"""
         pass
 
-    def on_error(self, exception_type: type, exception_value: Exception, tb):
-        """
-        Callback when exception raised.
-        """
-        sys.stderr.write(
-            self.exception_detail(exception_type, exception_value, tb)
-        )
-        return sys.excepthook(exception_type, exception_value, tb)
+    def on_error(
+        self,
+        exception_type: type,
+        exception_value: Exception,
+        tb
+    ) -> None:
+        """触发异常回调"""
+        try:
+            print("WebsocketClient on error" + "-" * 10)
+            print(self.exception_detail(exception_type, exception_value, tb))
+        except Exception:
+            traceback.print_exc()
 
     def exception_detail(
-        self, exception_type: type, exception_value: Exception, tb
-    ):
-        """
-        Print detailed exception information.
-        """
+        self,
+        exception_type: type,
+        exception_value: Exception,
+        tb
+    ) -> str:
+        """异常信息格式化"""
         text = "[{}]: Unhandled WebSocket Error:{}\n".format(
             datetime.now().isoformat(), exception_type
         )
@@ -312,14 +159,60 @@ class WebsocketClient:
         )
         return text
 
+    async def _run(self):
+        """
+        在事件循环中运行的主协程
+        """
+        while self._active:
+            # 捕捉运行过程中异常
+            try:
+                # 发起Websocket连接
+                self._ws = await self._session.ws_connect(
+                    self._host,
+                    proxy=self._proxy,
+                    verify_ssl=False
+                )
+
+                # 调用连接成功回调
+                self.on_connected()
+
+                # 持续处理收到的数据
+                async for msg in self._ws:
+                    text: str = msg.data
+                    self._record_last_received_text(text)
+
+                    data: dict = self.unpack_data(text)
+                    self.on_packet(data)
+
+                # 移除Websocket连接对象
+                self._ws = None
+
+                # 调用连接断开回调
+                self.on_disconnected()
+            # 处理捕捉到的异常
+            except Exception:
+                et, ev, tb = sys.exc_info()
+                self.on_error(et, ev, tb)
+
     def _record_last_sent_text(self, text: str):
-        """
-        Record last sent text for debug purpose.
-        """
+        """记录最近发出的数据字符串"""
         self._last_sent_text = text[:1000]
 
     def _record_last_received_text(self, text: str):
-        """
-        Record last received text for debug purpose.
-        """
+        """记录最近收到的数据字符串"""
         self._last_received_text = text[:1000]
+
+
+def start_event_loop(loop: AbstractEventLoop) -> AbstractEventLoop:
+    """启动事件循环"""
+    # 如果事件循环未运行，则创建后台线程来运行
+    if not loop.is_running():
+        thread = Thread(target=run_event_loop, args=(loop,))
+        thread.daemon = True
+        thread.start()
+
+
+def run_event_loop(loop: AbstractEventLoop) -> None:
+    """运行事件循环"""
+    set_event_loop(loop)
+    loop.run_forever()

@@ -1,6 +1,5 @@
-
 from collections import defaultdict
-from typing import Dict, List, Set, Callable
+from typing import Dict, List, Set, Callable, TYPE_CHECKING
 from copy import copy
 
 from howtrader.trader.object import (
@@ -9,7 +8,10 @@ from howtrader.trader.object import (
 from howtrader.trader.constant import Direction, Status, Offset, Interval
 from howtrader.trader.utility import virtual, floor_to, ceil_to, round_to
 
-from .base import SpreadData, calculate_inverse_volume
+from .base import SpreadData
+
+if TYPE_CHECKING:
+    from .engine import SpreadAlgoEngine, SpreadStrategyEngine
 
 
 class SpreadAlgoTemplate:
@@ -20,25 +22,24 @@ class SpreadAlgoTemplate:
 
     def __init__(
         self,
-        algo_engine,
+        algo_engine: "SpreadAlgoEngine",
         algoid: str,
         spread: SpreadData,
         direction: Direction,
-        offset: Offset,
         price: float,
         volume: float,
         payup: int,
         interval: int,
         lock: bool,
+        extra: dict
     ):
         """"""
-        self.algo_engine = algo_engine
+        self.algo_engine: "SpreadAlgoEngine" = algo_engine
         self.algoid: str = algoid
 
         self.spread: SpreadData = spread
         self.spread_name: str = spread.name
 
-        self.offset: Offset = offset
         self.direction: Direction = direction
         self.price: float = price
         self.volume: float = volume
@@ -51,11 +52,12 @@ class SpreadAlgoTemplate:
         else:
             self.target = -volume
 
-        self.status: Status = Status.NOTTRADED  # Algo status
-        self.count: int = 0                     # Timer count
-        self.traded: float = 0                  # Volume traded
-        self.traded_volume: float = 0           # Volume traded (Abs value)
-        self.traded_price: float = 0            # Spread fill price
+        self.status: Status = Status.NOTTRADED  # 算法状态
+        self.count: int = 0                     # 读秒计数
+        self.traded: float = 0                  # 成交数量
+        self.traded_volume: float = 0           # 成交数量（绝对值）
+        self.traded_price: float = 0            # 成交价格
+        self.stopped: bool = False              # 是否已被用户停止算法
 
         self.leg_traded: Dict[str, float] = defaultdict(float)
         self.leg_cost: Dict[str, float] = defaultdict(float)
@@ -66,15 +68,15 @@ class SpreadAlgoTemplate:
 
         self.write_log("算法已启动")
 
-    def is_active(self):
-        """"""
+    def is_active(self) -> bool:
+        """判断算法是否处于运行中"""
         if self.status not in [Status.CANCELLED, Status.ALLTRADED]:
             return True
         else:
             return False
 
-    def check_order_finished(self):
-        """"""
+    def is_order_finished(self) -> bool:
+        """检查委托是否全部结束"""
         finished = True
 
         for leg in self.spread.legs.values():
@@ -86,8 +88,8 @@ class SpreadAlgoTemplate:
 
         return finished
 
-    def check_hedge_finished(self):
-        """"""
+    def is_hedge_finished(self) -> bool:
+        """检查当前各条腿是否平衡"""
         active_symbol = self.spread.active_leg.vt_symbol
         active_traded = self.leg_traded[active_symbol]
 
@@ -105,67 +107,37 @@ class SpreadAlgoTemplate:
             )
             leg_traded = self.leg_traded[passive_symbol]
 
-            # For linear contract, traded volume must be no less than target volume
-            if not self.spread.is_inverse(leg.vt_symbol):
-                if leg_target > 0 and leg_traded < leg_target:
-                    finished = False
-                elif leg_target < 0 and leg_traded > leg_target:
-                    finished = False
-            # For inverse contract, the difference must be lower than min volume
-            else:
-                leg_min_volume = self.spread.calculate_leg_volume(
-                    passive_symbol, self.spread.min_volume
-                )
-
-                dif = leg_target - leg_traded
-                if leg_target > 0 and dif >= leg_min_volume:
-                    finished = False
-                elif leg_target < 0 and dif <= -leg_min_volume:
-                    finished = False
+            if leg_target > 0 and leg_traded < leg_target:
+                finished = False
+            elif leg_target < 0 and leg_traded > leg_target:
+                finished = False
 
             if not finished:
                 break
 
         return finished
 
-    def check_algo_finished(self) -> bool:
-        """"""
-        finished = True
-
-        for vt_symbol, leg in self.spread.legs.items():
-            leg_traded = self.leg_traded[vt_symbol]
-
-            trading_multiplier = self.spread.trading_multipliers[vt_symbol]
-            size = self.spread.get_leg_size(vt_symbol)
-
-            if self.spread.is_inverse(vt_symbol):
-                leg_target = calculate_inverse_volume(
-                    self.target * trading_multiplier,
-                    leg.last_price,
-                    size
-                )
-                min_change = calculate_inverse_volume(
-                    leg.min_volume,
-                    leg.last_price,
-                    size
-                )
-            else:
-                leg_target = self.target * trading_multiplier
-                min_change = leg.min_volume
-
-            leg_left = leg_target - leg_traded
-            if abs(leg_left) >= min_change:
-                finished = False
-
-        return finished
-
-    def stop(self):
-        """"""
-        if self.is_active():
-            self.cancel_all_order()
+    def check_algo_cancelled(self):
+        """检查算法是否已停止"""
+        if (
+            self.stopped
+            and self.is_order_finished()
+            and self.is_hedge_finished()
+        ):
             self.status = Status.CANCELLED
             self.write_log("算法已停止")
             self.put_event()
+
+    def stop(self):
+        """"""
+        if not self.is_active():
+            return
+
+        self.write_log("算法停止中")
+        self.stopped = True
+        self.cancel_all_order()
+
+        self.check_algo_cancelled()
 
     def update_tick(self, tick: TickData):
         """"""
@@ -173,21 +145,7 @@ class SpreadAlgoTemplate:
 
     def update_trade(self, trade: TradeData):
         """"""
-        # For inverse contract:
-        # record coin trading volume as leg trading volume,
-        # not contract volume!
-        trade.price = float(trade.price)
-        trade.volume = float(trade.volume)
-        if self.spread.is_inverse(trade.vt_symbol):
-            size = self.spread.get_leg_size(trade.vt_symbol)
-
-            trade_volume = calculate_inverse_volume(
-                trade.volume,
-                trade.price,
-                size
-            )
-        else:
-            trade_volume = trade.volume
+        trade_volume = trade.volume
 
         if trade.direction == Direction.LONG:
             self.leg_traded[trade.vt_symbol] += trade_volume
@@ -196,7 +154,8 @@ class SpreadAlgoTemplate:
             self.leg_traded[trade.vt_symbol] -= trade_volume
             self.leg_cost[trade.vt_symbol] -= trade_volume * trade.price
 
-        self.calculate_traded()
+        self.calculate_traded_volume()
+        self.calculate_traded_price()
 
         # Sum up total traded volume of each order,
         self.order_trade_volume[trade.vt_orderid] += trade.volume
@@ -205,7 +164,7 @@ class SpreadAlgoTemplate:
         order = self.orders[trade.vt_orderid]
         contract = self.get_contract(trade.vt_symbol)
 
-        trade_volume = floor_to(
+        trade_volume = round_to(
             self.order_trade_volume[order.vt_orderid],
             contract.min_volume
         )
@@ -215,9 +174,10 @@ class SpreadAlgoTemplate:
             if order.vt_orderid in vt_orderids:
                 vt_orderids.remove(order.vt_orderid)
 
-        msg = "委托成交，{}，{}，{}@{}".format(
+        msg = "委托成交[{}]，{}，{}，{}@{}".format(
+            trade.vt_orderid,
             trade.vt_symbol,
-            trade.direction,
+            trade.direction.value,
             trade.volume,
             trade.price
         )
@@ -236,7 +196,16 @@ class SpreadAlgoTemplate:
             if order.vt_orderid in vt_orderids:
                 vt_orderids.remove(order.vt_orderid)
 
+            msg = "委托{}[{}]".format(
+                order.status.value,
+                order.vt_orderid
+            )
+            self.write_log(msg)
+
         self.on_order(order)
+
+        # 如果在停止任务，则检查是否已经可以停止算法
+        self.check_algo_cancelled()
 
     def update_timer(self):
         """"""
@@ -255,52 +224,33 @@ class SpreadAlgoTemplate:
         """"""
         self.algo_engine.write_algo_log(self, msg)
 
-    def send_long_order(self, vt_symbol: str, price: float, volume: float):
-        """"""
-        self.send_order(vt_symbol, price, volume, Direction.LONG)
-
-    def send_short_order(self, vt_symbol: str, price: float, volume: float):
-        """"""
-        self.send_order(vt_symbol, price, volume, Direction.SHORT)
-
     def send_order(
         self,
         vt_symbol: str,
         price: float,
         volume: float,
         direction: Direction,
+        fak: bool = False
     ):
         """"""
-        # For inverse contract:
-        # calculate contract trading volume from coin trading volume
-        if self.spread.is_inverse(vt_symbol):
-            size = self.spread.get_leg_size(vt_symbol)
-
-            if self.offset == Offset.CLOSE:
-                leg = self.spread.legs[vt_symbol]
-                volume = volume * leg.net_pos_price / size
-            else:
-                volume = volume * price / size
+        # 如果已经进入停止任务，禁止主动腿发单
+        if self.stopped and vt_symbol == self.spread.active_leg.vt_symbol:
+            return
 
         # Round order volume to min_volume of contract
         leg = self.spread.legs[vt_symbol]
-        volume = floor_to(volume, leg.min_volume)
-
-        # If new order volume is 0, then check if algo finished
-        if not volume:
-            finished = self.check_algo_finished()
-
-            if finished:
-                self.status = Status.ALLTRADED
-                self.put_event()
-
-                msg = "各腿剩余数量均不足最小下单量，算法执行结束"
-                self.write_log(msg)
-
-            return
+        volume = round_to(volume, leg.min_volume)
 
         # Round order price to pricetick of contract
         price = round_to(price, leg.pricetick)
+
+        # 检查价格是否超过涨跌停板
+        tick: TickData = self.get_tick(vt_symbol)
+
+        if direction == Direction.LONG and tick.limit_up:
+            price = min(price, tick.limit_up)
+        elif direction == Direction.SHORT and tick.limit_down:
+            price = max(price, tick.limit_down)
 
         # Otherwise send order
         vt_orderids = self.algo_engine.send_order(
@@ -309,14 +259,16 @@ class SpreadAlgoTemplate:
             price,
             volume,
             direction,
-            self.lock
+            self.lock,
+            fak
         )
 
         self.leg_orders[vt_symbol].extend(vt_orderids)
 
-        msg = "发出委托，{}，{}，{}@{}".format(
+        msg = "发出委托[{}]，{}，{}，{}@{}".format(
+            "|".join(vt_orderids),
             vt_symbol,
-            direction,
+            direction.value,
             volume,
             price
         )
@@ -332,26 +284,25 @@ class SpreadAlgoTemplate:
         for vt_symbol in self.leg_orders.keys():
             self.cancel_leg_order(vt_symbol)
 
-    def calculate_traded(self):
+    def calculate_traded_volume(self):
         """"""
-        # Calculate traded volume
         self.traded = 0
+        spread = self.spread
 
-        for n, leg in enumerate(self.spread.legs.values()):
+        n = 0
+        for leg in spread.legs.values():
             leg_traded = self.leg_traded[leg.vt_symbol]
-            trading_multiplier = self.spread.trading_multipliers[
-                leg.vt_symbol]
+            trading_multiplier = spread.trading_multipliers[leg.vt_symbol]
+            if not trading_multiplier:
+                continue
 
             adjusted_leg_traded = leg_traded / trading_multiplier
-            adjusted_leg_traded = floor_to(
-                adjusted_leg_traded, self.spread.min_volume)
+            adjusted_leg_traded = round_to(adjusted_leg_traded, spread.min_volume)
 
             if adjusted_leg_traded > 0:
-                adjusted_leg_traded = floor_to(
-                    adjusted_leg_traded, self.spread.min_volume)
+                adjusted_leg_traded = floor_to(adjusted_leg_traded, spread.min_volume)
             else:
-                adjusted_leg_traded = ceil_to(
-                    adjusted_leg_traded, self.spread.min_volume)
+                adjusted_leg_traded = ceil_to(adjusted_leg_traded, spread.min_volume)
 
             if not n:
                 self.traded = adjusted_leg_traded
@@ -362,6 +313,8 @@ class SpreadAlgoTemplate:
                     self.traded = max(self.traded, adjusted_leg_traded)
                 else:
                     self.traded = 0
+
+            n += 1
 
         self.traded_volume = abs(self.traded)
 
@@ -374,23 +327,35 @@ class SpreadAlgoTemplate:
         else:
             self.status = Status.PARTTRADED
 
-        # Calculate traded price
+    def calculate_traded_price(self):
+        """"""
         self.traded_price = 0
+        spread = self.spread
 
-        for n, leg in enumerate(self.spread.legs.values()):
-            # If any leg is not traded yet, set spread trade price to 0
-            leg_traded = self.leg_traded[leg.vt_symbol]
-            if not leg_traded:
-                self.traded_price = 0
-                break
+        data = {}
 
-            leg_cost = self.leg_cost[leg.vt_symbol]
-            leg_price = leg_cost / leg_traded
+        for variable, vt_symbol in spread.variable_symbols.items():
+            leg = spread.legs[vt_symbol]
+            trading_multiplier = spread.trading_multipliers[leg.vt_symbol]
 
-            price_multiplier = self.spread.price_multipliers[leg.vt_symbol]
-            self.traded_price += leg_price * price_multiplier
+            # Use last price for non-trading leg (trading multiplier is 0)
+            if not trading_multiplier:
+                data[variable] = leg.tick.last_price
+            else:
+                # If any leg is not traded yet, clear data dict to set traded price to 0
+                leg_traded = self.leg_traded[leg.vt_symbol]
+                if not leg_traded:
+                    data.clear()
+                    break
 
-        self.traded_price = round_to(self.traded_price, self.spread.pricetick)
+                leg_cost = self.leg_cost[leg.vt_symbol]
+                data[variable] = leg_cost / leg_traded
+
+        if data:
+            self.traded_price = spread.parse_formula(spread.price_code, data)
+            self.traded_price = round_to(self.traded_price, spread.pricetick)
+        else:
+            self.traded_price = 0
 
     def get_tick(self, vt_symbol: str) -> TickData:
         """"""
@@ -432,19 +397,19 @@ class SpreadStrategyTemplate:
 
     def __init__(
         self,
-        strategy_engine,
+        strategy_engine: "SpreadStrategyEngine",
         strategy_name: str,
         spread: SpreadData,
         setting: dict
     ):
         """"""
-        self.strategy_engine = strategy_engine
-        self.strategy_name = strategy_name
-        self.spread = spread
-        self.spread_name = spread.name
+        self.strategy_engine: "SpreadStrategyEngine" = strategy_engine
+        self.strategy_name: str = strategy_name
+        self.spread: SpreadData = spread
+        self.spread_name: str = spread.name
 
-        self.inited = False
-        self.trading = False
+        self.inited: bool = False
+        self.trading: bool = False
 
         self.variables = copy(self.variables)
         self.variables.insert(0, "inited")
@@ -601,7 +566,7 @@ class SpreadStrategyTemplate:
         payup: int,
         interval: int,
         lock: bool,
-        offset: Offset
+        extra: dict
     ) -> str:
         """"""
         if not self.trading:
@@ -611,12 +576,12 @@ class SpreadStrategyTemplate:
             self,
             self.spread_name,
             direction,
-            offset,
             price,
             volume,
             payup,
             interval,
-            lock
+            lock,
+            extra
         )
 
         self.algoids.add(algoid)
@@ -630,12 +595,15 @@ class SpreadStrategyTemplate:
         payup: int,
         interval: int,
         lock: bool = False,
-        offset: Offset = Offset.NONE
+        extra: dict = None
     ) -> str:
         """"""
+        if not extra:
+            extra = {}
+
         return self.start_algo(
             Direction.LONG, price, volume,
-            payup, interval, lock, offset
+            payup, interval, lock, extra
         )
 
     def start_short_algo(
@@ -645,12 +613,15 @@ class SpreadStrategyTemplate:
         payup: int,
         interval: int,
         lock: bool = False,
-        offset: Offset = Offset.NONE
+        extra: dict = None
     ) -> str:
         """"""
+        if not extra:
+            extra = {}
+
         return self.start_algo(
             Direction.SHORT, price, volume,
-            payup, interval, lock, offset
+            payup, interval, lock, extra
         )
 
     def stop_algo(self, algoid: str):

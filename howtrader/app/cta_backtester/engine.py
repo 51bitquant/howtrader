@@ -1,19 +1,30 @@
-import os
+from ast import List
 import importlib
 import traceback
 from datetime import datetime
 from threading import Thread
 from pathlib import Path
 from inspect import getfile
+from glob import glob
+from types import ModuleType
+from pandas import DataFrame
+from typing import Optional
 
 from howtrader.event import Event, EventEngine
 from howtrader.trader.engine import BaseEngine, MainEngine
 from howtrader.trader.constant import Interval
 from howtrader.trader.utility import extract_vt_symbol
-from howtrader.trader.object import HistoryRequest
-from howtrader.trader.database import database_manager
+from howtrader.trader.object import HistoryRequest, TickData, ContractData, BarData
+from howtrader.trader.database import BaseDatabase, get_database
+
+
 from howtrader.app.cta_strategy import CtaTemplate
-from howtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
+from howtrader.app.cta_strategy.backtesting import (
+    BacktestingEngine,
+    OptimizationSetting,
+    BacktestingMode
+)
+
 
 APP_NAME = "CtaBacktester"
 
@@ -27,22 +38,24 @@ class BacktesterEngine(BaseEngine):
     For running CTA strategy backtesting.
     """
 
-    def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
+    def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
         super().__init__(main_engine, event_engine, APP_NAME)
 
-        self.classes = {}
-        self.backtesting_engine = None
-        self.thread = None
+        self.classes: dict = {}
+        self.backtesting_engine: BacktestingEngine = None
+        self.thread: Thread = None
+
+        self.database: BaseDatabase = get_database()
 
         # Backtesting reuslt
-        self.result_df = None
-        self.result_statistics = None
+        self.result_df: DataFrame = None
+        self.result_statistics: dict = None
 
         # Optimization result
-        self.result_values = None
+        self.result_values: list = None
 
-    def init_engine(self):
+    def init_engine(self) -> None:
         """"""
         self.write_log("初始化CTA回测引擎")
 
@@ -53,47 +66,44 @@ class BacktesterEngine(BaseEngine):
         self.load_strategy_class()
         self.write_log("策略文件加载完成")
 
-    def write_log(self, msg: str):
+        self.init_datafeed()
+
+    def write_log(self, msg: str) -> None:
         """"""
-        event = Event(EVENT_BACKTESTER_LOG)
+        event: Event = Event(EVENT_BACKTESTER_LOG)
         event.data = msg
         self.event_engine.put(event)
 
-    def load_strategy_class(self):
+    def load_strategy_class(self) -> None:
         """
         Load strategy class from source code.
         """
-        app_path = Path(__file__).parent.parent
-        path1 = app_path.joinpath("cta_strategy", "strategies")
-        self.load_strategy_class_from_folder(
-            path1, "howtrader.app.cta_strategy.strategies")
+        app_path: Path = Path(__file__).parent.parent
+        path1: Path = app_path.joinpath("cta_strategy", "strategies")
+        self.load_strategy_class_from_folder(path1, "howtrader.app.cta_strategy.strategies")
 
-        path2 = Path.cwd().joinpath("strategies")
+        path2: Path = Path.cwd().joinpath("strategies")
         self.load_strategy_class_from_folder(path2, "strategies")
 
-    def load_strategy_class_from_folder(self, path: Path, module_name: str = ""):
+    def load_strategy_class_from_folder(self, path: Path, module_name: str = "") -> None:
         """
         Load strategy class from certain folder.
         """
-        for dirpath, dirnames, filenames in os.walk(path):
-            for filename in filenames:
-                # Load python source code file
-                if filename.endswith(".py"):
-                    strategy_module_name = ".".join(
-                        [module_name, filename.replace(".py", "")])
-                    self.load_strategy_class_from_module(strategy_module_name)
-                # Load compiled pyd binary file
-                elif filename.endswith(".pyd"):
-                    strategy_module_name = ".".join(
-                        [module_name, filename.split(".")[0]])
-                    self.load_strategy_class_from_module(strategy_module_name)
+        for suffix in ["py", "pyd", "so"]:
+            pathname: str = str(path.joinpath(f"*.{suffix}"))
+            for filepath in glob(pathname):
+                filename: str = Path(filepath).stem
+                name: str = f"{module_name}.{filename}"
+                self.load_strategy_class_from_module(name)
 
-    def load_strategy_class_from_module(self, module_name: str):
+    def load_strategy_class_from_module(self, module_name: str) -> None:
         """
         Load strategy class from module file.
         """
         try:
-            module = importlib.import_module(module_name)
+            module: ModuleType = importlib.import_module(module_name)
+
+            # 重载模块，确保如果策略文件中有任何修改，能够立即生效。
             importlib.reload(module)
 
             for name in dir(module):
@@ -101,16 +111,16 @@ class BacktesterEngine(BaseEngine):
                 if (isinstance(value, type) and issubclass(value, CtaTemplate) and value is not CtaTemplate):
                     self.classes[value.__name__] = value
         except:  # noqa
-            msg = f"策略文件{module_name}加载失败，触发异常：\n{traceback.format_exc()}"
+            msg: str = f"策略文件{module_name}加载失败，触发异常：\n{traceback.format_exc()}"
             self.write_log(msg)
 
-    def reload_strategy_class(self):
+    def reload_strategy_class(self) -> None:
         """"""
         self.classes.clear()
         self.load_strategy_class()
         self.write_log("策略文件重载刷新完成")
 
-    def get_strategy_class_names(self):
+    def get_strategy_class_names(self) -> list:
         """"""
         return list(self.classes.keys())
 
@@ -126,15 +136,19 @@ class BacktesterEngine(BaseEngine):
         size: int,
         pricetick: float,
         capital: int,
-        inverse: bool,
         setting: dict
-    ):
+    ) -> None:
         """"""
         self.result_df = None
         self.result_statistics = None
 
-        engine = self.backtesting_engine
+        engine: BacktestingEngine = self.backtesting_engine
         engine.clear_data()
+
+        if interval == Interval.TICK.value:
+            mode: BacktestingMode = BacktestingMode.TICK
+        else:
+            mode: BacktestingMode = BacktestingMode.BAR
 
         engine.set_parameters(
             vt_symbol=vt_symbol,
@@ -146,10 +160,10 @@ class BacktesterEngine(BaseEngine):
             size=size,
             pricetick=pricetick,
             capital=capital,
-            inverse=inverse
+            mode=mode
         )
 
-        strategy_class = self.classes[class_name]
+        strategy_class: type = self.classes[class_name]
         engine.add_strategy(
             strategy_class,
             setting
@@ -160,7 +174,7 @@ class BacktesterEngine(BaseEngine):
         try:
             engine.run_backtesting()
         except Exception:
-            msg = f"策略回测失败，触发异常：\n{traceback.format_exc()}"
+            msg: str = f"策略回测失败，触发异常：\n{traceback.format_exc()}"
             self.write_log(msg)
 
             self.thread = None
@@ -173,7 +187,7 @@ class BacktesterEngine(BaseEngine):
         self.thread = None
 
         # Put backtesting done event
-        event = Event(EVENT_BACKTESTER_BACKTESTING_FINISHED)
+        event: Event = Event(EVENT_BACKTESTER_BACKTESTING_FINISHED)
         self.event_engine.put(event)
 
     def start_backtesting(
@@ -188,9 +202,8 @@ class BacktesterEngine(BaseEngine):
         size: int,
         pricetick: float,
         capital: int,
-        inverse: bool,
         setting: dict
-    ):
+    ) -> bool:
         if self.thread:
             self.write_log("已有任务在运行中，请等待完成")
             return False
@@ -209,7 +222,6 @@ class BacktesterEngine(BaseEngine):
                 size,
                 pricetick,
                 capital,
-                inverse,
                 setting
             )
         )
@@ -217,21 +229,21 @@ class BacktesterEngine(BaseEngine):
 
         return True
 
-    def get_result_df(self):
+    def get_result_df(self) -> DataFrame:
         """"""
         return self.result_df
 
-    def get_result_statistics(self):
+    def get_result_statistics(self) -> dict:
         """"""
         return self.result_statistics
 
-    def get_result_values(self):
+    def get_result_values(self) -> list:
         """"""
         return self.result_values
 
-    def get_default_setting(self, class_name: str):
+    def get_default_setting(self, class_name: str) -> dict:
         """"""
-        strategy_class = self.classes[class_name]
+        strategy_class: type = self.classes[class_name]
         return strategy_class.get_class_parameters()
 
     def run_optimization(
@@ -246,20 +258,19 @@ class BacktesterEngine(BaseEngine):
         size: int,
         pricetick: float,
         capital: int,
-        inverse: bool,
         optimization_setting: OptimizationSetting,
         use_ga: bool
-    ):
+    ) -> None:
         """"""
-        if use_ga:
-            self.write_log("开始遗传算法参数优化")
-        else:
-            self.write_log("开始多进程参数优化")
-
         self.result_values = None
 
-        engine = self.backtesting_engine
+        engine: BacktestingEngine = self.backtesting_engine
         engine.clear_data()
+
+        if interval == Interval.TICK.value:
+            mode: BacktestingMode = BacktestingMode.TICK
+        else:
+            mode: BacktestingMode = BacktestingMode.BAR
 
         engine.set_parameters(
             vt_symbol=vt_symbol,
@@ -271,10 +282,10 @@ class BacktesterEngine(BaseEngine):
             size=size,
             pricetick=pricetick,
             capital=capital,
-            inverse=inverse
+            mode=mode
         )
 
-        strategy_class = self.classes[class_name]
+        strategy_class: type = self.classes[class_name]
         engine.add_strategy(
             strategy_class,
             {}
@@ -286,7 +297,7 @@ class BacktesterEngine(BaseEngine):
                 output=False
             )
         else:
-            self.result_values = engine.run_optimization(
+            self.result_values = engine.run_bf_optimization(
                 optimization_setting,
                 output=False
             )
@@ -296,7 +307,7 @@ class BacktesterEngine(BaseEngine):
         self.write_log("多进程参数优化完成")
 
         # Put optimization done event
-        event = Event(EVENT_BACKTESTER_OPTIMIZATION_FINISHED)
+        event: Event = Event(EVENT_BACKTESTER_OPTIMIZATION_FINISHED)
         self.event_engine.put(event)
 
     def start_optimization(
@@ -311,10 +322,9 @@ class BacktesterEngine(BaseEngine):
         size: int,
         pricetick: float,
         capital: int,
-        inverse: bool,
         optimization_setting: OptimizationSetting,
         use_ga: bool
-    ):
+    ) -> bool:
         if self.thread:
             self.write_log("已有任务在运行中，请等待完成")
             return False
@@ -333,7 +343,6 @@ class BacktesterEngine(BaseEngine):
                 size,
                 pricetick,
                 capital,
-                inverse,
                 optimization_setting,
                 use_ga
             )
@@ -348,9 +357,9 @@ class BacktesterEngine(BaseEngine):
         interval: str,
         start: datetime,
         end: datetime
-    ):
+    ) -> None:
         """
-        Query bar data from RQData.
+        执行下载任务
         """
         self.write_log(f"{vt_symbol}-{interval}开始下载历史数据")
 
@@ -361,7 +370,7 @@ class BacktesterEngine(BaseEngine):
             self.thread = None
             return
 
-        req = HistoryRequest(
+        req: HistoryRequest = HistoryRequest(
             symbol=symbol,
             exchange=exchange,
             interval=Interval(interval),
@@ -369,23 +378,32 @@ class BacktesterEngine(BaseEngine):
             end=end
         )
 
-        contract = self.main_engine.get_contract(vt_symbol)
-
         try:
-            # If history data provided in gateway, then query
+            if interval == "tick":
+                data: List[TickData] = self.datafeed.query_tick_history(req)
+            else:
+                contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
 
-            if contract and contract.history_data:
-                data = self.main_engine.query_history(
-                    req, contract.gateway_name
-                )
-
-                if data:
-                    database_manager.save_bar_data(data)
-                    self.write_log(f"{vt_symbol}-{interval}历史数据下载完成")
+                # If history data provided in gateway, then query
+                if contract and contract.history_data:
+                    data: List[BarData] = self.main_engine.query_history(
+                        req, contract.gateway_name
+                    )
+                # Otherwise use RQData to query data
                 else:
-                    self.write_log(f"数据下载失败，无法获取{vt_symbol}的历史数据")
+                    data: List[BarData] = self.datafeed.query_bar_history(req)
+
+            if data:
+                if interval == "tick":
+                    self.database.save_tick_data(data)
+                else:
+                    self.database.save_bar_data(data)
+
+                self.write_log(f"{vt_symbol}-{interval}历史数据下载完成")
+            else:
+                self.write_log(f"数据下载失败，无法获取{vt_symbol}的历史数据")
         except Exception:
-            msg = f"数据下载失败，触发异常：\n{traceback.format_exc()}"
+            msg: str = f"数据下载失败，触发异常：\n{traceback.format_exc()}"
             self.write_log(msg)
 
         # Clear thread object handler.
@@ -397,7 +415,7 @@ class BacktesterEngine(BaseEngine):
         interval: str,
         start: datetime,
         end: datetime
-    ):
+    ) -> bool:
         if self.thread:
             self.write_log("已有任务在运行中，请等待完成")
             return False
@@ -416,24 +434,24 @@ class BacktesterEngine(BaseEngine):
 
         return True
 
-    def get_all_trades(self):
+    def get_all_trades(self) -> list:
         """"""
         return self.backtesting_engine.get_all_trades()
 
-    def get_all_orders(self):
+    def get_all_orders(self) -> list:
         """"""
         return self.backtesting_engine.get_all_orders()
 
-    def get_all_daily_results(self):
+    def get_all_daily_results(self) -> list:
         """"""
         return self.backtesting_engine.get_all_daily_results()
 
-    def get_history_data(self):
+    def get_history_data(self) -> list:
         """"""
         return self.backtesting_engine.history_data
 
-    def get_strategy_class_file(self, class_name: str):
+    def get_strategy_class_file(self, class_name: str) -> str:
         """"""
-        strategy_class = self.classes[class_name]
-        file_path = getfile(strategy_class)
+        strategy_class: type = self.classes[class_name]
+        file_path: str = getfile(strategy_class)
         return file_path

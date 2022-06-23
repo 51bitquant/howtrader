@@ -1,19 +1,19 @@
-six==1.13.0
-wheel
-PyQt5==5.15.2
-pyqtgraph==0.10.0
-qdarkstyle
 requests
-websocket-client
+aiohttp
+pytz
 peewee
-pymysql
-mongoengine
+pymongo
+tzlocal
+PySide6
+pyqtgraph
+qdarkstyle
 numpy
 pandas
 matplotlib
 seaborn
+ta-lib
 deap
 plotly
-tzlocal==2.1
-pandas_ta
+importlib-metadata
+backports.zoneinfo; python_version < '3.9'
 

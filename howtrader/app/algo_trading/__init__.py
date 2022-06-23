@@ -15,4 +15,4 @@ class AlgoTradingApp(BaseApp):
     display_name = "算法交易"
     engine_class = AlgoEngine
     widget_name = "AlgoManager"
-    icon_name = "algo.ico"
+    icon_name = str(app_path.joinpath("ui", "algo.ico"))

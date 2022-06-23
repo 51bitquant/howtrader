@@ -1,8 +1,9 @@
+from howtrader.trader.utility import round_to
 from howtrader.trader.constant import Offset, Direction
-from howtrader.trader.object import TradeData
+from howtrader.trader.object import TradeData, TickData
 from howtrader.trader.engine import BaseEngine
 
-from howtrader.app.algo_trading import AlgoTemplate
+from ..template import AlgoTemplate
 
 
 class TwapAlgo(AlgoTemplate):
@@ -42,7 +43,7 @@ class TwapAlgo(AlgoTemplate):
         """"""
         super().__init__(algo_engine, algo_name, setting)
 
-        # Parameters
+        # 参数
         self.vt_symbol = setting["vt_symbol"]
         self.direction = Direction(setting["direction"])
         self.price = setting["price"]
@@ -51,15 +52,25 @@ class TwapAlgo(AlgoTemplate):
         self.interval = setting["interval"]
         self.offset = Offset(setting["offset"])
 
-        # Variables
+        # 变量
         self.order_volume = self.volume / (self.time / self.interval)
+        contract = self.get_contract(self.vt_symbol)
+        if contract:
+            self.order_volume = round_to(self.order_volume, contract.min_volume)
+
         self.timer_count = 0
         self.total_count = 0
         self.traded = 0
 
+        self.last_tick = None
+
         self.subscribe(self.vt_symbol)
         self.put_parameters_event()
         self.put_variables_event()
+
+    def on_tick(self, tick: TickData):
+        """"""
+        self.last_tick = tick
 
     def on_trade(self, trade: TradeData):
         """"""
@@ -86,9 +97,10 @@ class TwapAlgo(AlgoTemplate):
             return
         self.timer_count = 0
 
-        tick = self.get_tick(self.vt_symbol)
-        if not tick:
+        if not self.last_tick:
             return
+        tick = self.last_tick
+        self.last_tick = None
 
         self.cancel_all()
 

@@ -126,3 +126,46 @@ folder by using the multi-threads for speeding.
 微信: bitquant51
 
 [币安邀请链接](https://www.binancezh.pro/cn/futures/ref/51bitquant)
+
+# api
+
+# app
+
+-- api check 
+
+-- chart check 
+
+-- event check 
+
+ -- algo 
+ 
+ -- chart 
+ 
+ -- cta_backtester
+ 
+ -- cta_strategy
+ 
+ -- data_manager 
+ 
+ -- data-recorder
+ 
+ -- paper_account
+ 
+ -- porfolio_manager
+ 
+ -- porfolio_strategy
+ 
+ -- risk_manager
+ 
+ -- spread_trading
+ 
+ 
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+ 

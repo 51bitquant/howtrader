@@ -1,16 +1,12 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData,
-    BarGenerator,
-    ArrayManager,
+    StopOrder
 )
 
-import pandas_ta as ta
-import pandas as pd
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
+from howtrader.trader.utility import BarGenerator, ArrayManager
+from decimal import Decimal
+
 
 class KingKeltnerStrategy(CtaTemplate):
     """"""
@@ -83,18 +79,7 @@ class KingKeltnerStrategy(CtaTemplate):
         if not am.inited:
             return
 
-        high = pd.Series(am.high_array)
-        low = pd.Series(am.low_array)
-        close = pd.Series(am.close_array)
-
-        range_ = ta.true_range(high, low, close)
-
-        basis = ta.sma(close, self.kk_length)
-        band = ta.sma(range_, self.kk_length)
-        up = basis + self.kk_dev * band
-        down = basis - self.kk_dev * band
-
-        self.kk_up, self.kk_down = up.iloc[-1], down.iloc[-1]
+        self.kk_up, self.kk_down = am.keltner(self.kk_length, self.kk_dev)
 
         if self.pos == 0:
             self.intra_trade_high = bar.high_price
@@ -105,16 +90,15 @@ class KingKeltnerStrategy(CtaTemplate):
             self.intra_trade_high = max(self.intra_trade_high, bar.high_price)
             self.intra_trade_low = bar.low_price
 
-            vt_orderids = self.sell(self.intra_trade_high * (1 - self.trailing_percent / 100),
-                                    abs(self.pos), True)
+            price = self.intra_trade_high * (1 - self.trailing_percent / 100)
+            vt_orderids = self.sell(Decimal(price), Decimal(abs(self.pos)), True)
             self.vt_orderids.extend(vt_orderids)
 
         elif self.pos < 0:
             self.intra_trade_high = bar.high_price
             self.intra_trade_low = min(self.intra_trade_low, bar.low_price)
-
-            vt_orderids = self.cover(self.intra_trade_low * (1 + self.trailing_percent / 100),
-                                     abs(self.pos), True)
+            price = self.intra_trade_low * (1 + self.trailing_percent / 100)
+            vt_orderids = self.cover(Decimal(price), Decimal(abs(self.pos)), True)
             self.vt_orderids.extend(vt_orderids)
 
         self.put_event()
@@ -146,8 +130,8 @@ class KingKeltnerStrategy(CtaTemplate):
 
     def send_oco_order(self, buy_price, short_price, volume):
         """"""
-        self.long_vt_orderids = self.buy(buy_price, volume, True)
-        self.short_vt_orderids = self.short(short_price, volume, True)
+        self.long_vt_orderids = self.buy(Decimal(buy_price), Decimal(volume), True)
+        self.short_vt_orderids = self.short(Decimal(short_price), Decimal(volume), True)
 
         self.vt_orderids.extend(self.long_vt_orderids)
         self.vt_orderids.extend(self.short_vt_orderids)

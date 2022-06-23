@@ -2,7 +2,7 @@ from howtrader.trader.constant import Offset, Direction
 from howtrader.trader.object import TradeData, OrderData, TickData
 from howtrader.trader.engine import BaseEngine
 
-from howtrader.app.algo_trading import AlgoTemplate
+from ..template import AlgoTemplate
 
 
 class StopAlgo(AlgoTemplate):
@@ -40,7 +40,7 @@ class StopAlgo(AlgoTemplate):
         """"""
         super().__init__(algo_engine, algo_name, setting)
 
-        # Parameters
+        # 参数
         self.vt_symbol = setting["vt_symbol"]
         self.direction = Direction(setting["direction"])
         self.stop_price = setting["stop_price"]
@@ -48,7 +48,7 @@ class StopAlgo(AlgoTemplate):
         self.price_add = setting["price_add"]
         self.offset = Offset(setting["offset"])
 
-        # Variables
+        # 变量
         self.vt_orderid = ""
         self.traded = 0
         self.order_status = ""

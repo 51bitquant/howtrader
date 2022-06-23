@@ -1,18 +1,16 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData
+    StopOrder
 )
 
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 from howtrader.app.cta_strategy.engine import CtaEngine
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event
 from howtrader.trader.object import Status
 from howtrader.trader.object import GridPositionCalculator
-from typing import Union
+from typing import Optional
+from decimal import Decimal
 
 NORMAL_TIMER_INTERVAL = 5
 PROFIT_TIMER_INTERVAL = 5
@@ -66,9 +64,9 @@ class SpotProfitGridStrategy(CtaTemplate):
 
         self.trigger_stop_loss = False  # 是否触发止损。
 
-        self.last_filled_order: Union[OrderData, None] = None
+        self.last_filled_order: Optional[OrderData] = None
 
-        self.tick: Union[TickData,None] = None
+        self.tick: Optional[TickData] = None
 
     def on_init(self):
         """
@@ -121,8 +119,8 @@ class SpotProfitGridStrategy(CtaTemplate):
 
                     buy_price = self.tick.bid_price_1 - self.grid_step / 2
                     sell_price = self.tick.bid_price_1 + self.grid_step / 2
-                    long_ids = self.buy(buy_price, self.trading_size)
-                    short_ids = self.sell(sell_price, self.trading_size)
+                    long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                    short_ids = self.sell(Decimal(sell_price), Decimal(self.trading_size))
 
                     self.long_orders.extend(long_ids)
                     self.short_orders.extend(short_ids)
@@ -140,7 +138,7 @@ class SpotProfitGridStrategy(CtaTemplate):
                     return
 
                 if self.last_filled_order:
-                    price = self.last_filled_order.price
+                    price = float(self.last_filled_order.price)
                 else:
                     price = self.tick.bid_price_1
 
@@ -152,8 +150,8 @@ class SpotProfitGridStrategy(CtaTemplate):
 
                 buy_price = min(self.tick.bid_price_1, buy_price)
                 sell_price = max(self.tick.ask_price_1, sell_price)
-                long_ids = self.buy(buy_price, self.trading_size)
-                short_ids = self.sell(sell_price, self.trading_size)
+                long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                short_ids = self.sell(Decimal(sell_price), Decimal(self.trading_size))
 
                 self.long_orders.extend(long_ids)
                 self.short_orders.extend(short_ids)
@@ -170,14 +168,14 @@ class SpotProfitGridStrategy(CtaTemplate):
 
                 if self.position_calculator.pos > 0:
                     price = max(self.tick.ask_price_1 * (1 + 0.0001),
-                                self.position_calculator.avg_price + self.profit_step)
-                    order_ids = self.sell(price, abs(self.position_calculator.pos))
+                                float(self.position_calculator.avg_price) + self.profit_step)
+                    order_ids = self.sell(Decimal(price), Decimal(abs(self.position_calculator.pos)))
                     self.profit_orders.extend(order_ids)
                     print(f"多头止盈情况: {self.position_calculator.pos}@{price}")
                 elif self.position_calculator.pos < 0:
                     price = min(self.tick.bid_price_1 * (1 - 0.0001),
-                                self.position_calculator.avg_price - self.profit_step)
-                    order_ids = self.buy(price, abs(self.position_calculator.pos))
+                                float(self.position_calculator.avg_price) - self.profit_step)
+                    order_ids = self.buy(Decimal(price), Decimal(abs(self.position_calculator.pos)))
                     self.profit_orders.extend(order_ids)
                     print(f"空头止盈情况: {self.position_calculator.pos}@{price}")
 
@@ -193,24 +191,24 @@ class SpotProfitGridStrategy(CtaTemplate):
 
                 if self.last_filled_order:
                     if self.position_calculator.pos > 0:
-                        if self.tick.bid_price_1 < self.last_filled_order.price - self.trailing_stop_multiplier * self.grid_step:
-                            vt_ids = self.sell(self.tick.bid_price_1, abs(self.position_calculator.pos))
+                        if self.tick.bid_price_1 < float(self.last_filled_order.price) - self.trailing_stop_multiplier * self.grid_step:
+                            vt_ids = self.sell(Decimal(self.tick.bid_price_1), Decimal(abs(self.position_calculator.pos)))
                             self.stop_orders.extend(vt_ids)
 
                     elif self.position_calculator.pos < 0:
-                        if self.tick.ask_price_1 > self.last_filled_order.price + self.trailing_stop_multiplier * self.grid_step:
-                            vt_ids = self.buy(self.tick.ask_price_1, abs(self.position_calculator.pos))
+                        if self.tick.ask_price_1 > float(self.last_filled_order.price) + self.trailing_stop_multiplier * self.grid_step:
+                            vt_ids = self.buy(Decimal(self.tick.ask_price_1), Decimal(abs(self.position_calculator.pos)))
                             self.stop_orders.extend(vt_ids)
 
                 else:
                     if self.position_calculator.pos > 0:
-                        if self.tick.bid_price_1 < self.position_calculator.avg_price - self.max_pos * self.grid_step:
-                            vt_ids = self.sell(self.tick.bid_price_1, abs(self.position_calculator.pos))
+                        if self.tick.bid_price_1 < float(self.position_calculator.avg_price) - self.max_pos * self.grid_step:
+                            vt_ids = self.sell(Decimal(self.tick.bid_price_1), Decimal(abs(self.position_calculator.pos)))
                             self.stop_orders.extend(vt_ids)
 
                     elif self.position_calculator.pos < 0:
-                        if self.tick.ask_price_1 > self.position_calculator.avg_price + self.max_pos * self.grid_step:
-                            vt_ids = self.buy(self.tick.ask_price_1, abs(self.position_calculator.pos))
+                        if self.tick.ask_price_1 > float(self.position_calculator.avg_price) + self.max_pos * self.grid_step:
+                            vt_ids = self.buy(Decimal(self.tick.ask_price_1), Decimal(abs(self.position_calculator.pos)))
                             self.stop_orders.extend(vt_ids)
 
     def on_tick(self, tick: TickData):
@@ -258,14 +256,14 @@ class SpotProfitGridStrategy(CtaTemplate):
                     sell_step = self.get_step()
 
                     # 解决步长的问题.
-                    buy_price = order.price - buy_step * self.grid_step
-                    sell_price = order.price + sell_step * self.grid_step
+                    buy_price = float(order.price) - buy_step * self.grid_step
+                    sell_price = float(order.price) + sell_step * self.grid_step
 
                     buy_price = min(self.tick.bid_price_1 * (1 - 0.0001), buy_price)
                     sell_price = max(self.tick.ask_price_1 * (1 + 0.0001), sell_price)
 
-                    long_ids = self.buy(buy_price, self.trading_size)
-                    short_ids = self.sell(sell_price, self.trading_size)
+                    long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                    short_ids = self.sell(Decimal(sell_price), Decimal(self.trading_size))
 
                     self.long_orders.extend(long_ids)
                     self.short_orders.extend(short_ids)

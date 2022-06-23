@@ -13,4 +13,4 @@ class DataManagerApp(BaseApp):
     display_name = "数据管理"
     engine_class = ManagerEngine
     widget_name = "ManagerWidget"
-    icon_name = "manager.ico"
+    icon_name = str(app_path.joinpath("ui", "manager.ico"))

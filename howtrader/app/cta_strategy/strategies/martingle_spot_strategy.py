@@ -1,534 +1,17 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData
+    StopOrder
 )
 
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 from howtrader.app.cta_strategy.engine import CtaEngine
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event
 from howtrader.trader.object import Status, Direction, Interval, ContractData, AccountData
-from howtrader.app.cta_strategy import BarGenerator
 
-from typing import Optional, Union, Tuple
-import numpy as np
-import talib
-from howtrader.trader.event import EVENT_CONTRACT, EVENT_ACCOUNT
-
-
-class MyArrayManager(object):
-    """
-    For:
-    1. time series container of bar data
-    2. calculating technical indicator value
-    """
-
-    def __init__(self, size: int = 100):
-        """Constructor"""
-        self.count: int = 0
-        self.size: int = size
-        self.inited: bool = False
-
-        self.open_array: np.ndarray = np.zeros(size)
-        self.high_array: np.ndarray = np.zeros(size)
-        self.low_array: np.ndarray = np.zeros(size)
-        self.close_array: np.ndarray = np.zeros(size)
-        self.volume_array: np.ndarray = np.zeros(size)
-        self.open_interest_array: np.ndarray = np.zeros(size)
-
-    def update_bar(self, bar: BarData) -> None:
-        """
-        Update new bar data into array manager.
-        """
-        self.count += 1
-        if not self.inited and self.count >= self.size:
-            self.inited = True
-
-        self.open_array[:-1] = self.open_array[1:]
-        self.high_array[:-1] = self.high_array[1:]
-        self.low_array[:-1] = self.low_array[1:]
-        self.close_array[:-1] = self.close_array[1:]
-        self.volume_array[:-1] = self.volume_array[1:]
-        self.open_interest_array[:-1] = self.open_interest_array[1:]
-
-        self.open_array[-1] = bar.open_price
-        self.high_array[-1] = bar.high_price
-        self.low_array[-1] = bar.low_price
-        self.close_array[-1] = bar.close_price
-        self.volume_array[-1] = bar.volume
-        self.open_interest_array[-1] = bar.open_interest
-
-    @property
-    def open(self) -> np.ndarray:
-        """
-        Get open price time series.
-        """
-        return self.open_array
-
-    @property
-    def high(self) -> np.ndarray:
-        """
-        Get high price time series.
-        """
-        return self.high_array
-
-    @property
-    def low(self) -> np.ndarray:
-        """
-        Get low price time series.
-        """
-        return self.low_array
-
-    @property
-    def close(self) -> np.ndarray:
-        """
-        Get close price time series.
-        """
-        return self.close_array
-
-    @property
-    def volume(self) -> np.ndarray:
-        """
-        Get trading volume time series.
-        """
-        return self.volume_array
-
-    @property
-    def open_interest(self) -> np.ndarray:
-        """
-        Get trading volume time series.
-        """
-        return self.open_interest_array
-
-    def sma(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        Simple moving average.
-        """
-        result = talib.SMA(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def ema(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        Exponential moving average.
-        """
-        result = talib.EMA(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def kama(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        KAMA.
-        """
-        result = talib.KAMA(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def wma(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        WMA.
-        """
-        result = talib.WMA(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def apo(
-            self,
-            fast_period: int,
-            slow_period: int,
-            matype: int = 0,
-            array: bool = False
-    ) -> Union[float, np.ndarray]:
-        """
-        APO.
-        """
-        result = talib.APO(self.close, fast_period, slow_period, matype)
-        if array:
-            return result
-        return result[-1]
-
-    def cmo(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        CMO.
-        """
-        result = talib.CMO(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def mom(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        MOM.
-        """
-        result = talib.MOM(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def ppo(
-            self,
-            fast_period: int,
-            slow_period: int,
-            matype: int = 0,
-            array: bool = False
-    ) -> Union[float, np.ndarray]:
-        """
-        PPO.
-        """
-        result = talib.PPO(self.close, fast_period, slow_period, matype)
-        if array:
-            return result
-        return result[-1]
-
-    def roc(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        ROC.
-        """
-        result = talib.ROC(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def rocr(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        ROCR.
-        """
-        result = talib.ROCR(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def rocp(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        ROCP.
-        """
-        result = talib.ROCP(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def rocr_100(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        ROCR100.
-        """
-        result = talib.ROCR100(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def trix(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        TRIX.
-        """
-        result = talib.TRIX(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def std(self, n: int, nbdev: int = 1, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        Standard deviation.
-        """
-        result = talib.STDDEV(self.close, n, nbdev)
-        if array:
-            return result
-        return result[-1]
-
-    def obv(self, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        OBV.
-        """
-        result = talib.OBV(self.close, self.volume)
-        if array:
-            return result
-        return result[-1]
-
-    def cci(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        Commodity Channel Index (CCI).
-        """
-        result = talib.CCI(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def atr(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        Average True Range (ATR).
-        """
-        result = talib.ATR(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def natr(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        NATR.
-        """
-        result = talib.NATR(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def rsi(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        Relative Strenght Index (RSI).
-        """
-        result = talib.RSI(self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def macd(
-            self,
-            fast_period: int,
-            slow_period: int,
-            signal_period: int,
-            array: bool = False
-    ) -> Union[
-        Tuple[np.ndarray, np.ndarray, np.ndarray],
-        Tuple[float, float, float]
-    ]:
-        """
-        MACD.
-        """
-        macd, signal, hist = talib.MACD(
-            self.close, fast_period, slow_period, signal_period
-        )
-        if array:
-            return macd, signal, hist
-        return macd[-1], signal[-1], hist[-1]
-
-    def adx(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        ADX.
-        """
-        result = talib.ADX(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def adxr(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        ADXR.
-        """
-        result = talib.ADXR(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def dx(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        DX.
-        """
-        result = talib.DX(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def minus_di(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        MINUS_DI.
-        """
-        result = talib.MINUS_DI(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def plus_di(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        PLUS_DI.
-        """
-        result = talib.PLUS_DI(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def willr(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        WILLR.
-        """
-        result = talib.WILLR(self.high, self.low, self.close, n)
-        if array:
-            return result
-        return result[-1]
-
-    def ultosc(
-            self,
-            time_period1: int = 7,
-            time_period2: int = 14,
-            time_period3: int = 28,
-            array: bool = False
-    ) -> Union[float, np.ndarray]:
-        """
-        Ultimate Oscillator.
-        """
-        result = talib.ULTOSC(self.high, self.low, self.close, time_period1, time_period2, time_period3)
-        if array:
-            return result
-        return result[-1]
-
-    def trange(self, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        TRANGE.
-        """
-        result = talib.TRANGE(self.high, self.low, self.close)
-        if array:
-            return result
-        return result[-1]
-
-    def boll(
-            self,
-            n: int,
-            dev: float,
-            array: bool = False
-    ) -> Union[
-        Tuple[np.ndarray, np.ndarray],
-        Tuple[float, float]
-    ]:
-        """
-        Bollinger Channel.
-        """
-        mid = self.sma(n, array)
-        std = self.std(n, 1, array)
-
-        up = mid + std * dev
-        down = mid - std * dev
-
-        return up, down
-
-    def keltner(
-            self,
-            n: int,
-            dev: float,
-            array: bool = False
-    ) -> Union[
-        Tuple[np.ndarray, np.ndarray],
-        Tuple[float, float]
-    ]:
-        """
-        Keltner Channel.
-        """
-        mid = self.sma(n, array)
-        atr = self.atr(n, array)
-
-        up = mid + atr * dev
-        down = mid - atr * dev
-
-        return up, down
-
-    def donchian(
-            self, n: int, array: bool = False
-    ) -> Union[
-        Tuple[np.ndarray, np.ndarray],
-        Tuple[float, float]
-    ]:
-        """
-        Donchian Channel.
-        """
-        up = talib.MAX(self.high, n)
-        down = talib.MIN(self.low, n)
-
-        if array:
-            return up, down
-        return up[-1], down[-1]
-
-    def aroon(
-            self,
-            n: int,
-            array: bool = False
-    ) -> Union[
-        Tuple[np.ndarray, np.ndarray],
-        Tuple[float, float]
-    ]:
-        """
-        Aroon indicator.
-        """
-        aroon_down, aroon_up = talib.AROON(self.high, self.low, n)
-
-        if array:
-            return aroon_up, aroon_down
-        return aroon_up[-1], aroon_down[-1]
-
-    def aroonosc(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        Aroon Oscillator.
-        """
-        result = talib.AROONOSC(self.high, self.low, n)
-
-        if array:
-            return result
-        return result[-1]
-
-    def minus_dm(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        MINUS_DM.
-        """
-        result = talib.MINUS_DM(self.high, self.low, n)
-
-        if array:
-            return result
-        return result[-1]
-
-    def plus_dm(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        PLUS_DM.
-        """
-        result = talib.PLUS_DM(self.high, self.low, n)
-
-        if array:
-            return result
-        return result[-1]
-
-    def mfi(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        Money Flow Index.
-        """
-        result = talib.MFI(self.high, self.low, self.close, self.volume, n)
-        if array:
-            return result
-        return result[-1]
-
-    def ad(self, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        AD.
-        """
-        result = talib.AD(self.high, self.low, self.close, self.volume)
-        if array:
-            return result
-        return result[-1]
-
-    def adosc(
-            self,
-            fast_period: int,
-            slow_period: int,
-            array: bool = False
-    ) -> Union[float, np.ndarray]:
-        """
-        ADOSC.
-        """
-        result = talib.ADOSC(self.high, self.low, self.close, self.volume, fast_period, slow_period)
-        if array:
-            return result
-        return result[-1]
-
-    def bop(self, array: bool = False) -> Union[float, np.ndarray]:
-        """
-        BOP.
-        """
-        result = talib.BOP(self.open, self.high, self.low, self.close)
-
-        if array:
-            return result
-        return result[-1]
-
+from typing import Optional
+from howtrader.trader.utility import BarGenerator, ArrayManager
+from decimal import Decimal
 
 class MartingleSpotStrategy(CtaTemplate):
     """
@@ -568,13 +51,13 @@ class MartingleSpotStrategy(CtaTemplate):
         """"""
         super().__init__(cta_engine, strategy_name, vt_symbol, setting)
 
-        self.last_filled_order: Optional[OrderData, None] = None
-        self.tick: Optional[TickData, None] = None
-        self.contract: Optional[ContractData, None] = None
-        self.account: Optional[AccountData, None] = None
+        self.last_filled_order: Optional[OrderData] = None
+        self.tick: Optional[TickData] = None
+        self.contract: Optional[ContractData] = None
+        self.account: Optional[AccountData] = None
 
         self.bg = BarGenerator(self.on_bar, 15, self.on_15min_bar, Interval.MINUTE)  # 15分钟的数据.
-        self.am = MyArrayManager(60)  # 默认是100，设置60
+        self.am = ArrayManager(60)  # 默认是100，设置60
             # ArrayManager
 
         # self.cta_engine.event_engine.register(EVENT_ACCOUNT + 'BINANCE.币名称', self.process_acccount_event)
@@ -627,12 +110,12 @@ class MartingleSpotStrategy(CtaTemplate):
 
         if self.current_pos * bar.close_price >= self.min_notional:
 
-            if len(self.sell_orders) <= 0 and self.avg_price > 0:
+            if len(self.sell_orders) <= 0 < self.avg_price:
                 # 有利润平仓的时候
                 profit_percent = bar.close_price / self.avg_price - 1
                 if profit_percent >= self.exit_profit_pct:
                     self.cancel_all()
-                    orderids = self.sell(bar.close_price, abs(self.current_pos))
+                    orderids = self.sell(Decimal(bar.close_price), Decimal(abs(self.current_pos)))
                     self.sell_orders.extend(orderids)
 
             # 考虑加仓的条件: 1） 当前有仓位,且仓位值要大于11USDTyi以上，2）加仓的次数小于最大的加仓次数，3）当前的价格比上次入场的价格跌了一定的百分比。
@@ -644,7 +127,7 @@ class MartingleSpotStrategy(CtaTemplate):
                 increase_pos_value = self.initial_trading_value * self.trading_value_multiplier ** self.current_increase_pos_times
                 price = bar.close_price
                 vol = increase_pos_value / price
-                orderids = self.buy(price, vol)
+                orderids = self.buy(Decimal(price), Decimal(vol))
                 self.buy_orders.extend(orderids)
 
         self.bg.update_bar(bar)
@@ -671,7 +154,7 @@ class MartingleSpotStrategy(CtaTemplate):
 
                 price = bar.close_price
                 vol = self.initial_trading_value / price
-                orderids = self.buy(price, vol)
+                orderids = self.buy(Decimal(price), Decimal(vol))
                 self.buy_orders.extend(orderids)  # 以及已经下单的orderids.
 
         self.put_event()
@@ -684,7 +167,7 @@ class MartingleSpotStrategy(CtaTemplate):
             if order.direction == Direction.LONG:
                 # 买单成交.
                 self.current_increase_pos_times += 1
-                self.last_entry_price = order.price  # 记录上一次成绩的价格.
+                self.last_entry_price = float(order.price)  # 记录上一次成绩的价格.
 
         if not order.is_active():
             if order.vt_orderid in self.sell_orders:
@@ -700,15 +183,14 @@ class MartingleSpotStrategy(CtaTemplate):
         Callback of new trade data update.
         """
         if trade.direction == Direction.LONG:
-            total = self.avg_price * self.current_pos + trade.price * trade.volume
-            self.current_pos += trade.volume
+            total = self.avg_price * self.current_pos + float(trade.price) * float(trade.volume)
+            self.current_pos += float(trade.volume)
             self.avg_price = total / self.current_pos
         elif trade.direction == Direction.SHORT:
-            self.current_pos -= trade.volume
+            self.current_pos -= float(trade.volume)
 
             # 计算统计下总体的利润.
-            self.total_profit += (
-                                         trade.price - self.avg_price) * trade.volume - trade.volume * trade.price * 2 * self.trading_fee
+            self.total_profit += (float(trade.price) - self.avg_price) * float(trade.volume) - float(trade.volume) * float(trade.price) * 2 * self.trading_fee
 
         self.put_event()
 

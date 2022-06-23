@@ -1,16 +1,12 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData,
-    BarGenerator,
-    ArrayManager,
+    StopOrder
 )
 
-import pandas_ta as ta
-import pandas as pd
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
+from howtrader.trader.utility import BarGenerator, ArrayManager
+from decimal import Decimal
+
 
 class DoubleMaStrategy(CtaTemplate):
     author = "用Python的交易员"
@@ -72,32 +68,30 @@ class DoubleMaStrategy(CtaTemplate):
         if not am.inited:
             return
 
-        close = pd.Series(am.close_array)
+        fast_ma = am.sma(self.fast_window, array=True)
+        self.fast_ma0 = fast_ma[-1]
+        self.fast_ma1 = fast_ma[-2]
 
-        fast_ma = ta.sma(close, self.fast_window)
-        self.fast_ma0 = fast_ma.iloc[-1]
-        self.fast_ma1 = fast_ma.iloc[-2]
-
-        slow_ma = ta.sma(close, self.slow_window)
-        self.slow_ma0 = slow_ma.iloc[-1]
-        self.slow_ma1 = slow_ma.iloc[-2]
+        slow_ma = am.sma(self.slow_window, array=True)
+        self.slow_ma0 = slow_ma[-1]
+        self.slow_ma1 = slow_ma[-2]
 
         cross_over = self.fast_ma0 > self.slow_ma0 and self.fast_ma1 < self.slow_ma1
         cross_below = self.fast_ma0 < self.slow_ma0 and self.fast_ma1 > self.slow_ma1
 
         if cross_over:
             if self.pos == 0:
-                self.buy(bar.close_price, 1)
+                self.buy(Decimal(bar.close_price), Decimal(1))
             elif self.pos < 0:
-                self.cover(bar.close_price, 1)
-                self.buy(bar.close_price, 1)
+                self.cover(Decimal(bar.close_price), Decimal(1))
+                self.buy(Decimal(bar.close_price), Decimal(1))
 
         elif cross_below:
             if self.pos == 0:
-                self.short(bar.close_price, 1)
+                self.short(Decimal(bar.close_price), Decimal(1))
             elif self.pos > 0:
-                self.sell(bar.close_price, 1)
-                self.short(bar.close_price, 1)
+                self.sell(Decimal(bar.close_price), Decimal(1))
+                self.short(Decimal(bar.close_price), Decimal(1))
 
         self.put_event()
 

@@ -1,17 +1,16 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData
+    StopOrder
 )
 
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 from howtrader.app.cta_strategy.engine import CtaEngine
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event
 from howtrader.trader.object import Direction, Status
 from howtrader.trader.object import GridPositionCalculator
+from typing import Optional
+from decimal import Decimal
 
 
 class HighFrequencyStrategy(CtaTemplate):
@@ -57,8 +56,8 @@ class HighFrequencyStrategy(CtaTemplate):
         self.trigger_stop_loss = False
         self.cancel_order_interval = 0
 
-        self.tick: TickData = None
-        self.last_filled_order: OrderData = None
+        self.tick: Optional[TickData] = None
+        self.last_filled_order: Optional[OrderData] = None
 
     def on_init(self):
         """
@@ -99,19 +98,19 @@ class HighFrequencyStrategy(CtaTemplate):
 
             if self.position.pos > 0 and len(self.profit_orders) == 0:
 
-                price = self.position.avg_price + self.grid_step
+                price = self.position.avg_price + Decimal(self.grid_step)
                 price = max(price, self.tick.ask_price_1 * (1 + 0.0001))
 
-                vts = self.sell(price, abs(self.position.pos))
+                vts = self.sell(Decimal(price), abs(self.position.pos))
                 self.profit_orders.extend(vts)
                 print(f"多头重新下止盈单子: {vts}@{price}")
 
             elif self.position.pos < 0 and len(self.profit_orders) == 0:
 
-                price = self.position.avg_price - self.grid_step
+                price = self.position.avg_price - Decimal(self.grid_step)
                 price = min(price, self.tick.bid_price_1 * (1 - 0.0001))
 
-                vts = self.cover(price, abs(self.position.pos))
+                vts = self.cover(Decimal(price), abs(self.position.pos))
                 self.profit_orders.extend(vts)
                 print(f"空头重新下止盈单子: {vts}@{price}")
 
@@ -121,7 +120,8 @@ class HighFrequencyStrategy(CtaTemplate):
 
             self.cancel_order_interval = 0
 
-            if abs(self.position.pos) < self.trading_size and (len(self.long_orders) == 0 or len(self.short_orders) == 0):
+            if abs(self.position.pos) < self.trading_size and (
+                    len(self.long_orders) == 0 or len(self.short_orders) == 0):
                 self.cancel_all()
                 print("当前没有仓位，多空单子不对等，需要重新开始. 先撤销所有订单.")
 
@@ -129,18 +129,18 @@ class HighFrequencyStrategy(CtaTemplate):
                 if self.position.pos > 0 and len(self.long_orders) == 0 and self.last_filled_order:
 
                     step = self.get_step()
-                    price = self.last_filled_order.price - self.grid_step * step
+                    price = self.last_filled_order.price - Decimal(self.grid_step) * Decimal(step)
                     price = min(price, self.tick.bid_price_1 * (1 - 0.0001))
-                    ids = self.buy(price, self.trading_size)
+                    ids = self.buy(Decimal(price), Decimal(self.trading_size))
                     self.long_orders.extend(ids)
 
                 elif self.position.pos < 0 and len(self.short_orders) == 0 and self.last_filled_order:
 
                     step = self.get_step()
-                    price = self.last_filled_order.price + self.grid_step * step
+                    price = self.last_filled_order.price + Decimal(self.grid_step) * Decimal(step)
                     price = max(price, self.tick.ask_price_1 * (1 + 0.0001))
 
-                    ids = self.short(price, self.trading_size)
+                    ids = self.short(Decimal(price), Decimal(self.trading_size))
                     self.short_orders.extend(ids)
 
     def on_tick(self, tick: TickData):
@@ -171,8 +171,8 @@ class HighFrequencyStrategy(CtaTemplate):
                 buy_price = tick.bid_price_1 - self.grid_step / 2
                 sell_price = tick.bid_price_1 + self.grid_step / 2
 
-                long_ids = self.buy(buy_price, self.trading_size)
-                short_ids = self.short(sell_price, self.trading_size)
+                long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
+                short_ids = self.short(Decimal(sell_price), Decimal(self.trading_size))
 
                 self.long_orders.extend(long_ids)
                 self.short_orders.extend(short_ids)
@@ -181,20 +181,21 @@ class HighFrequencyStrategy(CtaTemplate):
 
         if abs(self.position.pos) >= (self.max_pos * self.trading_size) and len(self.stop_orders) == 0:
 
-            if self.position.pos > 0 and tick.ask_price_1 < self.position.avg_price - self.stop_multiplier * self.grid_step:
-                vt_ids = self.sell(tick.ask_price_1, abs(self.position.pos))
-                stop_price = self.position.avg_price - self.stop_multiplier * self.grid_step
-                self.stop_orders.extend(vt_ids)
-                self.trigger_stop_loss = True
-                print(f"下多头止损单: stop_price: {stop_price}stop@{tick.ask_price_1}")
+            if self.position.pos > 0:
+                long_stop_price = self.position.avg_price - Decimal(self.stop_multiplier) * Decimal(self.grid_step)
+                if tick.ask_price_1 < long_stop_price:
+                    vt_ids = self.sell(Decimal(tick.ask_price_1), abs(self.position.pos))
+                    self.stop_orders.extend(vt_ids)
+                    self.trigger_stop_loss = True
+                    print(f"下多头止损单: stop_price: {long_stop_price}stop@{tick.ask_price_1}")
 
-            elif self.position.pos < 0 and tick.bid_price_1 > self.position.avg_price + self.stop_multiplier * self.grid_step:
-
-                stop_price = self.position.avg_price + self.stop_multiplier * self.grid_step
-                vt_ids = self.cover(tick.bid_price_1, abs(self.position.pos))
-                self.stop_orders.extend(vt_ids)
-                self.trigger_stop_loss = True
-                print(f"下空头止损单: stop_price: {stop_price}stop@{tick.bid_price_1}")
+            elif self.position.pos < 0:
+                short_stop_price = self.position.avg_price + Decimal(self.stop_multiplier) * Decimal(self.grid_step)
+                if tick.bid_price_1 > short_stop_price:
+                    vt_ids = self.cover(Decimal(tick.bid_price_1), abs(self.position.pos))
+                    self.stop_orders.extend(vt_ids)
+                    self.trigger_stop_loss = True
+                    print(f"下空头止损单: stop_price: {short_stop_price}stop@{tick.bid_price_1}")
 
     def on_bar(self, bar: BarData):
         """
@@ -246,10 +247,10 @@ class HighFrequencyStrategy(CtaTemplate):
                         if not self.tick:
                             return
 
-                        step = self.get_step()
-                        price = order.price - self.grid_step * step
+                        step = Decimal(self.get_step())
+                        price = order.price - Decimal(self.grid_step) * step
                         price = min(price, self.tick.bid_price_1 * (1 - 0.0001))
-                        ids = self.buy(price, self.trading_size)
+                        ids = self.buy(Decimal(price), Decimal(self.trading_size))
                         self.long_orders.extend(ids)
                         print(f"多头仓位继续下多头订单: {ids}@{price}")
 
@@ -271,11 +272,11 @@ class HighFrequencyStrategy(CtaTemplate):
                         if not self.tick:
                             return
 
-                        step = self.get_step()
-                        price = order.price + self.grid_step * step
+                        step = Decimal(self.get_step())
+                        price = order.price + Decimal(self.grid_step) * step
                         price = max(price, self.tick.ask_price_1 * (1 + 0.0001))
 
-                        ids = self.short(price, self.trading_size)
+                        ids = self.short(Decimal(price), Decimal(self.trading_size))
                         self.short_orders.extend(ids)
 
                         print(f"空头仓位继续下空头订单: {ids}@{price}")

@@ -1,16 +1,12 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData,
-    BarGenerator,
-    ArrayManager,
+    StopOrder
 )
 
-import pandas as pd
-import pandas_ta as ta
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
+from howtrader.trader.utility import BarGenerator, ArrayManager
+from decimal import Decimal
+
 
 class AtrRsiStrategy(CtaTemplate):
     """"""
@@ -96,14 +92,10 @@ class AtrRsiStrategy(CtaTemplate):
         if not am.inited:
             return
 
-        high = pd.Series(am.high_array)
-        low = pd.Series(am.low_array)
-        close = pd.Series(am.close_array)
-
-        atr_array = ta.atr(high, low, close, self.atr_length) #am.atr(self.atr_length, array=True)
-        self.atr_value = atr_array.iloc[-1]
-        self.atr_ma = atr_array.iloc[-self.atr_ma_length:].mean()
-        self.rsi_value = ta.rsi(close, self.rsi_length).iloc[-1]
+        atr_array = am.atr(self.atr_length, array=True)
+        self.atr_value = atr_array[-1]
+        self.atr_ma = atr_array[-self.atr_ma_length:].mean()
+        self.rsi_value = am.rsi(self.rsi_length)
 
         if self.pos == 0:
             self.intra_trade_high = bar.high_price
@@ -111,25 +103,24 @@ class AtrRsiStrategy(CtaTemplate):
 
             if self.atr_value > self.atr_ma:
                 if self.rsi_value > self.rsi_buy:
-                    self.buy(bar.close_price + 5, self.fixed_size)
+                    price = bar.close_price * 1.01
+                    self.buy(Decimal(price), Decimal(self.fixed_size))
                 elif self.rsi_value < self.rsi_sell:
-                    self.short(bar.close_price - 5, self.fixed_size)
+                    price = bar.close_price * 0.99
+                    self.short(Decimal(price), Decimal(self.fixed_size))
 
         elif self.pos > 0:
             self.intra_trade_high = max(self.intra_trade_high, bar.high_price)
             self.intra_trade_low = bar.low_price
-
-            long_stop = self.intra_trade_high * \
-                (1 - self.trailing_percent / 100)
-            self.sell(long_stop, abs(self.pos), stop=True)
+            long_stop = self.intra_trade_high * (1 - self.trailing_percent / 100)
+            self.sell(Decimal(long_stop), Decimal(abs(self.pos)), stop=True)
 
         elif self.pos < 0:
             self.intra_trade_low = min(self.intra_trade_low, bar.low_price)
             self.intra_trade_high = bar.high_price
 
-            short_stop = self.intra_trade_low * \
-                (1 + self.trailing_percent / 100)
-            self.cover(short_stop, abs(self.pos), stop=True)
+            short_stop = self.intra_trade_low * (1 + self.trailing_percent / 100)
+            self.cover(Decimal(short_stop), Decimal(abs(self.pos)), stop=True)
 
         self.put_event()
 

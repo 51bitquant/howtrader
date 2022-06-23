@@ -1,1 +1,1 @@
-from .rest_client import Request, RequestStatus, RestClient
+from .rest_client import RestClient, Request, Response

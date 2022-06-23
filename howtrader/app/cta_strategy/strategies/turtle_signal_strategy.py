@@ -1,18 +1,11 @@
 from howtrader.app.cta_strategy import (
     CtaTemplate,
-    StopOrder,
-    Direction,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData,
-    BarGenerator,
-    ArrayManager,
+    StopOrder
 )
 
-import pandas as pd
-import pandas_ta as ta
-
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData, Direction
+from howtrader.trader.utility import BarGenerator, ArrayManager
+from decimal import Decimal
 
 class TurtleSignalStrategy(CtaTemplate):
     """"""
@@ -79,20 +72,16 @@ class TurtleSignalStrategy(CtaTemplate):
         if not self.am.inited:
             return
 
-        high = pd.Series(self.am.high_array)
-        low = pd.Series(self.am.low_array)
-        close = pd.Series(self.am.close_array)
+        # Only calculates new entry channel when no position holding
+        if not self.pos:
+            self.entry_up, self.entry_down = self.am.donchian(
+                self.entry_window
+            )
+
+        self.exit_up, self.exit_down = self.am.donchian(self.exit_window)
 
         if not self.pos:
-            self.entry_up, self.entry_down = high.rolling(self.entry_window).max().iloc[-1], low.rolling(
-                self.entry_window).min().iloc[-1]
-
-        self.exit_up, self.exit_down = high.rolling(self.exit_window).max().iloc[-1], \
-                                       low.rolling(self.entry_window).min().iloc[-1]
-
-        if not self.pos:
-
-            self.atr_value = ta.atr(high, low, close, self.atr_window).iloc[-1]  # self.am.atr(self.atr_window)
+            self.atr_value = self.am.atr(self.atr_window)
 
             self.long_entry = 0
             self.short_entry = 0
@@ -105,13 +94,13 @@ class TurtleSignalStrategy(CtaTemplate):
             self.send_buy_orders(self.entry_up)
 
             sell_price = max(self.long_stop, self.exit_down)
-            self.sell(sell_price, abs(self.pos), True)
+            self.sell(Decimal(sell_price), Decimal(abs(self.pos)), True)
 
         elif self.pos < 0:
             self.send_short_orders(self.entry_down)
 
             cover_price = min(self.short_stop, self.exit_up)
-            self.cover(cover_price, abs(self.pos), True)
+            self.cover(Decimal(cover_price), Decimal(abs(self.pos)), True)
 
         self.put_event()
 
@@ -143,29 +132,35 @@ class TurtleSignalStrategy(CtaTemplate):
         t = self.pos / self.fixed_size
 
         if t < 1:
-            self.buy(price, self.fixed_size, True)
+            self.buy(Decimal(price), Decimal(self.fixed_size), True)
 
         if t < 2:
-            self.buy(price + self.atr_value * 0.5, self.fixed_size, True)
+            price = price + self.atr_value * 0.5
+            self.buy(Decimal(price), Decimal(self.fixed_size), True)
 
         if t < 3:
-            self.buy(price + self.atr_value, self.fixed_size, True)
+            price = price + self.atr_value
+            self.buy(Decimal(price), Decimal(self.fixed_size), True)
 
         if t < 4:
-            self.buy(price + self.atr_value * 1.5, self.fixed_size, True)
+            price = price + self.atr_value * 1.5
+            self.buy(Decimal(price), Decimal(self.fixed_size), True)
 
     def send_short_orders(self, price):
         """"""
         t = self.pos / self.fixed_size
 
         if t > -1:
-            self.short(price, self.fixed_size, True)
+            self.short(Decimal(price), Decimal(self.fixed_size), True)
 
         if t > -2:
-            self.short(price - self.atr_value * 0.5, self.fixed_size, True)
+            price = price - self.atr_value * 0.5
+            self.short(Decimal(price), Decimal(self.fixed_size), True)
 
         if t > -3:
-            self.short(price - self.atr_value, self.fixed_size, True)
+            price = price - self.atr_value
+            self.short(Decimal(price), Decimal(self.fixed_size), True)
 
         if t > -4:
-            self.short(price - self.atr_value * 1.5, self.fixed_size, True)
+            price = price - self.atr_value * 1.5
+            self.short(Decimal(price), Decimal(self.fixed_size), True)

@@ -46,6 +46,10 @@ class SpreadEngine(BaseEngine):
 
         self.active = False
 
+        self.offset_converter: OffsetConverter = OffsetConverter(
+            self.main_engine
+        )
+
         self.data_engine: SpreadDataEngine = SpreadDataEngine(self)
         self.algo_engine: SpreadAlgoEngine = SpreadAlgoEngine(self)
         self.strategy_engine: SpreadStrategyEngine = SpreadStrategyEngine(self)
@@ -87,6 +91,7 @@ class SpreadEngine(BaseEngine):
 class SpreadDataEngine:
     """"""
     setting_filename = "spread_trading_setting.json"
+    pos_filename = "spread_trading_pos.json"
 
     def __init__(self, spread_engine: SpreadEngine):
         """"""
@@ -99,12 +104,14 @@ class SpreadDataEngine:
         self.legs: Dict[str, LegData] = {}          # vt_symbol: leg
         self.spreads: Dict[str, SpreadData] = {}    # name: spread
         self.symbol_spread_map: Dict[str, List[SpreadData]] = defaultdict(list)
+        self.order_spread_map: Dict[str, SpreadData] = {}
 
         self.tradeid_history: Set[str] = set()
 
     def start(self):
         """"""
         self.load_setting()
+        self.load_pos()
         self.register_event()
 
         self.write_log("价差数据引擎启动成功")
@@ -121,6 +128,7 @@ class SpreadDataEngine:
             self.add_spread(
                 spread_setting["name"],
                 spread_setting["leg_settings"],
+                spread_setting["price_formula"],
                 spread_setting["active_symbol"],
                 spread_setting.get("min_volume", 1),
                 save=False
@@ -132,28 +140,47 @@ class SpreadDataEngine:
 
         for spread in self.spreads.values():
             leg_settings = []
-            for leg in spread.legs.values():
-                price_multiplier = spread.price_multipliers[leg.vt_symbol]
-                trading_multiplier = spread.trading_multipliers[leg.vt_symbol]
-                inverse_contract = spread.inverse_contracts[leg.vt_symbol]
+            for variable, vt_symbol in spread.variable_symbols.items():
+                trading_direction = spread.variable_directions[variable]
+                trading_multiplier = spread.trading_multipliers[vt_symbol]
 
                 leg_setting = {
-                    "vt_symbol": leg.vt_symbol,
-                    "price_multiplier": price_multiplier,
-                    "trading_multiplier": trading_multiplier,
-                    "inverse_contract": inverse_contract
+                    "variable": variable,
+                    "vt_symbol": vt_symbol,
+                    "trading_direction": trading_direction,
+                    "trading_multiplier": trading_multiplier
                 }
                 leg_settings.append(leg_setting)
 
             spread_setting = {
                 "name": spread.name,
                 "leg_settings": leg_settings,
+                "price_formula": spread.price_formula,
                 "active_symbol": spread.active_leg.vt_symbol,
                 "min_volume": spread.min_volume
             }
+
             setting.append(spread_setting)
 
         save_json(self.setting_filename, setting)
+
+    def save_pos(self) -> None:
+        """保存价差持仓"""
+        pos_data = {}
+
+        for spread in self.spreads.values():
+            pos_data[spread.name] = spread.leg_pos
+
+        save_json(self.pos_filename, pos_data)
+
+    def load_pos(self) -> None:
+        """加载价差持仓"""
+        pos_data = load_json(self.pos_filename)
+
+        for name, leg_pos in pos_data.items():
+            spread = self.spreads.get(name, None)
+            if spread:
+                spread.leg_pos.update(leg_pos)
 
     def register_event(self) -> None:
         """"""
@@ -172,8 +199,9 @@ class SpreadDataEngine:
         leg.update_tick(tick)
 
         for spread in self.symbol_spread_map[tick.vt_symbol]:
-            spread.calculate_price()
-            self.put_data_event(spread)
+            # 只有能成功计算出价差盘口时，才会送事件
+            if spread.calculate_price():
+                self.put_data_event(spread)
 
     def process_position_event(self, event: Event) -> None:
         """"""
@@ -196,14 +224,14 @@ class SpreadDataEngine:
             return
         self.tradeid_history.add(trade.vt_tradeid)
 
-        leg = self.legs.get(trade.vt_symbol, None)
-        if not leg:
-            return
-        leg.update_trade(trade)
-
-        for spread in self.symbol_spread_map[trade.vt_symbol]:
+        # 查询该笔成交，对应的价差，并更新计算价差持仓
+        spread = self.order_spread_map.get(trade.vt_orderid, None)
+        if spread:
+            spread.update_trade(trade)
             spread.calculate_pos()
             self.put_pos_event(spread)
+
+            self.save_pos()
 
     def process_contract_event(self, event: Event) -> None:
         """"""
@@ -262,6 +290,7 @@ class SpreadDataEngine:
         self,
         name: str,
         leg_settings: List[Dict],
+        price_formula: str,
         active_symbol: str,
         min_volume: float,
         save: bool = True
@@ -272,27 +301,28 @@ class SpreadDataEngine:
             return
 
         legs: List[LegData] = []
-        price_multipliers: Dict[str, int] = {}
+        variable_symbols: Dict[str, str] = {}
+        variable_directions: Dict[str, int] = {}
         trading_multipliers: Dict[str, int] = {}
-        inverse_contracts: Dict[str, bool] = {}
 
         for leg_setting in leg_settings:
             vt_symbol = leg_setting["vt_symbol"]
+            variable = leg_setting["variable"]
             leg = self.get_leg(vt_symbol)
 
             legs.append(leg)
-            price_multipliers[vt_symbol] = leg_setting["price_multiplier"]
+            variable_symbols[variable] = vt_symbol
+            variable_directions[variable] = leg_setting["trading_direction"]
             trading_multipliers[vt_symbol] = leg_setting["trading_multiplier"]
-            inverse_contracts[vt_symbol] = leg_setting.get(
-                "inverse_contract", False)
 
         spread = SpreadData(
             name,
             legs,
-            price_multipliers,
+            variable_symbols,
+            variable_directions,
+            price_formula,
             trading_multipliers,
             active_symbol,
-            inverse_contracts,
             min_volume
         )
         self.spreads[name] = spread
@@ -328,6 +358,10 @@ class SpreadDataEngine:
         """"""
         return list(self.spreads.values())
 
+    def update_order_spread_map(self, vt_orderid: str, spread: SpreadData) -> None:
+        """更新委托号对应的价差映射关系"""
+        self.order_spread_map[vt_orderid] = spread
+
 
 class SpreadAlgoEngine:
     """"""
@@ -336,23 +370,21 @@ class SpreadAlgoEngine:
     def __init__(self, spread_engine: SpreadEngine):
         """"""
         self.spread_engine: SpreadEngine = spread_engine
+        self.data_engine: SpreadDataEngine = spread_engine.data_engine
         self.main_engine: MainEngine = spread_engine.main_engine
         self.event_engine: EventEngine = spread_engine.event_engine
+        self.offset_converter: OffsetConverter = spread_engine.offset_converter
 
         self.write_log = spread_engine.write_log
 
         self.spreads: Dict[str: SpreadData] = {}
         self.algos: Dict[str: SpreadAlgoTemplate] = {}
 
-        self.order_algo_map: dict[str: SpreadAlgoTemplate] = {}
-        self.symbol_algo_map: dict[str: SpreadAlgoTemplate] = defaultdict(list)
+        self.order_algo_map: Dict[str: SpreadAlgoTemplate] = {}
+        self.symbol_algo_map: Dict[str: SpreadAlgoTemplate] = defaultdict(list)
 
         self.algo_count: int = 0
         self.vt_tradeids: Set = set()
-
-        self.offset_converter: OffsetConverter = OffsetConverter(
-            self.main_engine
-        )
 
     def start(self):
         """"""
@@ -440,12 +472,12 @@ class SpreadAlgoEngine:
         self,
         spread_name: str,
         direction: Direction,
-        offset: Offset,
         price: float,
         volume: float,
         payup: int,
         interval: int,
-        lock: bool
+        lock: bool,
+        extra: dict
     ) -> str:
         # Find spread object
         spread = self.spreads.get(spread_name, None)
@@ -464,12 +496,12 @@ class SpreadAlgoEngine:
             algoid,
             spread,
             direction,
-            offset,
             price,
             volume,
             payup,
             interval,
-            lock
+            lock,
+            extra
         )
         self.algos[algoid] = algo
 
@@ -511,42 +543,35 @@ class SpreadAlgoEngine:
         price: float,
         volume: float,
         direction: Direction,
-        lock: bool
+        lock: bool,
+        fak: bool
     ) -> List[str]:
         """"""
-        holding = self.offset_converter.get_position_holding(vt_symbol)
+        # 创建原始委托请求
         contract = self.main_engine.get_contract(vt_symbol)
 
-        if direction == Direction.LONG:
-            available = holding.short_pos - holding.short_pos_frozen
+        if fak:
+            order_type = OrderType.FAK
         else:
-            available = holding.long_pos - holding.long_pos_frozen
-
-        # If no position to close, just open new
-        if not available:
-            offset = Offset.OPEN
-        # If enougth position to close, just close old
-        elif volume < available:
-            offset = Offset.CLOSE
-        # Otherwise, just close existing position
-        else:
-            volume = available
-            offset = Offset.CLOSE
+            order_type = OrderType.LIMIT
 
         original_req = OrderRequest(
             symbol=contract.symbol,
             exchange=contract.exchange,
             direction=direction,
-            offset=offset,
-            type=OrderType.LIMIT,
+            offset=Offset.OPEN,
+            type=order_type,
             price=price,
             volume=volume,
             reference=f"{APP_NAME}_{algo.spread_name}"
         )
 
-        # Convert with offset converter
+        # 判断使用净仓还是锁仓模式
+        net = not lock
+
+        # 执行委托转换
         req_list = self.offset_converter.convert_order_request(
-            original_req, lock)
+            original_req, lock, net)
 
         # Send Orders
         vt_orderids = []
@@ -565,6 +590,9 @@ class SpreadAlgoEngine:
 
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
+
+            # 将委托号和价差的关系缓存下来
+            self.data_engine.update_order_spread_map(vt_orderid, algo.spread)
 
         return vt_orderids
 
@@ -597,6 +625,7 @@ class SpreadStrategyEngine:
         self.spread_engine: SpreadEngine = spread_engine
         self.main_engine: MainEngine = spread_engine.main_engine
         self.event_engine: EventEngine = spread_engine.event_engine
+        self.offset_converter: OffsetConverter = spread_engine.offset_converter
 
         self.write_log = spread_engine.write_log
 
@@ -605,9 +634,9 @@ class SpreadStrategyEngine:
         self.classes: Dict[str: Type[SpreadStrategyTemplate]] = {}
         self.strategies: Dict[str: SpreadStrategyTemplate] = {}
 
-        self.order_strategy_map: dict[str: SpreadStrategyTemplate] = {}
-        self.algo_strategy_map: dict[str: SpreadStrategyTemplate] = {}
-        self.spread_strategy_map: dict[str: SpreadStrategyTemplate] = defaultdict(
+        self.order_strategy_map: Dict[str: SpreadStrategyTemplate] = {}
+        self.algo_strategy_map: Dict[str: SpreadStrategyTemplate] = {}
+        self.spread_strategy_map: Dict[str: SpreadStrategyTemplate] = defaultdict(
             list)
 
         self.vt_tradeids: Set = set()
@@ -630,8 +659,7 @@ class SpreadStrategyEngine:
         Load strategy class from source code.
         """
         path1 = Path(__file__).parent.joinpath("strategies")
-        self.load_strategy_class_from_folder(
-            path1, "howtrader.app.spread_trading.strategies")
+        self.load_strategy_class_from_folder(path1, "vnpy_spreadtrading.strategies")
 
         path2 = Path.cwd().joinpath("strategies")
         self.load_strategy_class_from_folder(path2, "strategies")
@@ -919,23 +947,23 @@ class SpreadStrategyEngine:
         strategy: SpreadStrategyTemplate,
         spread_name: str,
         direction: Direction,
-        offset: Offset,
         price: float,
         volume: float,
         payup: int,
         interval: int,
-        lock: bool
+        lock: bool,
+        extra: dict
     ) -> str:
         """"""
         algoid = self.spread_engine.start_algo(
             spread_name,
             direction,
-            offset,
             price,
             volume,
             payup,
             interval,
-            lock
+            lock,
+            extra
         )
 
         self.algo_strategy_map[algoid] = strategy

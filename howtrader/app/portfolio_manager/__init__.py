@@ -13,4 +13,4 @@ class PortfolioManagerApp(BaseApp):
     display_name = "投资组合"
     engine_class = PortfolioEngine
     widget_name = "PortfolioManager"
-    icon_name = "portfolio.ico"
+    icon_name = str(app_path.joinpath("ui", "portfolio.ico"))

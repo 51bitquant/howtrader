@@ -1,17 +1,11 @@
 from howtrader.app.cta_strategy import (
-    StopOrder,
-    TickData,
-    BarData,
-    TradeData,
-    OrderData,
-    BarGenerator,
-    ArrayManager,
     CtaSignal,
-    TargetPosTemplate
+    TargetPosTemplate,
+    StopOrder
 )
 
-import pandas as pd
-import pandas_ta as ta
+from howtrader.trader.object import TickData, BarData, TradeData, OrderData
+from howtrader.trader.utility import BarGenerator, ArrayManager
 
 
 class RsiSignal(CtaSignal):
@@ -43,9 +37,7 @@ class RsiSignal(CtaSignal):
         if not self.am.inited:
             self.set_signal_pos(0)
 
-        close = pd.Series(self.am.close_array)
-
-        rsi_value = ta.rsi(close, self.rsi_window).iloc[-1]
+        rsi_value = self.am.rsi(self.rsi_window)
 
         if rsi_value >= self.rsi_long:
             self.set_signal_pos(1)
@@ -84,11 +76,7 @@ class CciSignal(CtaSignal):
         if not self.am.inited:
             self.set_signal_pos(0)
 
-        close = pd.Series(self.am.close_array)
-        high = pd.Series(self.am.high_array)
-        low = pd.Series(self.am.low_array)
-
-        cci_value = ta.cci(high, low, close, self.cci_window).iloc[-1]
+        cci_value = self.am.cci(self.cci_window)
 
         if cci_value >= self.cci_long:
             self.set_signal_pos(1)
@@ -129,9 +117,8 @@ class MaSignal(CtaSignal):
         if not self.am.inited:
             self.set_signal_pos(0)
 
-        close = pd.Series(self.am.close_array)
-        fast_ma = ta.sma(close, self.fast_window).iloc[-1]
-        slow_ma = ta.sma(close, self.slow_window).iloc[-1]
+        fast_ma = self.am.sma(self.fast_window)
+        slow_ma = self.am.sma(self.slow_window)
 
         if fast_ma > slow_ma:
             self.set_signal_pos(1)
