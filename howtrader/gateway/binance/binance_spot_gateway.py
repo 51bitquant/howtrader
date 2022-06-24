@@ -187,7 +187,6 @@ class BinanceSpotGateway(BaseGateway):
     def on_order(self, order: OrderData) -> None:
         """推送委托数据"""
         order.update_time = generate_datetime(time.time() * 1000)
-        self.orders[order.orderid] = copy(order)
         super().on_order(order)
         last_order: OrderData = self.get_order(order.orderid)
         if last_order:
@@ -205,6 +204,7 @@ class BinanceSpotGateway(BaseGateway):
                 )
 
                 super().on_trade(trade)
+        self.orders[order.orderid] = copy(order)
 
     def get_order(self, orderid: str) -> OrderData:
         """查询委托数据"""
