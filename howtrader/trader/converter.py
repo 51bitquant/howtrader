@@ -107,21 +107,21 @@ class PositionHolding:
 
         self.active_orders: Dict[str, OrderData] = {}
 
-        self.long_pos: Decimal = Decimal(0)
-        self.long_yd: Decimal = Decimal(0)
-        self.long_td: Decimal = Decimal(0)
+        self.long_pos: Decimal = Decimal("0")
+        self.long_yd: Decimal = Decimal("0")
+        self.long_td: Decimal = Decimal("0")
 
-        self.short_pos: Decimal = Decimal(0)
-        self.short_yd: Decimal = Decimal(0)
-        self.short_td: Decimal = Decimal(0)
+        self.short_pos: Decimal = Decimal("0")
+        self.short_yd: Decimal = Decimal("0")
+        self.short_td: Decimal = Decimal("0")
 
-        self.long_pos_frozen: Decimal = Decimal(0)
-        self.long_yd_frozen: Decimal = Decimal(0)
-        self.long_td_frozen: Decimal = Decimal(0)
+        self.long_pos_frozen: Decimal = Decimal("0")
+        self.long_yd_frozen: Decimal = Decimal("0")
+        self.long_td_frozen: Decimal = Decimal("0")
 
-        self.short_pos_frozen: Decimal = Decimal(0)
-        self.short_yd_frozen: Decimal = Decimal(0)
-        self.short_td_frozen: Decimal = Decimal(0)
+        self.short_pos_frozen: Decimal = Decimal("0")
+        self.short_yd_frozen: Decimal = Decimal("0")
+        self.short_td_frozen: Decimal = Decimal("0")
 
     def update_position(self, position: PositionData) -> None:
         """"""
@@ -168,7 +168,7 @@ class PositionHolding:
 
                     if self.short_td < 0:
                         self.short_yd += self.short_td
-                        self.short_td = 0
+                        self.short_td = Decimal("0")
         else:
             if trade.offset == Offset.OPEN:
                 self.short_td += trade.volume
@@ -184,7 +184,7 @@ class PositionHolding:
 
                     if self.long_td < 0:
                         self.long_yd += self.long_td
-                        self.long_td = 0
+                        self.long_td = Decimal("0")
 
         self.long_pos = self.long_td + self.long_yd
         self.short_pos = self.short_td + self.short_yd
@@ -194,13 +194,13 @@ class PositionHolding:
 
     def calculate_frozen(self) -> None:
         """"""
-        self.long_pos_frozen: Decimal = Decimal(0)
-        self.long_yd_frozen: Decimal = Decimal(0)
-        self.long_td_frozen: Decimal = Decimal(0)
+        self.long_pos_frozen: Decimal = Decimal("0")
+        self.long_yd_frozen: Decimal = Decimal("0")
+        self.long_td_frozen: Decimal = Decimal("0")
 
-        self.short_pos_frozen: Decimal = Decimal(0)
-        self.short_yd_frozen: Decimal = Decimal(0)
-        self.short_td_frozen: Decimal = Decimal(0)
+        self.short_pos_frozen: Decimal = Decimal("0")
+        self.short_yd_frozen: Decimal = Decimal("0")
+        self.short_td_frozen: Decimal = Decimal("0")
 
         for order in self.active_orders.values():
             # Ignore position open orders
@@ -299,7 +299,7 @@ class PositionHolding:
         # then open new position
         else:
             close_volume: Decimal = min(req.volume, yd_available)
-            open_volume: Decimal = max(0, req.volume - yd_available)
+            open_volume: Decimal = max(Decimal("0"), req.volume - yd_available)
             req_list: List[OrderRequest] = []
 
             if yd_available:

@@ -6,11 +6,9 @@ from howtrader.app.cta_strategy import (
 from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 
 from howtrader.app.cta_strategy.engine import CtaEngine
-from howtrader.trader.event import EVENT_TIMER
-from howtrader.event import Event
 from howtrader.trader.object import Status, Direction
 from typing import Optional
-from howtrader.trader.utility import floor_to, round_to
+from howtrader.trader.utility import floor_to, BarGenerator
 from decimal import Decimal
 
 class NeutralGridPositionCalculator(object):
@@ -24,7 +22,6 @@ class NeutralGridPositionCalculator(object):
     def __init__(self):
         self.pos: Decimal = Decimal(0)
         self.avg_price: Decimal = Decimal(0)
-        self.profit: Decimal = Decimal(0)
 
     def update_position(self, order: OrderData):
         if order.status != Status.ALLTRADED:
@@ -82,18 +79,13 @@ class FutureNeutralGridStrategy(CtaTemplate):
     low_price = 0.0  # 执行策略的最低价.
     grid_count = 100  # 网格的数量.
     order_volume = 0.05  # 每次下单的数量.
-    max_open_orders = 5  # 一边订单的数量.
+    max_open_orders = 2  # 一边订单的数量.
 
-
-    # 变量
-    avg_price = 0.0  # 持仓的均价
-    current_pos = 0.0  # 当前仓位
-    step_price = 0.0  # 网格的间隔
     trade_count = 0
 
     parameters = ["high_price", "low_price", "grid_count", "order_volume", "max_open_orders"]
 
-    variables = ["avg_price", "current_pos", "step_price", "trade_count"]
+    variables = ["trade_count"]
 
     def __init__(self, cta_engine: CtaEngine, strategy_name, vt_symbol, setting):
         """"""
@@ -102,7 +94,8 @@ class FutureNeutralGridStrategy(CtaTemplate):
         self.long_orders = []  # 所有的long orders.
         self.short_orders = []  # 所有的short orders.
         self.tick: Optional[TickData] = None
-        self.pos_calculator = NeutralGridPositionCalculator()
+        self.bg = BarGenerator(self.on_bar)
+        self.step_price = 0
 
     def on_init(self):
         """
@@ -115,9 +108,6 @@ class FutureNeutralGridStrategy(CtaTemplate):
         Callback when strategy is started.
         """
         self.write_log("策略启动")
-        self.pos_calculator = NeutralGridPositionCalculator()
-        self.avg_price = self.pos_calculator.avg_price
-        self.current_pos = self.pos_calculator.pos
 
     def on_stop(self):
         """
@@ -132,6 +122,8 @@ class FutureNeutralGridStrategy(CtaTemplate):
         if tick and tick.bid_price_1 > 0:
             self.tick = tick
 
+        self.bg.update_tick(tick)
+
     def on_bar(self, bar: BarData):
         """
         Callback of new bar data update.
@@ -139,40 +131,33 @@ class FutureNeutralGridStrategy(CtaTemplate):
         if not self.tick:
             return
 
-        if self.step_price > 0:
-            step_price = (self.high_price - self.low_price) / self.grid_count
-            arr = str(self.tick.bid_price_1).split('.')
-            if len(arr) == 2:
-                value = len(arr[1])
-                step_price = floor_to(Decimal(step_price), Decimal(1 / (10 ** value)))
-            else:
-                step_price = floor_to(Decimal(step_price), Decimal(1))
+        if len(self.long_orders) == 0 or len(self.short_orders) == 0:
 
-            self.step_price = float(step_price)
+            self.step_price = (self.high_price - self.low_price) / self.grid_count
+            mid_count = round((self.tick.bid_price_1 - self.low_price) / self.step_price)
+            if len(self.long_orders) == 0:
 
-        mid_count = round((self.tick.bid_price_1 - self.low_price) / self.step_price)
+                for i in range(self.max_open_orders):
+                    price = self.low_price + (mid_count - i - 1) * self.step_price
+                    if price < self.low_price:
+                        break
 
-        if len(self.long_orders) == 0:
+                    orders = self.buy(Decimal(price), Decimal(self.order_volume))
+                    self.long_orders.extend(orders)
 
-            for i in range(self.max_open_orders):
-                price = self.low_price + (mid_count - i - 1) * self.step_price
-                if price < self.low_price:
-                    return
+            if len(self.short_orders) == 0:
+                for i in range(self.max_open_orders):
+                    price = self.low_price + (mid_count + i + 1) * self.step_price
+                    if price > self.high_price:
+                        break
 
-                orders = self.buy(Decimal(price), Decimal(self.order_volume))
-                self.long_orders.extend(orders)
-
-        if len(self.short_orders) == 0:
-            for i in range(self.max_open_orders):
-                price = self.low_price + (mid_count + i + 1) * self.step_price
-                if price > self.high_price:
-                    return
-
-                orders = self.short(Decimal(price), Decimal(self.order_volume))
-                self.short_orders.extend(orders)
+                    orders = self.short(Decimal(price), Decimal(self.order_volume))
+                    self.short_orders.extend(orders)
 
         if len(self.short_orders + self.long_orders) > 100:
             self.cancel_all()
+
+        self.put_event()
 
     def on_order(self, order: OrderData):
         """
@@ -181,11 +166,6 @@ class FutureNeutralGridStrategy(CtaTemplate):
 
         if order.vt_orderid not in (self.short_orders + self.long_orders):
             return
-
-        self.pos_calculator.update_position(order)
-
-        self.current_pos = self.pos_calculator.pos
-        self.avg_price = self.pos_calculator.avg_price
 
         if order.status == Status.ALLTRADED:
 
@@ -200,7 +180,7 @@ class FutureNeutralGridStrategy(CtaTemplate):
                     self.short_orders.extend(orders)
 
                 if len(self.long_orders) < self.max_open_orders:
-                    long_price = order.price - Decimal(self.step_price * self.max_open_orders)
+                    long_price = order.price - Decimal(self.step_price) * Decimal(self.max_open_orders)
                     if long_price >= self.low_price:
                         orders = self.buy(long_price, Decimal(self.order_volume))
                         self.long_orders.extend(orders)
@@ -214,7 +194,7 @@ class FutureNeutralGridStrategy(CtaTemplate):
                     self.long_orders.extend(orders)
 
                 if len(self.short_orders) < self.max_open_orders:
-                    short_price = order.price + Decimal(self.step_price * self.max_open_orders)
+                    short_price = order.price + Decimal(self.step_price) * Decimal(self.max_open_orders)
                     if short_price <= self.high_price:
                         orders = self.short(short_price, Decimal(self.order_volume))
                         self.short_orders.extend(orders)

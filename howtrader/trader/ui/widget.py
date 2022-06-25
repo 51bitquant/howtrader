@@ -957,7 +957,7 @@ class TradingWidget(QtWidgets.QWidget):
 
         price_text: str = str(self.price_line.text())
         if not price_text:
-            price = 0
+            price = Decimal("0")
         else:
             price = Decimal(price_text)
 

@@ -585,11 +585,11 @@ class BinanceUsdtRestApi(RestClient):
             orderid=data["clientOrderId"],
             symbol=data["symbol"],
             exchange=Exchange.BINANCE,
-            price=Decimal(data["price"]),
-            volume=Decimal(data["origQty"]),
+            price=Decimal(str(data["price"])),
+            volume=Decimal(str(data["origQty"])),
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
-            traded=Decimal(data["executedQty"]),
+            traded=Decimal(str(data["executedQty"])),
             status=STATUS_BINANCES2VT.get(data["status"], None),
             datetime=generate_datetime(data["time"]),
             gateway_name=self.gateway_name,
@@ -611,11 +611,11 @@ class BinanceUsdtRestApi(RestClient):
                 orderid=d["clientOrderId"],
                 symbol=d["symbol"],
                 exchange=Exchange.BINANCE,
-                price=Decimal(d["price"]),
-                volume=Decimal(d["origQty"]),
+                price=Decimal(str(d["price"])),
+                volume=Decimal(str(d["origQty"])),
                 type=order_type,
                 direction=DIRECTION_BINANCES2VT[d["side"]],
-                traded=Decimal(d["executedQty"]),
+                traded=Decimal(str(d["executedQty"])),
                 status=STATUS_BINANCES2VT.get(d["status"], None),
                 datetime=generate_datetime(d["time"]),
                 gateway_name=self.gateway_name,
@@ -636,9 +636,9 @@ class BinanceUsdtRestApi(RestClient):
 
             for f in d["filters"]:
                 if f["filterType"] == "PRICE_FILTER":
-                    pricetick = Decimal(f["tickSize"])
+                    pricetick = Decimal(str(f["tickSize"]))
                 elif f["filterType"] == "LOT_SIZE":
-                    min_volume = Decimal(f["stepSize"])
+                    min_volume = Decimal(str(f["stepSize"]))
 
             contract: ContractData = ContractData(
                 symbol=d["symbol"],
@@ -869,9 +869,9 @@ class BinanceUsdtTradeWebsocketApi(WebsocketClient):
             orderid=str(ord_data["c"]),
             type=order_type,
             direction=DIRECTION_BINANCES2VT[ord_data["S"]],
-            price=Decimal(ord_data["p"]),
-            volume=Decimal(ord_data["q"]),
-            traded=Decimal(ord_data["z"]),
+            price=Decimal(str(ord_data["p"])),
+            volume=Decimal(str(ord_data["q"])),
+            traded=Decimal(str(ord_data["z"])),
             status=STATUS_BINANCES2VT[ord_data["X"]],
             datetime=generate_datetime(packet["E"]),
             gateway_name=self.gateway_name

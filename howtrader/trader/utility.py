@@ -129,8 +129,11 @@ def round_to(value: Decimal, target: Decimal) -> Decimal:
     """
     Round price to price tick value.
     """
-    # value = Decimal(str(value))
-    # target = Decimal(str(target))
+    if not isinstance(value, Decimal):
+        value = Decimal(str(value))
+    if not isinstance(target, Decimal):
+        target = Decimal(str(target))
+
     rounded = value.quantize(target)
     return rounded
 
@@ -140,6 +143,10 @@ def floor_to(value: Decimal, target: Decimal) -> Decimal:
     """
     # value = Decimal(str(value))
     # target = Decimal(str(target))
+    if not isinstance(value, Decimal):
+        value = Decimal(str(value))
+    if not isinstance(target, Decimal):
+        target = Decimal(str(target))
     result = value.quantize(target, rounding=ROUND_DOWN)
 
     return result

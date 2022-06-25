@@ -458,9 +458,9 @@ class GridPositionCalculator(object):
     """
 
     def __init__(self, grid_step: float = 1.0):
-        self.pos: Decimal = Decimal(0)
-        self.avg_price: Decimal = Decimal(0)
-        self.profit: Decimal = Decimal(0)
+        self.pos: Decimal = Decimal("0")
+        self.avg_price: Decimal = Decimal("0")
+        self.profit: Decimal = Decimal("0")
         self.grid_step: Decimal = Decimal(grid_step)
 
     def update_position(self, order: OrderData):
@@ -473,11 +473,11 @@ class GridPositionCalculator(object):
         if order.direction == Direction.LONG:
             self.pos += order.volume
 
-            if self.pos == Decimal(0):
-                self.avg_price = Decimal(0)
+            if self.pos == Decimal("0"):
+                self.avg_price = Decimal("0")
             else:
 
-                if previous_pos == Decimal(0):
+                if previous_pos == Decimal("0"):
                     self.avg_price = order.price
 
                 elif previous_pos > 0:
@@ -494,11 +494,11 @@ class GridPositionCalculator(object):
         elif order.direction == Direction.SHORT:
             self.pos -= order.volume
 
-            if self.pos == Decimal(0):
-                self.avg_price = Decimal(0)
+            if self.pos == Decimal("0"):
+                self.avg_price = Decimal("0")
             else:
 
-                if previous_pos == Decimal(0):
+                if previous_pos == Decimal("0"):
                     self.avg_price = order.price
 
                 elif previous_pos < 0:

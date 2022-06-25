@@ -519,11 +519,11 @@ class BinanceSpotRestAPi(RestClient):
             orderid=data["clientOrderId"],
             symbol=data["symbol"].lower(),
             exchange=Exchange.BINANCE,
-            price=Decimal(data["price"]),
-            volume=Decimal(data["origQty"]),
+            price=Decimal(str(data["price"])),
+            volume=Decimal(str(data["origQty"])),
             type=ORDERTYPE_BINANCE2VT.get(data["type"],OrderType.LIMIT),
             direction=DIRECTION_BINANCE2VT[data["side"]],
-            traded=Decimal(data["executedQty"]),
+            traded=Decimal(str(data["executedQty"])),
             status=STATUS_BINANCE2VT.get(data["status"], None),
             datetime=generate_datetime(data["time"]),
             gateway_name=self.gateway_name,
@@ -542,11 +542,11 @@ class BinanceSpotRestAPi(RestClient):
                 orderid=d["clientOrderId"],
                 symbol=d["symbol"].lower(),
                 exchange=Exchange.BINANCE,
-                price=Decimal(d["price"]),
-                volume=Decimal(d["origQty"]),
+                price=Decimal(str(d["price"])),
+                volume=Decimal(str(d["origQty"])),
                 type=ORDERTYPE_BINANCE2VT.get(d["type"], OrderType.LIMIT),
                 direction=DIRECTION_BINANCE2VT[d["side"]],
-                traded=Decimal(d["executedQty"]),
+                traded=Decimal(str(d["executedQty"])),
                 status=STATUS_BINANCE2VT.get(d["status"], None),
                 datetime=generate_datetime(d["time"]),
                 gateway_name=self.gateway_name,
@@ -568,9 +568,9 @@ class BinanceSpotRestAPi(RestClient):
 
             for f in d["filters"]:
                 if f["filterType"] == "PRICE_FILTER":
-                    pricetick = Decimal(f["tickSize"])
+                    pricetick = Decimal(str(f["tickSize"]))
                 elif f["filterType"] == "LOT_SIZE":
-                    min_volume = Decimal(f["stepSize"])
+                    min_volume = Decimal(str(f["stepSize"]))
 
             contract: ContractData = ContractData(
                 symbol=d["symbol"].lower(),
@@ -783,9 +783,9 @@ class BinanceSpotTradeWebsocketApi(WebsocketClient):
             orderid=orderid,
             type=ORDERTYPE_BINANCE2VT.get(packet["o"], OrderType.LIMIT),
             direction=DIRECTION_BINANCE2VT[packet["S"]],
-            price=Decimal(packet["p"]),
-            volume=Decimal(packet["q"]),
-            traded=Decimal(packet["z"]),
+            price=Decimal(str(packet["p"])),
+            volume=Decimal(str(packet["q"])),
+            traded=Decimal(str(packet["z"])),
             status=STATUS_BINANCE2VT[packet["X"]],
             datetime=generate_datetime(packet["O"]),
             gateway_name=self.gateway_name

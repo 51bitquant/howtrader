@@ -251,7 +251,7 @@ class CtaEngine(BaseEngine):
                     contract,
                     stop_order.direction,
                     stop_order.offset,
-                    price,
+                    Decimal(str(price)),
                     stop_order.volume,
                     stop_order.lock,
                     stop_order.net
@@ -357,8 +357,8 @@ class CtaEngine(BaseEngine):
         contract: ContractData,
         direction: Direction,
         offset: Offset,
-        price: float,
-        volume: float,
+        price: Decimal,
+        volume: Decimal,
         lock: bool,
         net: bool
     ) -> list:
@@ -385,8 +385,8 @@ class CtaEngine(BaseEngine):
         strategy: CtaTemplate,
         direction: Direction,
         offset: Offset,
-        price: float,
-        volume: float,
+        price: Decimal,
+        volume: Decimal,
         lock: bool,
         net: bool
     ) -> list:
@@ -512,7 +512,7 @@ class CtaEngine(BaseEngine):
         """"""
         return self.engine_type
 
-    def get_pricetick(self, strategy: CtaTemplate) -> float:
+    def get_pricetick(self, strategy: CtaTemplate) -> Optional[Decimal]:
         """
         Return contract pricetick data.
         """
@@ -668,7 +668,10 @@ class CtaEngine(BaseEngine):
             for name in strategy.variables:
                 value = data.get(name, None)
                 if value is not None:
-                    setattr(strategy, name, value)
+                    if name == 'pos':
+                        setattr(strategy, name, Decimal(str(value)))
+                    else:
+                        setattr(strategy, name, value)
 
         # Subscribe market data
         contract: Optional[ContractData] = self.main_engine.get_contract(strategy.vt_symbol)
@@ -691,11 +694,11 @@ class CtaEngine(BaseEngine):
         strategy: CtaTemplate = self.strategies[strategy_name]
         if not strategy.inited:
             self.write_log(f"策略{strategy.strategy_name}启动失败，请先初始化")
-            return
+            return None
 
         if strategy.trading:
             self.write_log(f"{strategy_name}已经启动，请勿重复操作")
-            return
+            return None
 
         self.call_strategy_func(strategy, strategy.on_start)
         strategy.trading = True
@@ -742,7 +745,7 @@ class CtaEngine(BaseEngine):
         strategy: CtaTemplate = self.strategies[strategy_name]
         if strategy.trading:
             self.write_log(f"策略{strategy.strategy_name}移除失败，请先停止")
-            return
+            return False
 
         # Remove setting
         self.remove_strategy_setting(strategy_name)
