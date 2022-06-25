@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from threading import Lock
 from typing import Any, Dict, List, Tuple
-from howtrader.trader.utility import round_to
 import pytz
 from decimal import Decimal
 
@@ -488,7 +487,7 @@ class BinanceInverseRestApi(RestClient):
             extra=order
         )
 
-    def start_user_stream(self) -> Request:
+    def start_user_stream(self) -> None:
         """生成listenKey"""
         data: dict = {
             "security": Security.API_KEY
@@ -503,11 +502,11 @@ class BinanceInverseRestApi(RestClient):
             data=data
         )
 
-    def keep_user_stream(self) -> Request:
+    def keep_user_stream(self) -> None:
         """延长listenKey有效期"""
         self.keep_alive_count += 1
         if self.keep_alive_count < 600:
-            return
+            return None
         self.keep_alive_count = 0
 
         data: dict = {
@@ -713,6 +712,7 @@ class BinanceInverseRestApi(RestClient):
     ) -> None:
         """延长listenKey有效期函数报错回报"""
         # 当延长listenKey有效期时，忽略超时报错
+        self.start_user_stream()
         if not issubclass(exception_type, TimeoutError):
             self.on_error(exception_type, exception_value, tb, request)
 
@@ -818,6 +818,8 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
             self.on_account(packet)
         elif packet["e"] == "ORDER_TRADE_UPDATE":
             self.on_order(packet)
+        elif packet['e'] == 'listenKeyExpired':
+            self.gateway.rest_api.start_user_stream()
 
     def on_account(self, packet: dict) -> None:
         """资金更新推送"""

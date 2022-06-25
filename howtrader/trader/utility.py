@@ -2,7 +2,7 @@
 General utility functions.
 """
 
-import json
+import simplejson
 import logging
 import sys
 from datetime import datetime
@@ -103,7 +103,7 @@ def load_json(filename: str) -> dict:
 
     if filepath.exists():
         with open(filepath, mode="r", encoding="UTF-8") as f:
-            data: dict = json.load(f)
+            data: dict = simplejson.load(f)
         return data
     else:
         save_json(filename, {})
@@ -116,11 +116,12 @@ def save_json(filename: str, data: dict) -> None:
     """
     filepath: Path = get_file_path(filename)
     with open(filepath, mode="w+", encoding="UTF-8") as f:
-        json.dump(
+        simplejson.dump(
             data,
             f,
             indent=4,
-            ensure_ascii=False
+            ensure_ascii=False,
+            use_decimal=True
         )
 
 

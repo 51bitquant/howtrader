@@ -54,7 +54,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_dock()
         self.init_toolbar()
         self.init_menu()
-        self.load_window_setting("custom")
+        # self.load_window_setting("custom")
 
     def init_dock(self) -> None:
         """"""
@@ -74,16 +74,20 @@ class MainWindow(QtWidgets.QMainWindow):
             TradeMonitor, "成交", QtCore.Qt.RightDockWidgetArea
         )
         log_widget, log_dock = self.create_dock(
-            LogMonitor, "日志", QtCore.Qt.BottomDockWidgetArea
+            LogMonitor, "日志", QtCore.Qt.RightDockWidgetArea
         )
         account_widget, account_dock = self.create_dock(
-            AccountMonitor, "资金", QtCore.Qt.BottomDockWidgetArea
+            AccountMonitor, "资金", QtCore.Qt.RightDockWidgetArea
         )
         position_widget, position_dock = self.create_dock(
-            PositionMonitor, "持仓", QtCore.Qt.BottomDockWidgetArea
+            PositionMonitor, "持仓", QtCore.Qt.RightDockWidgetArea
         )
 
-        self.tabifyDockWidget(active_dock, order_dock)
+        self.tabifyDockWidget(order_dock, active_dock)
+        self.tabifyDockWidget(active_dock,trade_dock)
+
+        self.tabifyDockWidget(account_dock, position_dock)
+        self.tabifyDockWidget(position_dock, log_dock)
 
         self.save_window_setting("default")
 
@@ -251,7 +255,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QtWidgets.QMessageBox.Yes:
             for widget in self.widgets.values():
                 widget.close()
-            self.save_window_setting("custom")
+            # self.save_window_setting("custom")
 
             self.main_engine.close()
 
@@ -304,7 +308,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Sending a test email.
         """
-        self.main_engine.send_email("VeighNa Trader", "testing")
+        self.main_engine.send_email("Howtrader", "testing")
 
     def open_forum(self) -> None:
         """
