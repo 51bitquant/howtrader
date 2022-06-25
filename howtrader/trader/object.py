@@ -141,10 +141,16 @@ class OrderData(BaseData):
         """
         Create cancel request object from order.
         """
-        req: CancelRequest = CancelRequest(
+        return CancelRequest(
             orderid=self.orderid, symbol=self.symbol, exchange=self.exchange
         )
-        return req
+
+    def create_query_request(self) -> "OrderQueryRequest":
+        """
+        Create OrderQueryRequest for updating the order when the order hasn't updated for a long time.
+        you can config the update interval in vt_setting.json file, config the value "update_interval"
+        """
+        return OrderQueryRequest(orderid=self.orderid, symbol=self.symbol, exchange=self.exchange)
 
 
 @dataclass
