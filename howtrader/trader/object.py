@@ -122,8 +122,8 @@ class OrderData(BaseData):
     volume: Decimal = Decimal("0")
     traded: Decimal = Decimal("0")
     status: Status = Status.SUBMITTING
-    datetime: datetime = None
-    update_time: datetime = None
+    datetime: datetime = datetime.now()
+    update_time: datetime = datetime.now()
     reference: str = ""
 
     def __post_init__(self) -> None:
