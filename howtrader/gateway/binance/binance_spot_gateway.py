@@ -135,8 +135,16 @@ class BinanceSpotGateway(BaseGateway):
         """连接交易接口"""
         key: str = setting["key"]
         secret: str = setting["secret"]
-        proxy_host: str = setting["proxy_host"]
-        proxy_port: int = setting["proxy_port"]
+
+        if isinstance(setting["proxy_host"], str):
+            proxy_host: str = setting["proxy_host"]
+        else:
+            proxy_host: str = ""
+
+        if isinstance(setting["proxy_port"], int):
+            proxy_port: int = setting["proxy_port"]
+        else:
+            proxy_port: int = 0
 
         self.rest_api.connect(key, secret, proxy_host, proxy_port)
         self.market_ws_api.connect(proxy_host, proxy_port)
@@ -186,10 +194,15 @@ class BinanceSpotGateway(BaseGateway):
     def on_order(self, order: OrderData) -> None:
         """推送委托数据"""
         order.update_time = generate_datetime(time.time() * 1000)
-        super().on_order(order)
+        super().on_order(copy(order))
         last_order: OrderData = self.get_order(order.orderid)
-        if last_order:
+        if not last_order:
+            self.orders[order.orderid] = copy(order)
+        else:
             traded: Decimal = order.traded - last_order.traded
+            if traded >= 0:
+                self.orders[order.orderid] = copy(order)
+
             if traded > 0:
                 trade: TradeData = TradeData(
                     symbol=order.symbol,
@@ -203,7 +216,6 @@ class BinanceSpotGateway(BaseGateway):
                 )
 
                 super().on_trade(trade)
-        self.orders[order.orderid] = copy(order)
 
     def get_order(self, orderid: str) -> OrderData:
         """查询委托数据"""
