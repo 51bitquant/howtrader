@@ -11,57 +11,6 @@ from typing import Optional
 from howtrader.trader.utility import floor_to, BarGenerator
 from decimal import Decimal
 
-class NeutralGridPositionCalculator(object):
-    """
-    用来计算网格头寸的平均价格
-    Use for calculating the grid position's average price.
-
-    :param grid_step: 网格间隙.
-    """
-
-    def __init__(self):
-        self.pos: Decimal = Decimal(0)
-        self.avg_price: Decimal = Decimal(0)
-
-    def update_position(self, order: OrderData):
-        if order.status != Status.ALLTRADED:
-            return
-
-        previous_pos = self.pos
-        previous_avg = self.avg_price
-
-        if order.direction == Direction.LONG:
-            self.pos += order.volume
-
-            if self.pos == 0:
-                self.avg_price = Decimal(0)
-            else:
-
-                if previous_pos == 0:
-                    self.avg_price = order.price
-
-                elif previous_pos > 0:
-                    self.avg_price = (previous_pos * previous_avg + order.volume * order.price) / abs(self.pos)
-
-                elif previous_pos < 0 < self.pos:
-                    self.avg_price = order.price
-
-        elif order.direction == Direction.SHORT:
-            self.pos -= order.volume
-
-            if self.pos == 0:
-                self.avg_price = Decimal(0)
-            else:
-
-                if previous_pos == Decimal(0):
-                    self.avg_price = order.price
-
-                elif previous_pos < 0:
-                    self.avg_price = (abs(previous_pos) * previous_avg + order.volume * order.price) / abs(self.pos)
-
-                elif previous_pos > 0 > self.pos:
-                    self.avg_price = order.price
-
 
 class FutureNeutralGridStrategy(CtaTemplate):
     """
