@@ -1,9 +1,8 @@
 from howtrader.trader.constant import Direction
 from howtrader.trader.object import TradeData, OrderData, TickData
-from howtrader.trader.engine import BaseEngine
-from howtrader.app.algo_trading import AlgoTemplate
+from howtrader.app.algo_trading import AlgoTemplate, AlgoEngine
 import math
-
+from decimal import Decimal
 
 class GridAlgo(AlgoTemplate):
     """"""
@@ -26,7 +25,7 @@ class GridAlgo(AlgoTemplate):
 
     def __init__(
         self,
-        algo_engine: BaseEngine,
+        algo_engine: AlgoEngine,
         algo_name: str,
         setting: dict
     ):
@@ -86,15 +85,15 @@ class GridAlgo(AlgoTemplate):
         if target_buy_volume > 0:
             self.vt_orderid = self.buy(
                 self.vt_symbol,
-                self.last_tick.ask_price_1,
-                min(target_buy_volume, self.last_tick.ask_volume_1)
+                Decimal(self.last_tick.ask_price_1),
+                Decimal(min(target_buy_volume, self.last_tick.ask_volume_1))
             )
         # Sell when price rising
         elif target_sell_volume > 0:
             self.vt_orderid = self.sell(
                 self.vt_symbol,
-                self.last_tick.bid_price_1,
-                min(target_sell_volume, self.last_tick.bid_volume_1)
+                Decimal(self.last_tick.bid_price_1),
+                Decimal(min(target_sell_volume, self.last_tick.bid_volume_1))
             )
 
         # Update UI
@@ -109,8 +108,8 @@ class GridAlgo(AlgoTemplate):
     def on_trade(self, trade: TradeData):
         """"""
         if trade.direction == Direction.LONG:
-            self.pos += trade.volume
+            self.pos += float(trade.volume)
         else:
-            self.pos -= trade.volume
+            self.pos -= float(trade.volume)
 
         self.put_variables_event()

@@ -2,7 +2,7 @@ from random import uniform
 
 from howtrader.trader.constant import Offset, Direction
 from howtrader.trader.object import TradeData, OrderData, TickData
-from howtrader.trader.engine import BaseEngine
+from howtrader.app.algo_trading.engine import AlgoEngine
 from howtrader.trader.utility import round_to
 from decimal import Decimal
 
@@ -46,7 +46,7 @@ class BestLimitAlgo(AlgoTemplate):
 
     def __init__(
         self,
-        algo_engine: BaseEngine,
+        algo_engine: AlgoEngine,
         algo_name: str,
         setting: dict
     ):
@@ -108,7 +108,7 @@ class BestLimitAlgo(AlgoTemplate):
 
     def on_trade(self, trade: TradeData):
         """"""
-        self.traded += trade.volume
+        self.traded += float(trade.volume)
 
         if self.traded >= self.volume:
             self.write_log(f"已交易数量：{self.traded}，总数量：{self.volume}")
@@ -133,8 +133,8 @@ class BestLimitAlgo(AlgoTemplate):
         self.order_price = self.last_tick.bid_price_1
         self.vt_orderid = self.buy(
             self.vt_symbol,
-            self.order_price,
-            order_volume,
+            Decimal(self.order_price),
+            Decimal(order_volume),
             offset=self.offset
         )
 
@@ -148,17 +148,17 @@ class BestLimitAlgo(AlgoTemplate):
         self.order_price = self.last_tick.ask_price_1
         self.vt_orderid = self.sell(
             self.vt_symbol,
-            self.order_price,
-            order_volume,
+            Decimal(self.order_price),
+            Decimal(order_volume),
             offset=self.offset
         )
 
     def generate_rand_volume(self):
         """"""
         rand_volume = uniform(self.min_volume, self.max_volume)
-        rand_volume = round_to(rand_volume, Decimal(self.volume_change))
+        rand_volume = round_to(Decimal(rand_volume), Decimal(self.volume_change))
 
         if self.volume_change == 1:
-            rand_volume = int(rand_volume)
+            return int(rand_volume)
 
-        return rand_volume
+        return float(rand_volume)

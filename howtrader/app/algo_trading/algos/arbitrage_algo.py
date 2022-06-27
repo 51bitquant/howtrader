@@ -3,6 +3,7 @@ from howtrader.trader.object import TradeData, OrderData
 from howtrader.trader.engine import BaseEngine
 
 from howtrader.app.algo_trading import AlgoTemplate
+from decimal import Decimal
 
 
 class ArbitrageAlgo(AlgoTemplate):
@@ -28,10 +29,10 @@ class ArbitrageAlgo(AlgoTemplate):
     ]
 
     def __init__(
-        self,
-        algo_engine: BaseEngine,
-        algo_name: str,
-        setting: dict
+            self,
+            algo_engine: BaseEngine,
+            algo_name: str,
+            setting: dict
     ):
         """"""
         super().__init__(algo_engine, algo_name, setting)
@@ -76,14 +77,14 @@ class ArbitrageAlgo(AlgoTemplate):
         # Update pos
         if trade.direction == Direction.LONG:
             if trade.vt_symbol == self.active_vt_symbol:
-                self.active_pos += trade.volume
+                self.active_pos += float(trade.volume)
             else:
-                self.passive_pos += trade.volume
+                self.passive_pos += float(trade.volume)
         else:
             if trade.vt_symbol == self.active_vt_symbol:
-                self.active_pos -= trade.volume
+                self.active_pos -= float(trade.volume)
             else:
-                self.passive_pos -= trade.volume
+                self.passive_pos -= float(trade.volume)
 
         # Hedge if active symbol traded
         if trade.vt_symbol == self.active_vt_symbol:
@@ -144,8 +145,8 @@ class ArbitrageAlgo(AlgoTemplate):
 
                 self.active_vt_orderid = self.sell(
                     self.active_vt_symbol,
-                    active_tick.bid_price_1,
-                    volume
+                    Decimal(active_tick.bid_price_1),
+                    Decimal(volume)
                 )
 
         # Buy condition
@@ -160,8 +161,8 @@ class ArbitrageAlgo(AlgoTemplate):
 
                 self.active_vt_orderid = self.buy(
                     self.active_vt_symbol,
-                    active_tick.ask_price_1,
-                    volume
+                    Decimal(active_tick.ask_price_1),
+                    Decimal(volume)
                 )
 
         # Update GUI
@@ -175,12 +176,12 @@ class ArbitrageAlgo(AlgoTemplate):
         if volume > 0:
             self.passive_vt_orderid = self.buy(
                 self.passive_vt_symbol,
-                tick.ask_price_1,
-                volume
+                Decimal(tick.ask_price_1),
+                Decimal(volume)
             )
         elif volume < 0:
             self.passive_vt_orderid = self.sell(
                 self.passive_vt_symbol,
-                tick.bid_price_1,
-                abs(volume)
+                Decimal(tick.bid_price_1),
+                Decimal(abs(volume))
             )

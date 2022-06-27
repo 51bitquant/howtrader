@@ -1,9 +1,9 @@
 from howtrader.trader.constant import Offset, Direction
 from howtrader.trader.object import TradeData, OrderData, TickData
-from howtrader.trader.engine import BaseEngine
+from howtrader.app.algo_trading.engine import AlgoEngine
 
 from ..template import AlgoTemplate
-
+from decimal import Decimal
 
 class IcebergAlgo(AlgoTemplate):
     """"""
@@ -34,7 +34,7 @@ class IcebergAlgo(AlgoTemplate):
 
     def __init__(
         self,
-        algo_engine: BaseEngine,
+        algo_engine: AlgoEngine,
         algo_name: str,
         setting: dict
     ):
@@ -80,7 +80,7 @@ class IcebergAlgo(AlgoTemplate):
 
     def on_trade(self, trade: TradeData):
         """"""
-        self.traded += trade.volume
+        self.traded += float(trade.volume)
 
         if self.traded >= self.volume:
             self.write_log(f"已交易数量：{self.traded}，总数量：{self.volume}")
@@ -110,15 +110,15 @@ class IcebergAlgo(AlgoTemplate):
             if self.direction == Direction.LONG:
                 self.vt_orderid = self.buy(
                     self.vt_symbol,
-                    self.price,
-                    order_volume,
+                    Decimal(self.price),
+                    Decimal(order_volume),
                     offset=self.offset
                 )
             else:
                 self.vt_orderid = self.sell(
                     self.vt_symbol,
-                    self.price,
-                    order_volume,
+                    Decimal(self.price),
+                    Decimal(order_volume),
                     offset=self.offset
                 )
         # 否则检查撤单

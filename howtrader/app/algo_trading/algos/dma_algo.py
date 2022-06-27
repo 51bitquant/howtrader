@@ -1,8 +1,9 @@
 from howtrader.trader.constant import Offset, Direction, OrderType
 from howtrader.trader.object import TradeData, OrderData, TickData
-from howtrader.trader.engine import BaseEngine
+from howtrader.app.algo_trading.engine import AlgoEngine
 
 from ..template import AlgoTemplate
+from decimal import Decimal
 
 
 class DmaAlgo(AlgoTemplate):
@@ -39,7 +40,7 @@ class DmaAlgo(AlgoTemplate):
 
     def __init__(
         self,
-        algo_engine: BaseEngine,
+        algo_engine: AlgoEngine,
         algo_name: str,
         setting: dict
     ):
@@ -69,8 +70,8 @@ class DmaAlgo(AlgoTemplate):
             if self.direction == Direction.LONG:
                 self.vt_orderid = self.buy(
                     self.vt_symbol,
-                    self.price,
-                    self.volume,
+                    Decimal(self.price),
+                    Decimal(self.volume),
                     self.order_type,
                     self.offset
                 )
@@ -78,8 +79,8 @@ class DmaAlgo(AlgoTemplate):
             else:
                 self.vt_orderid = self.sell(
                     self.vt_symbol,
-                    self.price,
-                    self.volume,
+                    Decimal(self.price),
+                    Decimal(self.volume),
                     self.order_type,
                     self.offset
                 )
@@ -87,7 +88,7 @@ class DmaAlgo(AlgoTemplate):
 
     def on_order(self, order: OrderData):
         """"""
-        self.traded = order.traded
+        self.traded = float(order.traded)
         self.order_status = order.status
 
         if not order.is_active():

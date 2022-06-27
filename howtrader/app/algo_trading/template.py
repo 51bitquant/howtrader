@@ -1,9 +1,10 @@
 from typing import Dict
-from howtrader.trader.engine import BaseEngine
-from howtrader.trader.object import TickData, OrderData, TradeData
+from howtrader.trader.object import TickData, OrderData, TradeData, ContractData
 from howtrader.trader.constant import OrderType, Offset, Direction
 from howtrader.trader.utility import virtual
 from decimal import Decimal
+from typing import Optional
+from .engine import AlgoEngine
 
 class AlgoTemplate:
     """"""
@@ -15,12 +16,12 @@ class AlgoTemplate:
 
     def __init__(
         self,
-        algo_engine: BaseEngine,
+        algo_engine: AlgoEngine,
         algo_name: str,
         setting: dict
     ) -> None:
         """构造函数"""
-        self.algo_engine: BaseEngine = algo_engine
+        self.algo_engine: AlgoEngine = algo_engine
         self.algo_name: str = algo_name
 
         self.active: bool = False
@@ -29,7 +30,7 @@ class AlgoTemplate:
         self.variables.insert(0, "active")
 
     @classmethod
-    def new(cls, algo_engine: BaseEngine, setting: dict) -> "AlgoTemplate":
+    def new(cls, algo_engine: AlgoEngine, setting: dict) -> "AlgoTemplate":
         """创建一个新的算法实例"""
         cls._count += 1
         algo_name: str = f"{cls.__name__}_{cls._count}"
@@ -114,10 +115,10 @@ class AlgoTemplate:
         volume: Decimal,
         order_type: OrderType = OrderType.LIMIT,
         offset: Offset = Offset.NONE
-    ) -> None:
+    ) -> Optional[str]:
         """"""
         if not self.active:
-            return
+            return None
 
         msg: str = f"委托买入{vt_symbol}：{volume}@{price}"
         self.write_log(msg)
@@ -139,10 +140,10 @@ class AlgoTemplate:
         volume: Decimal,
         order_type: OrderType = OrderType.LIMIT,
         offset: Offset = Offset.NONE
-    ) -> None:
+    ) -> Optional[str]:
         """"""
         if not self.active:
-            return
+            return None
 
         msg: str = f"委托卖出{vt_symbol}：{volume}@{price}"
         self.write_log(msg)
@@ -169,11 +170,11 @@ class AlgoTemplate:
         for vt_orderid in self.active_orders.keys():
             self.cancel_order(vt_orderid)
 
-    def get_tick(self, vt_symbol: str) -> None:
+    def get_tick(self, vt_symbol: str) -> Optional[TickData]:
         """"""
         return self.algo_engine.get_tick(self, vt_symbol)
 
-    def get_contract(self, vt_symbol: str) -> None:
+    def get_contract(self, vt_symbol: str) -> Optional[ContractData]:
         """"""
         return self.algo_engine.get_contract(self, vt_symbol)
 

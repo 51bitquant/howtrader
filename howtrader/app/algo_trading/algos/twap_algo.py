@@ -1,8 +1,8 @@
 from howtrader.trader.utility import round_to
 from howtrader.trader.constant import Offset, Direction
 from howtrader.trader.object import TradeData, TickData
-from howtrader.trader.engine import BaseEngine
-
+from howtrader.app.algo_trading.engine import AlgoEngine
+from decimal import Decimal
 from ..template import AlgoTemplate
 
 
@@ -36,7 +36,7 @@ class TwapAlgo(AlgoTemplate):
 
     def __init__(
         self,
-        algo_engine: BaseEngine,
+        algo_engine: AlgoEngine,
         algo_name: str,
         setting: dict
     ):
@@ -56,7 +56,7 @@ class TwapAlgo(AlgoTemplate):
         self.order_volume = self.volume / (self.time / self.interval)
         contract = self.get_contract(self.vt_symbol)
         if contract:
-            self.order_volume = round_to(self.order_volume, contract.min_volume)
+            self.order_volume = float(round_to(Decimal(self.order_volume), contract.min_volume))
 
         self.timer_count = 0
         self.total_count = 0
@@ -74,7 +74,7 @@ class TwapAlgo(AlgoTemplate):
 
     def on_trade(self, trade: TradeData):
         """"""
-        self.traded += trade.volume
+        self.traded += float(trade.volume)
 
         if self.traded >= self.volume:
             self.write_log(f"已交易数量：{self.traded}，总数量：{self.volume}")
@@ -109,9 +109,9 @@ class TwapAlgo(AlgoTemplate):
 
         if self.direction == Direction.LONG:
             if tick.ask_price_1 <= self.price:
-                self.buy(self.vt_symbol, self.price,
-                         order_volume, offset=self.offset)
+                self.buy(self.vt_symbol, Decimal(self.price),
+                         Decimal(order_volume), offset=self.offset)
         else:
             if tick.bid_price_1 >= self.price:
-                self.sell(self.vt_symbol, self.price,
-                          order_volume, offset=self.offset)
+                self.sell(self.vt_symbol, Decimal(self.price),
+                          Decimal(order_volume), offset=self.offset)
