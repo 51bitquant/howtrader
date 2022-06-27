@@ -8,8 +8,6 @@ from howtrader.trader.constant import Interval
 from howtrader.trader.object import BarData, HistoryRequest, ContractData
 from howtrader.trader.utility import extract_vt_symbol
 from howtrader.trader.database import get_database, BaseDatabase
-from howtrader.trader.datafeed import get_datafeed, BaseDatafeed
-
 
 APP_NAME: str = "ChartWizard"
 
@@ -24,8 +22,6 @@ class ChartWizardEngine(BaseEngine):
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine) -> None:
         """"""
         super().__init__(main_engine, event_engine, APP_NAME)
-
-        self.datafeed: BaseDatafeed = get_datafeed()
         self.database: BaseDatabase = get_database()
 
     def query_history(
@@ -64,8 +60,6 @@ class ChartWizardEngine(BaseEngine):
         if contract:
             if contract.history_data:
                 data: List[BarData] = self.main_engine.query_history(req, contract.gateway_name)
-            else:
-                data: List[BarData] = self.datafeed.query_bar_history(req)
         else:
             data: List[BarData] = self.database.load_bar_data(
                 symbol,

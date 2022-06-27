@@ -11,7 +11,7 @@ from howtrader.trader.event import EVENT_TICK
 from howtrader.trader.object import ContractData, TickData, BarData, SubscribeRequest
 from howtrader.trader.utility import BarGenerator
 from howtrader.trader.constant import Interval
-from vnpy_spreadtrading.base import SpreadData, EVENT_SPREAD_DATA
+from howtrader.app.spread_trading.base import SpreadData, EVENT_SPREAD_DATA
 
 from ..engine import APP_NAME, EVENT_CHART_HISTORY, ChartWizardEngine
 
