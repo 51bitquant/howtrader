@@ -66,8 +66,6 @@ class BacktesterEngine(BaseEngine):
         self.load_strategy_class()
         self.write_log("策略文件加载完成")
 
-        self.init_datafeed()
-
     def write_log(self, msg: str) -> None:
         """"""
         event: Event = Event(EVENT_BACKTESTER_LOG)
@@ -128,7 +126,7 @@ class BacktesterEngine(BaseEngine):
         self,
         class_name: str,
         vt_symbol: str,
-        interval: str,
+        interval: Interval,
         start: datetime,
         end: datetime,
         rate: float,
@@ -145,7 +143,7 @@ class BacktesterEngine(BaseEngine):
         engine: BacktestingEngine = self.backtesting_engine
         engine.clear_data()
 
-        if interval == Interval.TICK.value:
+        if interval == Interval.TICK:
             mode: BacktestingMode = BacktestingMode.TICK
         else:
             mode: BacktestingMode = BacktestingMode.BAR

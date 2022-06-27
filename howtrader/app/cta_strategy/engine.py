@@ -192,8 +192,7 @@ class CtaEngine(BaseEngine):
 
         strategy: Optional[CtaTemplate] = self.orderid_strategy_map.get(trade.vt_orderid, None)
         if not strategy:
-            return
-
+            return None
         # Update strategy pos before calling on_trade method
         if trade.direction == Direction.LONG:
             strategy.pos += trade.volume

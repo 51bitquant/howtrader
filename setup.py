@@ -24,24 +24,26 @@ from setuptools import find_packages, setup
 
 def get_install_requires():
     install_requires = [
-        "six==1.13.0",
+        "six",
         "wheel",
-        "PyQt5==5.15.2",
-        "pyqtgraph==0.10.0",
+        "PySide6",
+        "pyqtgraph",
         "qdarkstyle",
         "requests",
+        "aiohttp",
+        "pytz",
         "websocket-client",
         "peewee",
-        "pymysql",
         "mongoengine",
         "numpy",
         "pandas",
         "matplotlib",
         "seaborn",
         "deap",
-        "tzlocal==2.1",
+        "ta-lib",
+        "tzlocal",
         "plotly",
-        "pandas_ta"
+        "importlib-metadata"
     ]
 
     if sys.version_info.minor < 7:

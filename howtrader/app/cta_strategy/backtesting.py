@@ -122,7 +122,7 @@ class BacktestingEngine:
         """"""
         self.mode = mode
         self.vt_symbol = vt_symbol
-        self.interval = Interval(interval)
+        self.interval = interval
         self.rate = rate
         self.slippage = slippage
         self.size = size
