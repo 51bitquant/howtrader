@@ -460,8 +460,7 @@ class GridPositionCalculator(object):
     def __init__(self, grid_step: float = 1.0):
         self.pos: Decimal = Decimal("0")
         self.avg_price: Decimal = Decimal("0")
-        self.profit: Decimal = Decimal("0")
-        self.grid_step: Decimal = Decimal(grid_step)
+        self.grid_step: Decimal = Decimal(str(grid_step))
 
     def update_position(self, order: OrderData):
         if order.status != Status.ALLTRADED:
