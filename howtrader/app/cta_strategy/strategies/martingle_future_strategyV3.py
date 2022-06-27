@@ -6,14 +6,9 @@ from howtrader.app.cta_strategy import (
 from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 
 from howtrader.app.cta_strategy.engine import CtaEngine
-from howtrader.trader.event import EVENT_TIMER
-from howtrader.event import Event
 from howtrader.trader.object import Status, Direction, Interval, ContractData, AccountData
 
-from typing import Optional, Union, Tuple
-import numpy as np
-import talib
-from howtrader.trader.event import EVENT_CONTRACT, EVENT_ACCOUNT
+from typing import Optional
 from howtrader.trader.utility import BarGenerator
 from decimal import Decimal
 
@@ -65,10 +60,10 @@ class MartingleFutureStrategyV3(CtaTemplate):
         """"""
         super().__init__(cta_engine, strategy_name, vt_symbol, setting)
 
-        self.last_filled_order: Optional[OrderData, None] = None
-        self.tick: Optional[TickData, None] = None
-        self.contract: Optional[ContractData, None] = None
-        self.account: Optional[AccountData, None] = None
+        self.last_filled_order: Optional[OrderData] = None
+        self.tick: Optional[TickData] = None
+        self.contract: Optional[ContractData] = None
+        self.account: Optional[AccountData] = None
 
         self.bg_1hour = BarGenerator(self.on_bar, 1, on_window_bar=self.on_1hour_bar, interval=Interval.HOUR)  # 1hour
         self.bg_4hour = BarGenerator(self.on_bar, 4, on_window_bar=self.on_4hour_bar, interval=Interval.HOUR)  # 4hour

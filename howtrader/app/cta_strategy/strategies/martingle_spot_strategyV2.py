@@ -5,12 +5,10 @@ from howtrader.app.cta_strategy import (
 
 from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 from howtrader.app.cta_strategy.engine import CtaEngine
-from howtrader.trader.event import EVENT_TIMER
-from howtrader.event import Event
-from howtrader.trader.object import Status, Direction, Interval, ContractData, AccountData
+from howtrader.trader.object import Status, Direction, ContractData, AccountData
 
 from typing import Optional
-from howtrader.trader.utility import BarGenerator, ArrayManager
+from howtrader.trader.utility import ArrayManager, BarGenerator
 from decimal import Decimal
 
 class MartingleSpotStrategyV2(CtaTemplate):
@@ -64,10 +62,11 @@ class MartingleSpotStrategyV2(CtaTemplate):
         """"""
         super().__init__(cta_engine, strategy_name, vt_symbol, setting)
 
-        self.last_filled_order: Optional[OrderData, None] = None
-        self.tick: Optional[TickData, None] = None
-        self.contract: Optional[ContractData, None] = None
-        self.account: Optional[AccountData, None] = None
+        self.last_filled_order: Optional[OrderData] = None
+        self.tick: Optional[TickData] = None
+        self.contract: Optional[ContractData] = None
+        self.account: Optional[AccountData] = None
+        self.bg = BarGenerator(self.on_bar)  # generate 1min bar.
         self.am = ArrayManager(3000)  # 默认是100，设置3000
 
         # self.cta_engine.event_engine.register(EVENT_ACCOUNT + 'BINANCE.币名称', self.process_acccount_event)
@@ -106,10 +105,9 @@ class MartingleSpotStrategyV2(CtaTemplate):
         """
         Callback of new tick data update.
         """
-        # if tick.bid_price_1 > 0 and tick.ask_price_1 > 0:
-        #     self.tick = tick
-        # else:
-        #     self.tick = None
+        if tick.bid_price_1 > 0 and tick.ask_price_1 > 0:
+            self.tick = tick
+            self.bg.update_tick(tick)
 
     def on_bar(self, bar: BarData):
         """

@@ -6,8 +6,6 @@ from howtrader.app.cta_strategy import (
 from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 
 from howtrader.app.cta_strategy.engine import CtaEngine
-from howtrader.trader.event import EVENT_TIMER
-from howtrader.event import Event
 from howtrader.trader.object import Status, Direction, Interval, ContractData, AccountData
 
 from typing import Optional

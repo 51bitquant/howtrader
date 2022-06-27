@@ -6,7 +6,7 @@ from howtrader.app.cta_strategy import (
 from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 from howtrader.app.cta_strategy.engine import CtaEngine
 from howtrader.trader.object import Status, Direction, ContractData, AccountData
-from howtrader.trader.utility import ArrayManager
+from howtrader.trader.utility import ArrayManager, BarGenerator
 from typing import Optional
 from decimal import Decimal
 
@@ -66,7 +66,8 @@ class MartingleFutureStrategyV2(CtaTemplate):
         self.tick: Optional[TickData, None] = None
         self.contract: Optional[ContractData, None] = None
         self.account: Optional[AccountData, None] = None
-        self.am = ArrayManager(3000)  # 默认是100，设置3000
+        self.bg = BarGenerator(self.on_bar) # generate 1min bar.
+        self.am = ArrayManager(3000)  # default is 100, we need 3000
 
         # self.cta_engine.event_engine.register(EVENT_ACCOUNT + 'BINANCE.币名称', self.process_acccount_event)
         # self.cta_engine.event_engine.register(EVENT_ACCOUNT + "BINANCE.USDT", self.process_account_event)
@@ -104,10 +105,9 @@ class MartingleFutureStrategyV2(CtaTemplate):
         """
         Callback of new tick data update.
         """
-        # if tick.bid_price_1 > 0 and tick.ask_price_1 > 0:
-        #     self.tick = tick
-        # else:
-        #     self.tick = None
+        if tick.bid_price_1 > 0 and tick.ask_price_1 > 0:
+            self.tick = tick
+            self.bg.update_tick(tick)
 
     def on_bar(self, bar: BarData):
         """
@@ -144,7 +144,7 @@ class MartingleFutureStrategyV2(CtaTemplate):
                 orderids = self.buy(Decimal(price), Decimal(vol))
                 self.buy_orders.extend(orderids)  # 以及已经下单的orderids.
         else:
-            if len(self.sell_orders) <= 0 and self.avg_price > 0:
+            if len(self.sell_orders) <= 0 < self.avg_price:
                 # 有利润平仓的时候
                 # 清理掉其他买单.
 
@@ -154,7 +154,7 @@ class MartingleFutureStrategyV2(CtaTemplate):
                     orderids = self.short(Decimal(bar.close_price), Decimal(abs(self.current_pos)))
                     self.sell_orders.extend(orderids)
 
-            if self.entry_lowest > 0 and len(self.buy_orders) <= 0:
+            if self.entry_lowest > 0 >= len(self.buy_orders):
                 # 考虑加仓的条件: 1） 当前有仓位,且仓位值要大于11USDTyi以上，2）加仓的次数小于最大的加仓次数，3）当前的价格比上次入场的价格跌了一定的百分比。
 
                 dump_down_pct = self.last_entry_price / self.entry_lowest - 1
@@ -181,8 +181,8 @@ class MartingleFutureStrategyV2(CtaTemplate):
                 # 买单成交.
 
                 self.current_increase_pos_times += 1
-                self.last_entry_price = order.price  # 记录上一次成绩的价格.
-                self.entry_lowest = order.price
+                self.last_entry_price =float(order.price)  # 记录上一次成绩的价格.
+                self.entry_lowest = float(order.price)
 
         if not order.is_active():
             if order.vt_orderid in self.sell_orders:

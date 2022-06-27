@@ -37,20 +37,19 @@ class SpotProfitGridStrategy(CtaTemplate):
 
     # 变量
     avg_price = 0.0
-    current_pos = 0.0
 
     parameters = ["grid_step", "profit_step", "trading_size", "max_pos", "profit_orders_counts",
                   "trailing_stop_multiplier", "stop_minutes"]
 
-    variables = ["avg_price", "current_pos"]
+    variables = ["avg_price"]
 
     def __init__(self, cta_engine: CtaEngine, strategy_name, vt_symbol, setting):
         """"""
         super().__init__(cta_engine, strategy_name, vt_symbol, setting)
 
         self.position_calculator = GridPositionCalculator(grid_step=self.grid_step)  # 计算仓位用的对象
-        self.current_pos = self.position_calculator.pos
-        self.avg_price = self.position_calculator.avg_price
+        self.position_calculator.pos = self.pos
+        self.position_calculator.avg_price = Decimal(str(self.avg_price))
 
         self.normal_timer_interval = 0
         self.profit_order_interval = 0
@@ -63,7 +62,6 @@ class SpotProfitGridStrategy(CtaTemplate):
         self.stop_orders = []  # stop orders.
 
         self.trigger_stop_loss = False  # 是否触发止损。
-
         self.last_filled_order: Optional[OrderData] = None
 
         self.tick: Optional[TickData] = None
@@ -81,11 +79,6 @@ class SpotProfitGridStrategy(CtaTemplate):
         self.write_log("策略启动")
         self.cta_engine.event_engine.register(EVENT_TIMER, self.process_timer_event)
 
-        self.position_calculator = GridPositionCalculator(
-            grid_step=self.grid_step)  # 计算仓位用的对象 
-        self.avg_price = self.position_calculator.avg_price
-        self.current_pos = self.position_calculator.pos
-
     def on_stop(self):
         """
         Callback when strategy is stopped.
@@ -100,6 +93,12 @@ class SpotProfitGridStrategy(CtaTemplate):
 
         if self.trigger_stop_loss:
             self.stop_strategy_interval += 1  # 如果触发了止损，然后就会开始计时.
+            # 如果触发了止损就需要休息一段时间.
+            if self.stop_order_interval < self.stop_minutes * 60:
+                return
+            else:
+                self.stop_order_interval = 0
+                self.trigger_stop_loss = False
 
         self.normal_timer_interval += 1
 
@@ -107,16 +106,8 @@ class SpotProfitGridStrategy(CtaTemplate):
             self.normal_timer_interval = 0
 
             # 仓位为零的时候
-            if abs(self.position_calculator.pos) < self.trading_size:
+            if abs(self.pos) < self.trading_size:
                 if len(self.long_orders) == 0 and len(self.short_orders) == 0:
-                    if self.trigger_stop_loss:
-                        # 如果触发了止损就需要休息一段时间.
-                        if self.stop_order_interval < self.stop_minutes * 60:
-                            return
-                        else:
-                            self.stop_order_interval = 0
-                            self.trigger_stop_loss = False
-
                     buy_price = self.tick.bid_price_1 - self.grid_step / 2
                     sell_price = self.tick.bid_price_1 + self.grid_step / 2
                     long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
@@ -132,7 +123,7 @@ class SpotProfitGridStrategy(CtaTemplate):
                     print(f"仓位为零且单边网格没有订单, 先撤掉所有订单")
                     self.cancel_all()
 
-            elif abs(self.position_calculator.pos) >= self.trading_size:
+            elif abs(self.pos) >= self.trading_size:
 
                 if len(self.long_orders) > 0 and len(self.short_orders) > 0:
                     return
@@ -162,22 +153,22 @@ class SpotProfitGridStrategy(CtaTemplate):
         if self.profit_order_interval >= PROFIT_TIMER_INTERVAL:
             self.profit_order_interval = 0
 
-            if abs(self.position_calculator.pos) >= self.profit_orders_counts * self.trading_size and len(
+            if abs(self.pos) >= self.profit_orders_counts * self.trading_size and len(
                     self.profit_orders) == 0:
-                print(f"单边网格出现超过{self.profit_orders_counts}个订单以上,头寸为:{self.position_calculator.pos}, 考虑设置止盈的情况")
+                print(f"单边网格出现超过{self.profit_orders_counts}个订单以上,头寸为:{self.pos}, 考虑设置止盈的情况")
 
-                if self.position_calculator.pos > 0:
+                if self.pos > 0:
                     price = max(self.tick.ask_price_1 * (1 + 0.0001),
                                 float(self.position_calculator.avg_price) + self.profit_step)
-                    order_ids = self.sell(Decimal(price), Decimal(abs(self.position_calculator.pos)))
+                    order_ids = self.sell(Decimal(price), Decimal(abs(self.pos)))
                     self.profit_orders.extend(order_ids)
-                    print(f"多头止盈情况: {self.position_calculator.pos}@{price}")
-                elif self.position_calculator.pos < 0:
+                    print(f"多头止盈情况: {self.pos}@{price}")
+                elif self.pos < 0:
                     price = min(self.tick.bid_price_1 * (1 - 0.0001),
                                 float(self.position_calculator.avg_price) - self.profit_step)
-                    order_ids = self.buy(Decimal(price), Decimal(abs(self.position_calculator.pos)))
+                    order_ids = self.buy(Decimal(price), Decimal(abs(self.pos)))
                     self.profit_orders.extend(order_ids)
-                    print(f"空头止盈情况: {self.position_calculator.pos}@{price}")
+                    print(f"空头止盈情况: {self.pos}@{price}")
 
         self.stop_order_interval += 1
         if self.stop_order_interval >= STOP_TIMER_INTERVAL:
@@ -187,28 +178,28 @@ class SpotProfitGridStrategy(CtaTemplate):
                 self.cancel_order(vt_id)
 
             # 如果仓位达到最大值的时候.
-            if abs(self.position_calculator.pos) >= self.max_pos * self.trading_size:
+            if abs(self.pos) >= self.max_pos * self.trading_size:
 
                 if self.last_filled_order:
-                    if self.position_calculator.pos > 0:
+                    if self.pos > 0:
                         if self.tick.bid_price_1 < float(self.last_filled_order.price) - self.trailing_stop_multiplier * self.grid_step:
-                            vt_ids = self.sell(Decimal(self.tick.bid_price_1), Decimal(abs(self.position_calculator.pos)))
+                            vt_ids = self.sell(Decimal(self.tick.bid_price_1), Decimal(abs(self.pos)))
                             self.stop_orders.extend(vt_ids)
 
-                    elif self.position_calculator.pos < 0:
+                    elif self.pos < 0:
                         if self.tick.ask_price_1 > float(self.last_filled_order.price) + self.trailing_stop_multiplier * self.grid_step:
-                            vt_ids = self.buy(Decimal(self.tick.ask_price_1), Decimal(abs(self.position_calculator.pos)))
+                            vt_ids = self.buy(Decimal(self.tick.ask_price_1), Decimal(abs(self.pos)))
                             self.stop_orders.extend(vt_ids)
 
                 else:
-                    if self.position_calculator.pos > 0:
+                    if self.pos > 0:
                         if self.tick.bid_price_1 < float(self.position_calculator.avg_price) - self.max_pos * self.grid_step:
-                            vt_ids = self.sell(Decimal(self.tick.bid_price_1), Decimal(abs(self.position_calculator.pos)))
+                            vt_ids = self.sell(Decimal(self.tick.bid_price_1), Decimal(abs(self.pos)))
                             self.stop_orders.extend(vt_ids)
 
-                    elif self.position_calculator.pos < 0:
+                    elif self.pos < 0:
                         if self.tick.ask_price_1 > float(self.position_calculator.avg_price) + self.max_pos * self.grid_step:
-                            vt_ids = self.buy(Decimal(self.tick.ask_price_1), Decimal(abs(self.position_calculator.pos)))
+                            vt_ids = self.buy(Decimal(self.tick.ask_price_1), Decimal(abs(self.pos)))
                             self.stop_orders.extend(vt_ids)
 
     def on_tick(self, tick: TickData):
@@ -228,9 +219,7 @@ class SpotProfitGridStrategy(CtaTemplate):
         Callback of new order data update.
         """
         self.position_calculator.update_position(order)
-
-        self.current_pos = self.position_calculator.pos
-        self.avg_price = self.position_calculator.avg_price
+        self.avg_price = float(self.position_calculator.avg_price)
 
         if order.status == Status.ALLTRADED:
             if order.vt_orderid in (self.long_orders + self.short_orders):
@@ -246,12 +235,12 @@ class SpotProfitGridStrategy(CtaTemplate):
 
                 self.last_filled_order = order
 
-                if abs(self.position_calculator.pos) < self.trading_size:
+                if abs(self.pos) < self.trading_size:
                     print("仓位为零， 需要重新开始.")
                     return
 
                 # tick 存在且仓位数量还没有达到设置的最大值.
-                if self.tick and abs(self.position_calculator.pos) < self.max_pos * self.trading_size:
+                if self.tick and abs(self.pos) < self.max_pos * self.trading_size:
                     buy_step = self.get_step()
                     sell_step = self.get_step()
 
@@ -273,13 +262,13 @@ class SpotProfitGridStrategy(CtaTemplate):
 
             elif order.vt_orderid in self.profit_orders:
                 self.profit_orders.remove(order.vt_orderid)
-                if abs(self.position_calculator.pos) < self.trading_size:
+                if abs(self.pos) < self.trading_size:
                     self.cancel_all()
                     print(f"止盈单子成交,且仓位为零, 先撤销所有订单，然后重新开始")
 
             elif order.vt_orderid in self.stop_orders:
                 self.stop_orders.remove(order.vt_orderid)
-                if abs(self.position_calculator.pos) < self.trading_size:
+                if abs(self.pos) < self.trading_size:
                     self.trigger_stop_loss = True
                     self.cancel_all()
 
