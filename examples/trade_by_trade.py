@@ -1,11 +1,12 @@
 from howtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
-from howtrader.app.cta_strategy.strategies.turtle_signal_strategy import TurtleSignalStrategy
+from .strategies.turtle_signal_strategy import TurtleSignalStrategy
 from datetime import datetime
+from howtrader.trader.object import Interval
 
 engine = BacktestingEngine()
 engine.set_parameters(
     vt_symbol="BTCUSDT.BINANCE",
-    interval="1h",
+    interval=Interval.HOUR,
     start=datetime(2017, 1, 1),
     end=datetime(2019, 11, 30),
     rate=1 / 10000,

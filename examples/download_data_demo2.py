@@ -1,6 +1,8 @@
 """
-    我们使用币安原生的api进行数据爬取.
+use binance api to get the kline datas.
+author: 51bitquant
 
+discord: 51bitquant#8078
 """
 
 import pandas as pd
@@ -8,7 +10,7 @@ import time
 from datetime import datetime
 import requests
 import pytz
-from howtrader.trader.database import database_manager
+from howtrader.trader.database import BaseDatabase, get_database
 
 pd.set_option('expand_frame_repr', False)  #
 from howtrader.trader.object import BarData, Interval, Exchange
@@ -18,6 +20,9 @@ BINANCE_FUTURE_LIMIT = 1500
 
 CHINA_TZ = pytz.timezone("Asia/Shanghai")
 from threading import Thread
+
+
+database: BaseDatabase = get_database()
 
 
 def generate_datetime(timestamp: float) -> datetime:
@@ -30,39 +35,40 @@ def generate_datetime(timestamp: float) -> datetime:
     return dt
 
 
-def get_binance_data(symbol: str, exchanges: str, start_time: str, end_time: str):
+def get_binance_data(symbol: str, exchange: str, start_time: str, end_time: str, gate_way: str="BINANCE_USDT"):
     """
-    爬取币安交易所的数据
+    crawl binance exchange data
     :param symbol: BTCUSDT.
-    :param exchanges: 现货、USDT合约, 或者币币合约.
-    :param start_time: 格式如下:2020-1-1 或者2020-01-01
-    :param end_time: 格式如下:2020-1-1 或者2020-01-01
+    :param exchange: spot、usdt_future, inverse_future.
+    :param start_time: format :2020-1-1 or 2020-01-01 year-month-day
+    :param end_time: format: 2020-1-1 or 2020-01-01 year-month-day
+    :param gate_way the gateway name for binance is:BINANCE_SPOT, BINANCE_USDT, BINANCE_INVERSE
     :return:
     """
 
     api_url = ''
     save_symbol = symbol
-    gate_way = 'BINANCES'
 
-    if exchanges == 'spot':
+
+    if exchange == 'spot':
         print("spot")
         limit = BINANCE_SPOT_LIMIT
         save_symbol = symbol.lower()
         gate_way = 'BINANCE'
         api_url = f'https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&limit={limit}'
 
-    elif exchanges == 'future':
-        print('future')
+    elif exchange == 'usdt_future':
+        print('usdt_future')
         limit = BINANCE_FUTURE_LIMIT
         api_url = f'https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1m&limit={limit}'
 
-    elif exchanges == 'coin_future':
-        print("coin_future")
+    elif exchange == 'inverse_future':
+        print("inverse_future")
         limit = BINANCE_FUTURE_LIMIT
         f'https://dapi.binance.com/dapi/v1/klines?symbol={symbol}&interval=1m&limit={limit}'
 
     else:
-        raise Exception('交易所名称请输入以下其中一个：spot, future, coin_future')
+        raise Exception('the exchange name should be one of ：spot, usdt_future, inverse_future')
 
     start_time = int(datetime.strptime(start_time, '%Y-%m-%d').timestamp() * 1000)
     end_time = int(datetime.strptime(end_time, '%Y-%m-%d').timestamp() * 1000)
@@ -72,7 +78,7 @@ def get_binance_data(symbol: str, exchanges: str, start_time: str, end_time: str
             print(start_time)
             url = f'{api_url}&startTime={start_time}'
             print(url)
-            data = requests.get(url=url, timeout=10, proxies=proxies).json()
+            datas = requests.get(url=url, timeout=10, proxies=proxies).json()
 
             """
             [
@@ -95,28 +101,29 @@ def get_binance_data(symbol: str, exchanges: str, start_time: str, end_time: str
 
             buf = []
 
-            for l in data:
-                bar = BarData(
+            for row in datas:
+                bar: BarData = BarData(
                     symbol=save_symbol,
                     exchange=Exchange.BINANCE,
-                    datetime=generate_datetime(l[0]),
+                    datetime=generate_datetime(row[0]),
                     interval=Interval.MINUTE,
-                    volume=float(l[5]),
-                    open_price=float(l[1]),
-                    high_price=float(l[2]),
-                    low_price=float(l[3]),
-                    close_price=float(l[4]),
+                    volume=float(row[5]),
+                    turnover=float(row[7]),
+                    open_price=float(row[1]),
+                    high_price=float(row[2]),
+                    low_price=float(row[3]),
+                    close_price=float(row[4]),
                     gateway_name=gate_way
                 )
                 buf.append(bar)
 
-            database_manager.save_bar_data(buf)
+            database.save_bar_data(buf)
 
             # 到结束时间就退出, 后者收盘价大于当前的时间.
-            if (data[-1][0] > end_time) or data[-1][6] >= (int(time.time() * 1000) - 60 * 1000):
+            if (datas[-1][0] > end_time) or datas[-1][6] >= (int(time.time() * 1000) - 60 * 1000):
                 break
 
-            start_time = data[-1][0]
+            start_time = datas[-1][0]
 
         except Exception as error:
             print(error)
@@ -143,13 +150,13 @@ def download_spot(symbol):
     t3.join()
 
 
-def download_future(symbol):
+def download_usdt_future(symbol):
     """
     下载合约数据的方法。
     :return:
     """
-    t1 = Thread(target=get_binance_data, args=(symbol, 'future', "2019-9-10", "2020-3-1"))
-    t2 = Thread(target=get_binance_data, args=(symbol, 'future', "2019-3-1", "2020-11-16"))
+    t1 = Thread(target=get_binance_data, args=(symbol, 'usdt_future', "2019-9-10", "2020-3-1"))
+    t2 = Thread(target=get_binance_data, args=(symbol, 'usdt_future', "2019-3-1", "2020-11-16"))
 
     t1.start()
     t2.start()
@@ -174,4 +181,4 @@ if __name__ == '__main__':
 
     # download_spot(symbol) # 下载现货的数据.
 
-    download_future(symbol)  # 下载合约的数据
+    download_usdt_future(symbol)  # 下载合约的数据
