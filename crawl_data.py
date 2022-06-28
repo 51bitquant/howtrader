@@ -140,10 +140,9 @@ def download_spot(symbol):
     t5 = Thread(target=get_binance_data, args=(symbol, 'spot', "2019-12-1", "2020-6-1"))
     t6 = Thread(target=get_binance_data, args=(symbol, 'spot', "2020-6-1", "2020-12-1"))
 
-    t9 = Thread(target=get_binance_data, args=(symbol, 'spot', "2020-12-1", "2021-6-1"))
-    t10 = Thread(target=get_binance_data, args=(symbol, 'spot', "2021-6-1", "2021-12-1"))
-
-    t11 = Thread(target=get_binance_data, args=(symbol, 'spot', "2021-12-1", "2022-6-28"))
+    t7 = Thread(target=get_binance_data, args=(symbol, 'spot', "2020-12-1", "2021-6-1"))
+    t8 = Thread(target=get_binance_data, args=(symbol, 'spot', "2021-6-1", "2021-12-1"))
+    t9 = Thread(target=get_binance_data, args=(symbol, 'spot', "2021-12-1", "2022-6-28"))
 
     t1.start()
     t2.start()
@@ -151,10 +150,9 @@ def download_spot(symbol):
     t4.start()
     t5.start()
     t6.start()
+    t7.start()
+    t8.start()
     t9.start()
-    t9.start()
-    t10.start()
-    t11.start()
 
     t1.join()
     t2.join()
@@ -162,9 +160,9 @@ def download_spot(symbol):
     t4.join()
     t5.join()
     t6.join()
+    t7.join()
+    t8.join()
     t9.join()
-    t10.join()
-    t11.join()
 
 
 def download_future(symbol):
