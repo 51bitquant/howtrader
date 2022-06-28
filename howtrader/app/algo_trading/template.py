@@ -4,7 +4,6 @@ from howtrader.trader.constant import OrderType, Offset, Direction
 from howtrader.trader.utility import virtual
 from decimal import Decimal
 from typing import Optional
-from .engine import AlgoEngine
 
 class AlgoTemplate:
     """"""
@@ -16,12 +15,12 @@ class AlgoTemplate:
 
     def __init__(
         self,
-        algo_engine: AlgoEngine,
+        algo_engine: "AlgoEngine",
         algo_name: str,
         setting: dict
     ) -> None:
         """构造函数"""
-        self.algo_engine: AlgoEngine = algo_engine
+        self.algo_engine: "AlgoEngine" = algo_engine
         self.algo_name: str = algo_name
 
         self.active: bool = False
@@ -30,7 +29,7 @@ class AlgoTemplate:
         self.variables.insert(0, "active")
 
     @classmethod
-    def new(cls, algo_engine: AlgoEngine, setting: dict) -> "AlgoTemplate":
+    def new(cls, algo_engine: "AlgoEngine", setting: dict) -> "AlgoTemplate":
         """创建一个新的算法实例"""
         cls._count += 1
         algo_name: str = f"{cls.__name__}_{cls._count}"

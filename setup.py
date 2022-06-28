@@ -25,6 +25,7 @@ from setuptools import find_packages, setup
 def get_install_requires():
     install_requires = [
         "six",
+        "simplejson",
         "wheel",
         "PySide6",
         "pyqtgraph",
@@ -32,7 +33,6 @@ def get_install_requires():
         "requests",
         "aiohttp",
         "pytz",
-        "websocket-client",
         "peewee",
         "mongoengine",
         "numpy",
