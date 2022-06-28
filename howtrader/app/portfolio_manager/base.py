@@ -15,7 +15,7 @@ class ContractResult:
         engine: "PortfolioEngine",
         reference: str,
         vt_symbol: str,
-        open_pos: int = 0
+        open_pos: float = 0
     ) -> None:
         """"""
         super().__init__()
@@ -25,8 +25,8 @@ class ContractResult:
         self.reference: str = reference
         self.vt_symbol: str = vt_symbol
 
-        self.open_pos: int = open_pos
-        self.last_pos: int = open_pos
+        self.open_pos: float = open_pos
+        self.last_pos: float = open_pos
 
         self.trading_pnl: float = 0
         self.holding_pnl: float = 0
@@ -49,9 +49,9 @@ class ContractResult:
         self.new_trades.append(trade)
 
         if trade.direction == Direction.LONG:
-            self.last_pos += trade.volume
+            self.last_pos += float(trade.volume)
         else:
-            self.last_pos -= trade.volume
+            self.last_pos -= float(trade.volume)
 
     def calculate_pnl(self) -> None:
         """"""
@@ -63,19 +63,19 @@ class ContractResult:
             return
 
         last_price: float = tick.last_price
-        size: float = contract.size
+        size: float = float(contract.size)
 
         # 计算新成交额
         for trade in self.new_trades:
-            trade_volume: float = trade.volume
-            trade_cost: float = trade.price * trade_volume * size
+            trade_volume: float = float(trade.volume)
+            trade_cost: float = float(trade.price) * float(trade_volume) * size
 
             if trade.direction == Direction.LONG:
                 self.long_cost += trade_cost
                 self.long_volume += trade_volume
             else:
                 self.short_cost += trade_cost
-                self.short_volume += trade_volume
+                self.short_volume += float(trade_volume)
 
         self.new_trades.clear()
 
