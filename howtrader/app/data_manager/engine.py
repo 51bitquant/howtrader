@@ -183,7 +183,7 @@ class ManagerEngine(BaseEngine):
         self,
         symbol: str,
         exchange: Exchange,
-        interval: str,
+        interval: Interval,
         start: datetime
     ) -> int:
         """
@@ -192,7 +192,7 @@ class ManagerEngine(BaseEngine):
         req = HistoryRequest(
             symbol=symbol,
             exchange=exchange,
-            interval=Interval(interval),
+            interval=interval,
             start=start,
             end=datetime.now(DB_TZ)
         )
