@@ -8,7 +8,6 @@ import numpy as np
 from pandas import DataFrame, Series
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from decimal import Decimal
 from howtrader.trader.constant import (Direction, Offset, Exchange,
                                   Interval, Status)
 from howtrader.trader.database import get_database, BaseDatabase
@@ -48,7 +47,7 @@ class BacktestingEngine:
         self.rate: float = 0
         self.slippage: float = 0
         self.size: float = 1
-        self.pricetick: Decimal = 0
+        self.pricetick: float = 0
         self.capital: int = 1_000_000
         self.risk_free: float = 0
         self.annual_days: int = 240
@@ -984,7 +983,7 @@ class DailyResult:
         self,
         pre_close: float,
         start_pos: float,
-        size: int,
+        size: float,
         rate: float,
         slippage: float
     ) -> None:
@@ -1008,16 +1007,15 @@ class DailyResult:
 
         for trade in self.trades:
             if trade.direction == Direction.LONG:
-                pos_change = trade.volume
+                pos_change = float(trade.volume)
             else:
-                pos_change = -trade.volume
+                pos_change = -float(trade.volume)
 
             self.end_pos += pos_change
 
-            turnover: float = trade.volume * size * trade.price
-            self.trading_pnl += pos_change * \
-                (self.close_price - trade.price) * size
-            self.slippage += trade.volume * size * slippage
+            turnover: float = float(trade.volume) * size * float(trade.price)
+            self.trading_pnl += pos_change * (self.close_price - float(trade.price)) * size
+            self.slippage += float(trade.volume) * size * slippage
 
             self.turnover += turnover
             self.commission += turnover * rate
