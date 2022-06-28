@@ -23,7 +23,6 @@ else:
     from backports.zoneinfo import ZoneInfo
 
 
-
 log_formatter: logging.Formatter = logging.Formatter('[%(asctime)s] %(message)s')
 
 
@@ -51,19 +50,10 @@ def _get_trader_dir(temp_name: str) -> Tuple[Path, Path]:
 
     # If howtrader folder exists in current working directory,
     # then use it as trader running path.
-    if temp_path.exists():
-        return cwd, temp_path
-
-    # Otherwise use home path of system.
-    home_path: Path = Path.home()
-    temp_path: Path = home_path.joinpath(temp_name)
-
-    # Create .vntrader folder under home path if not exist.
     if not temp_path.exists():
         temp_path.mkdir()
 
-    return home_path, temp_path
-
+    return cwd, temp_path
 
 TRADER_DIR, TEMP_DIR = _get_trader_dir("howtrader")
 sys.path.append(str(TRADER_DIR))
