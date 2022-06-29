@@ -34,7 +34,7 @@ def get_install_requires():
         "aiohttp",
         "pytz",
         "peewee",
-        "mongoengine",
+        "pymongo",
         "numpy",
         "pandas",
         "matplotlib",

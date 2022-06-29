@@ -69,12 +69,12 @@ class BacktesterManager(QtWidgets.QWidget):
 
     def init_ui(self) -> None:
         """"""
-        self.setWindowTitle("CTA回测")
+        self.setWindowTitle("CTA backtester")
 
         # Setting Part
         self.class_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
 
-        self.symbol_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("IF88.CFFEX")
+        self.symbol_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("BTCUSDT.BINANCE")
 
         self.interval_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
         for interval in Interval:
@@ -94,10 +94,10 @@ class BacktesterManager(QtWidgets.QWidget):
             QtCore.QDate.currentDate()
         )
 
-        self.rate_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("0.000025")
-        self.slippage_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("0.2")
-        self.size_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("300")
-        self.pricetick_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("0.2")
+        self.rate_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("0.0004")
+        self.slippage_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("1")
+        self.size_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("1")
+        self.pricetick_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("0.01")
         self.capital_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit("1000000")
 
         backtesting_button: QtWidgets.QPushButton = QtWidgets.QPushButton("开始回测")

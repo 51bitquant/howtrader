@@ -248,7 +248,7 @@ class BacktesterEngine(BaseEngine):
         self,
         class_name: str,
         vt_symbol: str,
-        interval: str,
+        interval: Interval,
         start: datetime,
         end: datetime,
         rate: float,
@@ -265,7 +265,7 @@ class BacktesterEngine(BaseEngine):
         engine: BacktestingEngine = self.backtesting_engine
         engine.clear_data()
 
-        if interval == Interval.TICK.value:
+        if interval == Interval.TICK:
             mode: BacktestingMode = BacktestingMode.TICK
         else:
             mode: BacktestingMode = BacktestingMode.BAR
@@ -312,7 +312,7 @@ class BacktesterEngine(BaseEngine):
         self,
         class_name: str,
         vt_symbol: str,
-        interval: str,
+        interval: Interval,
         start: datetime,
         end: datetime,
         rate: float,
@@ -352,7 +352,7 @@ class BacktesterEngine(BaseEngine):
     def run_downloading(
         self,
         vt_symbol: str,
-        interval: str,
+        interval: Interval,
         start: datetime,
         end: datetime
     ) -> None:
@@ -371,14 +371,16 @@ class BacktesterEngine(BaseEngine):
         req: HistoryRequest = HistoryRequest(
             symbol=symbol,
             exchange=exchange,
-            interval=Interval(interval),
+            interval=interval,
             start=start,
             end=end
         )
 
         try:
-            if interval == "tick":
-                data: List[TickData] = self.datafeed.query_tick_history(req)
+            if interval == interval.TICK:
+                print("not support tick data downloading")
+                pass
+                # data: List[TickData] = self.database.query_tick_history(req)
             else:
                 contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
 
@@ -387,19 +389,13 @@ class BacktesterEngine(BaseEngine):
                     data: List[BarData] = self.main_engine.query_history(
                         req, contract.gateway_name
                     )
-                # Otherwise use RQData to query data
-                else:
-                    data: List[BarData] = self.datafeed.query_bar_history(req)
 
-            if data:
-                if interval == "tick":
-                    self.database.save_tick_data(data)
-                else:
-                    self.database.save_bar_data(data)
+                    if data:
+                        self.database.save_bar_data(data)
 
-                self.write_log(f"{vt_symbol}-{interval}历史数据下载完成")
-            else:
-                self.write_log(f"数据下载失败，无法获取{vt_symbol}的历史数据")
+                        self.write_log(f"{vt_symbol}-{interval}历史数据下载完成")
+                    else:
+                        self.write_log(f"数据下载失败，无法获取{vt_symbol}的历史数据")
         except Exception:
             msg: str = f"数据下载失败，触发异常：\n{traceback.format_exc()}"
             self.write_log(msg)
