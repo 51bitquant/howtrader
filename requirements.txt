@@ -8,7 +8,7 @@ tzlocal
 PySide6
 pyqtgraph==0.12.3
 qdarkstyle
-numpy
+numpy==1.23.0
 pandas
 matplotlib
 seaborn
