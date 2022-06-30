@@ -93,7 +93,6 @@ setup(
         "Topic :: Office/Business :: Financial :: Investment :: 51bitquant",
         "Programming Language :: Python :: Implementation :: CPython",
         "License :: OSI Approved :: MIT License",
-        "Natural Language :: Chinese (Simplified)",
-        "Natural Language :: Chinese (Simplified)"
+        "Natural Language :: English"
     ],
 )

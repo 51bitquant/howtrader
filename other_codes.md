@@ -17,12 +17,15 @@ https://share.weiyun.com/LhKEc3cQ
 https://github.com/51bitquant/howtrader
 
 ## vnpy课程的代码下载地址
-https://github.com/51bitqunat/course_codes
+https://github.com/51bitquant/course_codes
 
 
 ## 联系方式
-如果遇到需要咨询的问题或者定制化开发，可以联系我微信: bitquant51
+如果遇到需要咨询的问题或者定制化开发，可以联系我
 
+微信: bitquant51
+
+discord: 51bitquant#8078
 
 
 

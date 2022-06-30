@@ -79,18 +79,18 @@ def get_binance_data(symbol: str, exchange: str, start_time: str, end_time: str)
             """
             [
                 [
-                    1591258320000,      // 开盘时间
-                    "9640.7",           // 开盘价
-                    "9642.4",           // 最高价
-                    "9640.6",           // 最低价
-                    "9642.0",           // 收盘价(当前K线未结束的即为最新价)
-                    "206",              // 成交量
-                    1591258379999,      // 收盘时间
-                    "2.13660389",       // 成交额(标的数量)
-                    48,                 // 成交笔数
-                    "119",              // 主动买入成交量
-                    "1.23424865",      // 主动买入成交额(标的数量)
-                    "0"                 // 请忽略该参数
+                    1591258320000,      // open time
+                    "9640.7",           // open price
+                    "9642.4",           // highest price
+                    "9640.6",           // lowest price
+                    "9642.0",           // close price(latest price if the kline is not close)
+                    "206",              // volume
+                    1591258379999,      // close time
+                    "2.13660389",       // turnover
+                    48,                 // trade count 
+                    "119",              // buy volume
+                    "1.23424865",       //  buy turnover
+                    "0"                 // ignore
                 ]
 
             """
@@ -115,7 +115,7 @@ def get_binance_data(symbol: str, exchange: str, start_time: str, end_time: str)
 
             database.save_bar_data(buf)
 
-            # 到结束时间就退出, 后者收盘价大于当前的时间.
+            # exit the loop, if close time is greater than the current time
             if (datas[-1][0] > end_time) or datas[-1][6] >= (int(time.time() * 1000) - 60 * 1000):
                 break
 
@@ -128,7 +128,7 @@ def get_binance_data(symbol: str, exchange: str, start_time: str, end_time: str)
 
 def download_spot(symbol):
     """
-    下载现货数据的方法.
+    download binance spot data, config your start date and end date(format: year-month-day)
     :return:
     """
     t1 = Thread(target=get_binance_data, args=(symbol, 'spot', "2018-1-1", "2018-6-1"))
@@ -167,7 +167,7 @@ def download_spot(symbol):
 
 def download_future(symbol):
     """
-    下载合约数据的方法。
+    download binance future data, config your start date and end date(format: year-month-day)
     :return:
 
     """
