@@ -15,18 +15,18 @@ from howtrader.trader.setting import SETTINGS
 
 
 class MongodbDatabase(BaseDatabase):
-    """MongoDB数据库接口"""
+    """MongoDB database connector"""
 
     def __init__(self) -> None:
         """"""
-        # 读取配置
+        # read the settings
         self.database: str = SETTINGS["database.database"]
         self.host: str = SETTINGS["database.host"]
         self.port: int = SETTINGS["database.port"]
         self.username: str = SETTINGS["database.user"]
         self.password: str = SETTINGS["database.password"]
 
-        # 创建客户端
+        # create MongoClient
         if self.username and self.password:
             self.client: MongoClient = MongoClient(
                 host=self.host,
@@ -44,10 +44,10 @@ class MongodbDatabase(BaseDatabase):
                 tzinfo=DB_TZ
             )
 
-        # 初始化数据库
+        # initialize the database
         self.db: Database = self.client[self.database]
 
-        # 初始化K线数据表
+        # Kline Collection
         self.bar_collection: Collection = self.db["bar_data"]
         self.bar_collection.create_index(
             [
@@ -59,7 +59,7 @@ class MongodbDatabase(BaseDatabase):
             unique=True
         )
 
-        # 初始化Tick数据表
+        # Tick Collection
         self.tick_collection: Collection = self.db["tick_data"]
         self.tick_collection.create_index(
             [
@@ -70,7 +70,7 @@ class MongodbDatabase(BaseDatabase):
             unique=True
         )
 
-        # 初始化K线概览表
+        # Kline/Bar overview
         self.overview_collection: Collection = self.db["bar_overview"]
         self.overview_collection.create_index(
             [
@@ -82,11 +82,11 @@ class MongodbDatabase(BaseDatabase):
         )
 
     def save_bar_data(self, bars: List[BarData]) -> bool:
-        """保存K线数据"""
+        """save Kline/Bar data"""
         requests: List[ReplaceOne] = []
 
         for bar in bars:
-            # 逐个插入
+            # insert into database.
             filter: dict = {
                 "symbol": bar.symbol,
                 "exchange": bar.exchange.value,
@@ -112,7 +112,7 @@ class MongodbDatabase(BaseDatabase):
 
         self.bar_collection.bulk_write(requests, ordered=False)
 
-        # 更新汇总
+        # update overview
         filter: dict = {
             "symbol": bar.symbol,
             "exchange": bar.exchange.value,
@@ -140,7 +140,7 @@ class MongodbDatabase(BaseDatabase):
         return True
 
     def save_tick_data(self, ticks: List[TickData]) -> bool:
-        """保存TICK数据"""
+        """Save tikc data"""
         requests: List[ReplaceOne] = []
 
         for tick in ticks:
@@ -203,7 +203,7 @@ class MongodbDatabase(BaseDatabase):
         start: datetime,
         end: datetime
     ) -> List[BarData]:
-        """读取K线数据"""
+        """Load Kline/Bar data"""
         filter: dict = {
             "symbol": symbol,
             "exchange": exchange.value,
@@ -235,7 +235,7 @@ class MongodbDatabase(BaseDatabase):
         start: datetime,
         end: datetime
     ) -> List[TickData]:
-        """读取TICK数据"""
+        """load tick data"""
         filter: dict = {
             "symbol": symbol,
             "exchange": exchange.value,
@@ -264,7 +264,7 @@ class MongodbDatabase(BaseDatabase):
         exchange: Exchange,
         interval: Interval
     ) -> int:
-        """删除K线数据"""
+        """delete bar data"""
         filter: dict = {
             "symbol": symbol,
             "exchange": exchange.value,
@@ -281,7 +281,7 @@ class MongodbDatabase(BaseDatabase):
         symbol: str,
         exchange: Exchange
     ) -> int:
-        """删除TICK数据"""
+        """Delete tick data"""
         filter: dict = {
             "symbol": symbol,
             "exchange": exchange.value
@@ -291,7 +291,7 @@ class MongodbDatabase(BaseDatabase):
         return result.deleted_count
 
     def get_bar_overview(self) -> List[BarOverview]:
-        """查询数据库中的K线汇总信息"""
+        """query kline overview data"""
         c: Cursor = self.overview_collection.find()
 
         overviews: List[BarOverview] = []

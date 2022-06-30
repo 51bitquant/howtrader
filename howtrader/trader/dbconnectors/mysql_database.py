@@ -35,7 +35,7 @@ db = PeeweeMySQLDatabase(
 
 
 class DbBarData(Model):
-    """K线数据表映射对象"""
+    """Bar Data Model"""
 
     id = AutoField()
 
@@ -58,7 +58,7 @@ class DbBarData(Model):
 
 
 class DbTickData(Model):
-    """TICK数据表映射对象"""
+    """TICK Data Model"""
 
     id = AutoField()
 
@@ -112,7 +112,7 @@ class DbTickData(Model):
 
 
 class DbBarOverview(Model):
-    """K线汇总数据表映射对象"""
+    """BarData Overview"""
 
     id = AutoField()
 
@@ -129,7 +129,7 @@ class DbBarOverview(Model):
 
 
 class MysqlDatabase(BaseDatabase):
-    """Mysql数据库接口"""
+    """Mysql Database connector"""
 
     def __init__(self) -> None:
         """"""
@@ -138,14 +138,14 @@ class MysqlDatabase(BaseDatabase):
         self.db.create_tables([DbBarData, DbTickData, DbBarOverview])
 
     def save_bar_data(self, bars: List[BarData]) -> bool:
-        """保存K线数据"""
-        # 读取主键参数
+        """save bar data"""
+        # read primary key
         bar = bars[0]
         symbol = bar.symbol
         exchange = bar.exchange
         interval = bar.interval
 
-        # 将BarData数据转换为字典，并调整时区
+        # convert BarData into dict, and convert datetime
         data = []
 
         for bar in bars:
@@ -158,12 +158,12 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_symbol")
             data.append(d)
 
-        # 使用upsert操作将数据更新到数据库中
+        # use upsert to update data into database
         with self.db.atomic():
             for c in chunked(data, 50):
                 DbBarData.insert_many(c).on_conflict_replace().execute()
 
-        # 更新K线汇总数据
+        # update DbBarOverview
         overview: DbBarOverview = DbBarOverview.get_or_none(
             DbBarOverview.symbol == symbol,
             DbBarOverview.exchange == exchange.value,
@@ -194,8 +194,8 @@ class MysqlDatabase(BaseDatabase):
         return True
 
     def save_tick_data(self, ticks: List[TickData]) -> bool:
-        """保存TICK数据"""
-        # 将TickData数据转换为字典，并调整时区
+        """Save tick data"""
+        # convert TickData into Dict, and convert timezone
         data = []
 
         for tick in ticks:
@@ -207,7 +207,7 @@ class MysqlDatabase(BaseDatabase):
             d.pop("vt_symbol")
             data.append(d)
 
-        # 使用upsert操作将数据更新到数据库中
+        # use upsert to update data into database
         with self.db.atomic():
             for c in chunked(data, 50):
                 DbTickData.insert_many(c).on_conflict_replace().execute()
@@ -263,7 +263,7 @@ class MysqlDatabase(BaseDatabase):
         start: datetime,
         end: datetime
     ) -> List[TickData]:
-        """读取TICK数据"""
+        """load tick data"""
         start = start.replace(hour=0, minute=0, second=0)
         end = end.replace(hour=23, minute=59, second=59)
 
@@ -327,7 +327,7 @@ class MysqlDatabase(BaseDatabase):
         exchange: Exchange,
         interval: Interval
     ) -> int:
-        """删除K线数据"""
+        """delete bar data"""
         d: ModelDelete = DbBarData.delete().where(
             (DbBarData.symbol == symbol)
             & (DbBarData.exchange == exchange.value)
@@ -335,7 +335,7 @@ class MysqlDatabase(BaseDatabase):
         )
         count = d.execute()
 
-        # 删除K线汇总数据
+        # delete DbBarOverview
         d2: ModelDelete = DbBarOverview.delete().where(
             (DbBarOverview.symbol == symbol)
             & (DbBarOverview.exchange == exchange.value)
@@ -358,7 +358,7 @@ class MysqlDatabase(BaseDatabase):
         return count
 
     def get_bar_overview(self) -> List[BarOverview]:
-        """查询数据库中的K线汇总信息"""
+        """query bar overview"""
         # 如果已有K线，但缺失汇总信息，则执行初始化
         data_count = DbBarData.select().count()
         overview_count = DbBarOverview.select().count()
@@ -374,7 +374,7 @@ class MysqlDatabase(BaseDatabase):
         return overviews
 
     def init_bar_overview(self) -> None:
-        """初始化数据库中的K线汇总信息"""
+        """init Bar Overview data"""
         s: ModelSelect = (
             DbBarData.select(
                 DbBarData.symbol,
