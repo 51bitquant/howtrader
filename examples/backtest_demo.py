@@ -7,13 +7,13 @@ engine = BacktestingEngine()
 engine.set_parameters(
     vt_symbol="BTCUSDT.BINANCE",
     interval=Interval.MINUTE,
-    start=datetime(2019, 10, 1),
+    start=datetime(2020, 1, 1),
     end=datetime(2020, 5, 1),
-    rate=6/ 10000,
+    rate=4/10000,
     slippage=0,
     size=1,
     pricetick=0.01,
-    capital=1_000_000,
+    capital=1000000,
 )
 
 engine.add_strategy(AtrRsiStrategy, {})
@@ -30,4 +30,5 @@ setting.set_target("sharpe_ratio")
 setting.add_parameter("atr_length", 3, 39, 1)
 setting.add_parameter("atr_ma_length", 10, 30, 1)
 
-engine.run_ga_optimization(setting)
+result = engine.run_ga_optimization(setting)
+print(result)

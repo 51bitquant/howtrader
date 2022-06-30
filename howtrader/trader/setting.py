@@ -2,7 +2,7 @@
 Global setting of the trading platform.
 """
 
-from logging import CRITICAL
+from logging import CRITICAL, INFO, DEBUG
 from typing import Dict, Any
 from tzlocal import get_localzone_name
 

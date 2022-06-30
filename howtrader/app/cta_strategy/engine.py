@@ -534,7 +534,6 @@ class CtaEngine(BaseEngine):
         symbol, exchange = extract_vt_symbol(vt_symbol)
         end: datetime = datetime.now(LOCAL_TZ)
         start: datetime = end - timedelta(days)
-        bars: List[BarData] = []
 
         # Pass gateway and datafeed if use_database set to True
         if not use_database:
@@ -550,21 +549,23 @@ class CtaEngine(BaseEngine):
                     end=end
                 )
                 bars: List[BarData] = self.main_engine.query_history(req, contract.gateway_name)
-
+                if bars:
+                    return bars
             # Try to query bars from datafeed, if not found, load from database.
             # else:
             #     bars: List[BarData] = self.query_bar_from_datafeed(symbol, exchange, interval, start, end)
 
-        if not bars:
-            bars: List[BarData] = self.database.load_bar_data(
+        bars: List[BarData] = self.database.load_bar_data(
                 symbol=symbol,
                 exchange=exchange,
                 interval=interval,
                 start=start,
                 end=end,
             )
+        if bars:
+            return bars
 
-        return bars
+        return []
 
     def load_tick(
         self,

@@ -1,7 +1,8 @@
 
 from howtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
-from .strategies.atr_rsi_strategy import AtrRsiStrategy
-from .strategies.boll_channel_strategy import BollChannelStrategy
+from strategies.atr_rsi_strategy import AtrRsiStrategy
+from strategies.boll_channel_strategy import BollChannelStrategy
+from howtrader.trader.object import Interval
 from datetime import datetime
 
 
@@ -34,10 +35,10 @@ df1 = run_backtesting(
     strategy_class=AtrRsiStrategy,
     setting={},
     vt_symbol="BTCUSDT.BINANCE",
-    interval="1m",
-    start=datetime(2019, 1, 1),
-    end=datetime(2019, 4, 30),
-    rate=0.3/10000,
+    interval=Interval.MINUTE,
+    start=datetime(2020, 1, 1),
+    end=datetime(2021, 1, 1),
+    rate=4/10000,
     slippage=0.2,
     size=300,
     pricetick=0.2,
@@ -48,16 +49,19 @@ df1 = run_backtesting(
 df2 = run_backtesting(
     strategy_class=BollChannelStrategy,
     setting={'fixed_size': 16},
-    vt_symbol="ETHUSDT.BINANCE",
-    interval="1m",
-    start=datetime(2019, 1, 1),
-    end=datetime(2019, 4, 30),
-    rate=1/10000,
+    vt_symbol="BTCUSDT.BINANCE",
+    interval=Interval.MINUTE,
+    start=datetime(2020, 1, 1),
+    end=datetime(2021, 1, 1),
+    rate=4/10000,
     slippage=1,
     size=10,
     pricetick=1,
-    capital=1_000_000,
+    capital=1000000,
     )
+
+print(df1)
+print(df2)
 
 dfp = df1 + df2
 dfp =dfp.dropna()
