@@ -748,7 +748,7 @@ class BinanceSpotTradeWebsocketApi(WebsocketClient):
         self.start()
 
     def on_connected(self) -> None:
-        """连接成功回报"""
+        """trade ws connected """
         self.gateway.write_log("trade ws connected")
 
     def on_packet(self, packet: dict) -> None:
@@ -842,7 +842,7 @@ class BinanceSpotDataWebsocketApi(WebsocketClient):
         self.start()
 
     def on_connected(self) -> None:
-        """ws connected"""
+        """data ws connected"""
         self.gateway.write_log("data ws connected")
 
         # re-subscribe data.
