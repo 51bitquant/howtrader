@@ -15,13 +15,15 @@ from aiohttp import ClientSession, ClientWebSocketResponse
 
 class WebsocketClient:
     """
-    针对各类Websocket API的异步客户端
+    WebsocketClient
 
-    * 重载unpack_data方法来实现数据解包逻辑
-    * 重载on_connected方法来实现连接成功回调处理
-    * 重载on_disconnected方法来实现连接断开回调处理
-    * 重载on_packet方法来实现数据推送回调处理
-    * 重载on_error方法来实现异常捕捉回调处理
+    subclass requirements:
+
+    * reload unpack_data method to implement the logic from server
+    * reload on_connected: implement your logic when server connected
+    * reload on_disconnected方
+    * reload on_packet to subscribe data
+    * reload on_error
     """
 
     def __init__(self):
@@ -34,7 +36,7 @@ class WebsocketClient:
         self._loop: AbstractEventLoop = None
 
         self._proxy: str = ""
-        self._ping_interval: int = 60  # 秒
+        self._ping_interval: int = 60  # ping interval for 60 seconds
         self._header: dict = {}
 
         self._last_sent_text: str = ""
@@ -49,7 +51,7 @@ class WebsocketClient:
         header: dict = None
     ):
         """
-        初始化客户端
+        init client, only support the http proxy.
         """
         self._host = host
         self._ping_interval = ping_interval
@@ -62,11 +64,10 @@ class WebsocketClient:
 
     def start(self):
         """
-        启动客户端
+        start client
 
-        连接成功后会自动调用on_connected回调函数，
-
-        请等待on_connected被调用后，再发送数据包。
+        will call the on_connected callback when connected
+        subscribe the data when call the on_connected callback
         """
         self._active = True
 
@@ -78,7 +79,7 @@ class WebsocketClient:
 
     def stop(self):
         """
-        停止客户端。
+        stop the client
         """
         self._active = False
 
@@ -91,15 +92,14 @@ class WebsocketClient:
 
     def join(self):
         """
-        等待后台线程退出。
+        wait for the thread to finish.
         """
         pass
 
     def send_packet(self, packet: dict):
         """
-        发送数据包字典到服务器。
-
-        如果需要发送非json数据，请重载实现本函数。
+        send data to server.
+        if the data is not in json format, please reload this function.
         """
         if self._ws:
             text: str = json.dumps(packet)
@@ -110,22 +110,22 @@ class WebsocketClient:
 
     def unpack_data(self, data: str):
         """
-        对字符串数据进行json格式解包
-
-        如果需要使用json以外的解包格式，请重载实现本函数。
+        unpack the data from server
+        use json.loads method to convert the str in to dict
+        you may need to reload the unpack_data if server send the data not in str format
         """
         return json.loads(data)
 
     def on_connected(self):
-        """连接成功回调"""
+        """on connected callback"""
         pass
 
     def on_disconnected(self):
-        """连接断开回调"""
+        """on disconnected callback"""
         pass
 
     def on_packet(self, packet: dict):
-        """收到数据回调"""
+        """on packed callback"""
         pass
 
     def on_error(
@@ -134,7 +134,7 @@ class WebsocketClient:
         exception_value: Exception,
         tb
     ) -> None:
-        """触发异常回调"""
+        """raise error"""
         try:
             print("WebsocketClient on error" + "-" * 10)
             print(self.exception_detail(exception_type, exception_value, tb))
@@ -147,7 +147,7 @@ class WebsocketClient:
         exception_value: Exception,
         tb
     ) -> str:
-        """异常信息格式化"""
+        """format the exception detail in str"""
         text = "[{}]: Unhandled WebSocket Error:{}\n".format(
             datetime.now().isoformat(), exception_type
         )
@@ -161,22 +161,22 @@ class WebsocketClient:
 
     async def _run(self):
         """
-        在事件循环中运行的主协程
+
         """
         while self._active:
-            # 捕捉运行过程中异常
+            # try catch error/exception
             try:
-                # 发起Websocket连接
+                # connect ws server
                 self._ws = await self._session.ws_connect(
                     self._host,
                     proxy=self._proxy,
                     verify_ssl=False
                 )
 
-                # 调用连接成功回调
+                # call the on_connected function
                 self.on_connected()
 
-                # 持续处理收到的数据
+                # receive data from websocket
                 async for msg in self._ws:
                     text: str = msg.data
                     self._record_last_received_text(text)
@@ -184,28 +184,28 @@ class WebsocketClient:
                     data: dict = self.unpack_data(text)
                     self.on_packet(data)
 
-                # 移除Websocket连接对象
+                # remove the _ws object
                 self._ws = None
 
-                # 调用连接断开回调
+                # call the on_disconnected
                 self.on_disconnected()
-            # 处理捕捉到的异常
+            # on exception
             except Exception:
                 et, ev, tb = sys.exc_info()
                 self.on_error(et, ev, tb)
 
     def _record_last_sent_text(self, text: str):
-        """记录最近发出的数据字符串"""
+        """record the last send text for debugging"""
         self._last_sent_text = text[:1000]
 
     def _record_last_received_text(self, text: str):
-        """记录最近收到的数据字符串"""
+        """record the last receive text for debugging"""
         self._last_received_text = text[:1000]
 
 
 def start_event_loop(loop: AbstractEventLoop) -> AbstractEventLoop:
-    """启动事件循环"""
-    # 如果事件循环未运行，则创建后台线程来运行
+    """start event loop"""
+    # if the event loop is not running, then create the thread to run
     if not loop.is_running():
         thread = Thread(target=run_event_loop, args=(loop,))
         thread.daemon = True
@@ -213,6 +213,6 @@ def start_event_loop(loop: AbstractEventLoop) -> AbstractEventLoop:
 
 
 def run_event_loop(loop: AbstractEventLoop) -> None:
-    """运行事件循环"""
+    """run event loop"""
     set_event_loop(loop)
     loop.run_forever()
