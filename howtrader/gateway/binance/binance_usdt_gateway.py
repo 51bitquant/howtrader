@@ -1,5 +1,5 @@
 """
-1. only support single mode
+1. only support one-way Mode position
 
 """
 
@@ -110,7 +110,7 @@ class Security(Enum):
 
 class BinanceUsdtGateway(BaseGateway):
     """
-    Binance Usdt/Busd future gateway
+    Binance USDT/BUSD future gateway
     """
 
     default_name: str = "BINANCE_USDT"
@@ -227,7 +227,7 @@ class BinanceUsdtGateway(BaseGateway):
 
 
 class BinanceUsdtRestApi(RestClient):
-    """币安正向合约的REST API"""
+    """Binance USDT/BUSD future rest api"""
 
     def __init__(self, gateway: BinanceUsdtGateway) -> None:
         """init"""
@@ -507,13 +507,15 @@ class BinanceUsdtRestApi(RestClient):
             method="POST",
             path=path,
             callback=self.on_start_user_stream,
+            on_failed=self.on_start_user_stream_failed,
+            on_error=self.on_start_user_stream_eror,
             data=data
         )
 
     def keep_user_stream(self) -> None:
         """extend listenKey expire time"""
         self.keep_alive_count += 1
-        if self.keep_alive_count < 600:
+        if self.keep_alive_count < 1200:
             return None
         self.keep_alive_count = 0
 
@@ -533,6 +535,7 @@ class BinanceUsdtRestApi(RestClient):
             callback=self.on_keep_user_stream,
             params=params,
             data=data,
+            on_failed=self.on_keep_user_strea_failed,
             on_error=self.on_keep_user_stream_error
         )
 
@@ -711,9 +714,18 @@ class BinanceUsdtRestApi(RestClient):
 
         self.trade_ws_api.connect(url, self.proxy_host, self.proxy_port)
 
+    def on_start_user_stream_failed(self, status_code: str, request: Request):
+        self.start_user_stream()
+
+    def on_start_user_stream_error(self, exception_type: type, exception_value: Exception, tb, request: Request):
+        self.start_user_stream()
+
     def on_keep_user_stream(self, data: dict, request: Request) -> None:
         """extend the listen key expire time"""
         pass
+
+    def on_keep_user_strea_failed(self, status_code: str, request: Request):
+        self.start_user_stream()
 
     def on_keep_user_stream_error(
             self, exception_type: type, exception_value: Exception, tb, request: Request
@@ -751,7 +763,7 @@ class BinanceUsdtRestApi(RestClient):
                 params=params
             )
 
-            # 如果请求失败则终止循环
+            # will break the while loop if the request failed
             if resp.status_code // 100 != 2:
                 msg: str = f"query historical kline data failed, status code：{resp.status_code}，msg：{resp.text}"
                 self.gateway.write_log(msg)

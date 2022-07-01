@@ -1,7 +1,5 @@
 """
-1. 只支持全仓模式
-2. 只支持单向持仓模式
-3. 只支持反向合约
+1. only support one-way Mode position
 """
 
 import urllib
@@ -47,24 +45,18 @@ from howtrader.event import Event, EventEngine
 from howtrader.api.rest import Request, RestClient, Response
 from howtrader.api.websocket import WebsocketClient
 
-# 中国时区
+# Asia/Shanghai timezone
 CHINA_TZ = pytz.timezone("Asia/Shanghai")
 
-# 实盘反向合约REST API地址
+# rest api host for inverse future
 D_REST_HOST: str = "https://dapi.binance.com"
 
-# 实盘反向合约Websocket API地址
+# ws api host
 D_WEBSOCKET_TRADE_HOST: str = "wss://dstream.binance.com/ws/"
 D_WEBSOCKET_DATA_HOST: str = "wss://dstream.binance.com/stream"
 
-# 模拟盘反向合约REST API地址
-D_TESTNET_REST_HOST: str = "https://testnet.binancefuture.com"
 
-# 模拟盘反向合约Websocket API地址
-D_TESTNET_WEBSOCKET_TRADE_HOST: str = "wss://dstream.binancefuture.com/ws/"
-D_TESTNET_WEBSOCKET_DATA_HOST: str = "wss://dstream.binancefuture.com/stream"
-
-# 委托状态映射
+# Order status map
 STATUS_BINANCES2VT: Dict[str, Status] = {
     "NEW": Status.NOTTRADED,
     "PARTIALLY_FILLED": Status.PARTTRADED,
@@ -74,7 +66,7 @@ STATUS_BINANCES2VT: Dict[str, Status] = {
     "EXPIRED": Status.CANCELLED
 }
 
-# 委托类型映射
+# Order type map
 ORDERTYPE_VT2BINANCES: Dict[OrderType, Tuple[str, str]] = {
     OrderType.LIMIT: ("LIMIT", "GTC"),
     OrderType.MARKET: ("MARKET", "GTC"),
@@ -83,32 +75,32 @@ ORDERTYPE_VT2BINANCES: Dict[OrderType, Tuple[str, str]] = {
 }
 ORDERTYPE_BINANCES2VT: Dict[Tuple[str, str], OrderType] = {v: k for k, v in ORDERTYPE_VT2BINANCES.items()}
 
-# 买卖方向映射
+# buy/sell direction map
 DIRECTION_VT2BINANCES: Dict[Direction, str] = {
     Direction.LONG: "BUY",
     Direction.SHORT: "SELL"
 }
 DIRECTION_BINANCES2VT: Dict[str, Direction] = {v: k for k, v in DIRECTION_VT2BINANCES.items()}
 
-# 数据频率映射
+# data time frame map
 INTERVAL_VT2BINANCES: Dict[Interval, str] = {
     Interval.MINUTE: "1m",
     Interval.HOUR: "1h",
     Interval.DAILY: "1d",
 }
 
-# 时间间隔映射
+# time delta map
 TIMEDELTA_MAP: Dict[Interval, timedelta] = {
     Interval.MINUTE: timedelta(minutes=1),
     Interval.HOUR: timedelta(hours=1),
     Interval.DAILY: timedelta(days=1),
 }
 
-# 合约数据全局缓存字典
+# contract symbol map
 symbol_contract_map: Dict[str, ContractData] = {}
 
 
-# 鉴权类型
+# signature type
 class Security(Enum):
     NONE: int = 0
     SIGNED: int = 1
@@ -116,7 +108,7 @@ class Security(Enum):
 
 
 class BinanceInverseGateway(BaseGateway):
-    """vn.py用于对接币安反向合约的交易接口"""
+    """Binance Inverse future gateway"""
 
     default_name: str = "BINANCE_INVERSE"
 
@@ -130,7 +122,7 @@ class BinanceInverseGateway(BaseGateway):
     exchanges: Exchange = [Exchange.BINANCE]
 
     def __init__(self, event_engine: EventEngine, gateway_name: str) -> None:
-        """构造函数"""
+        """init"""
         super().__init__(event_engine, gateway_name)
 
         self.trade_ws_api: "BinanceInverseTradeWebsocketApi" = BinanceInverseTradeWebsocketApi(self)
@@ -140,7 +132,7 @@ class BinanceInverseGateway(BaseGateway):
         self.orders: Dict[str, OrderData] = {}
 
     def connect(self, setting: dict) -> None:
-        """连接交易接口"""
+        """connect exchange api rest & ws"""
         key: str = setting["key"]
         secret: str = setting["secret"]
 
@@ -160,47 +152,48 @@ class BinanceInverseGateway(BaseGateway):
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
 
     def subscribe(self, req: SubscribeRequest) -> None:
-        """订阅行情"""
+        """subscribe data"""
         self.market_ws_api.subscribe(req)
 
     def send_order(self, req: OrderRequest) -> str:
-        """委托下单"""
+        """send/place order"""
         return self.rest_api.send_order(req)
 
     def cancel_order(self, req: CancelRequest) -> None:
-        """委托撤单"""
+        """cancel order"""
         self.rest_api.cancel_order(req)
 
     def query_order(self, req: OrderQueryRequest) -> None:
+        """query single order status by orderid, you can get the order callback in on_order method"""
         self.rest_api.query_order(req)
 
     def query_account(self) -> None:
-        """查询资金"""
+        """query account"""
         self.rest_api.query_account()
 
     def query_kline(self, req: KlineRequest) -> None:
         pass
 
     def query_position(self) -> None:
-        """查询持仓"""
+        """query position"""
         self.rest_api.query_position()
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
-        """查询历史数据"""
+        """query historical kline data"""
         return self.rest_api.query_history(req)
 
     def close(self) -> None:
-        """关闭连接"""
+        """close api connection"""
         self.rest_api.stop()
         self.trade_ws_api.stop()
         self.market_ws_api.stop()
 
     def process_timer_event(self, event: Event) -> None:
-        """定时事件处理"""
+        """process the listen key update"""
         self.rest_api.keep_user_stream()
 
     def on_order(self, order: OrderData) -> None:
-        """推送委托数据"""
+        """order update"""
         order.update_time = generate_datetime(time.time() * 1000)
         super().on_order(copy(order))
         last_order: OrderData = self.get_order(order.orderid)
@@ -226,15 +219,15 @@ class BinanceInverseGateway(BaseGateway):
                 super().on_trade(trade)
 
     def get_order(self, orderid: str) -> OrderData:
-        """查询委托数据"""
+        """get order by order id"""
         return self.orders.get(orderid, None)
 
 
 class BinanceInverseRestApi(RestClient):
-    """币安反向合约的REST API"""
+    """Binance Inverse future rest api"""
 
     def __init__(self, gateway: BinanceInverseGateway) -> None:
-        """构造函数"""
+        """init"""
         super().__init__()
 
         self.gateway: BinanceInverseGateway = gateway
@@ -255,7 +248,7 @@ class BinanceInverseRestApi(RestClient):
         self.connect_time: int = 0
 
     def sign(self, request: Request) -> Request:
-        """生成币安签名"""
+        """generate signature for private api"""
         security: Security = request.data["security"]
         if security == Security.NONE:
             request.data = None
@@ -288,7 +281,7 @@ class BinanceInverseRestApi(RestClient):
         request.params = {}
         request.data = {}
 
-        # 添加请求头
+        # request headers
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json",
@@ -308,7 +301,7 @@ class BinanceInverseRestApi(RestClient):
             proxy_host: str,
             proxy_port: int
     ) -> None:
-        """连接REST服务器"""
+        """connect rest api"""
         self.key = key
         self.secret = secret.encode()
         self.proxy_port = proxy_port
@@ -322,7 +315,7 @@ class BinanceInverseRestApi(RestClient):
 
         self.start()
 
-        self.gateway.write_log("REST API启动成功")
+        self.gateway.write_log("start connecting rest api")
 
         self.query_time()
         self.query_account()
@@ -332,7 +325,7 @@ class BinanceInverseRestApi(RestClient):
         self.start_user_stream()
 
     def query_time(self) -> None:
-        """查询时间"""
+        """query server time"""
         data: dict = {
             "security": Security.NONE
         }
@@ -346,7 +339,7 @@ class BinanceInverseRestApi(RestClient):
         )
 
     def query_account(self) -> None:
-        """查询资金"""
+        """query account data"""
         data: dict = {"security": Security.SIGNED}
 
         path: str = "/dapi/v1/account"
@@ -359,7 +352,7 @@ class BinanceInverseRestApi(RestClient):
         )
 
     def query_position(self) -> None:
-        """查询持仓"""
+        """query position"""
         data: dict = {"security": Security.SIGNED}
 
         path: str = "/dapi/v1/positionRisk"
@@ -372,6 +365,7 @@ class BinanceInverseRestApi(RestClient):
         )
 
     def query_order(self, req: OrderQueryRequest) -> None:
+        """query specific order with orderid"""
         data = {
             "security": Security.SIGNED
         }
@@ -393,7 +387,7 @@ class BinanceInverseRestApi(RestClient):
         )
 
     def query_orders(self) -> None:
-        """查询未成交委托"""
+        """query open orders"""
         data: dict = {"security": Security.SIGNED}
 
         path: str = "/dapi/v1/openOrders"
@@ -406,7 +400,7 @@ class BinanceInverseRestApi(RestClient):
         )
 
     def query_contract(self) -> None:
-        """查询合约信息"""
+        """query contract detail or  symbol detail"""
         data: dict = {
             "security": Security.NONE
         }
@@ -421,17 +415,16 @@ class BinanceInverseRestApi(RestClient):
         )
 
     def _new_order_id(self) -> int:
-        """生成本地委托号"""
+        """generate customized order id"""
         with self.order_count_lock:
             self.order_count += 1
             return self.order_count
 
     def send_order(self, req: OrderRequest) -> str:
-        """委托下单"""
-        # 生成本地委托号
+        """send/place order"""
         orderid: str = "x-cLbi5uMH" + str(self.connect_time + self._new_order_id())
 
-        # 推送提交中事件
+        # create OrderData Object
         order: OrderData = req.create_order_data(
             orderid,
             self.gateway_name
@@ -442,7 +435,7 @@ class BinanceInverseRestApi(RestClient):
             "security": Security.SIGNED
         }
 
-        # 生成委托请求
+        # order request parameters
         params: dict = {
             "symbol": req.symbol,
             "side": DIRECTION_VT2BINANCES[req.direction],
@@ -474,7 +467,7 @@ class BinanceInverseRestApi(RestClient):
         return order.vt_orderid
 
     def cancel_order(self, req: CancelRequest) -> None:
-        """委托撤单"""
+        """cancel order"""
         data: dict = {
             "security": Security.SIGNED
         }
@@ -499,7 +492,7 @@ class BinanceInverseRestApi(RestClient):
         )
 
     def start_user_stream(self) -> None:
-        """生成listenKey"""
+        """post listen key"""
         data: dict = {
             "security": Security.API_KEY
         }
@@ -510,13 +503,21 @@ class BinanceInverseRestApi(RestClient):
             method="POST",
             path=path,
             callback=self.on_start_user_stream,
+            on_failed=self.on_start_user_stream_failed,
+            on_error=self.on_start_user_stream_error,
             data=data
         )
 
+    def on_start_user_stream_failed(self, status_code: str, request: Request):
+        self.start_user_stream()
+
+    def on_start_user_stream_error(self, exception_type: type, exception_value: Exception, tb, request: Request):
+        self.start_user_stream()
+
     def keep_user_stream(self) -> None:
-        """延长listenKey有效期"""
+        """extend listenKey expire time"""
         self.keep_alive_count += 1
-        if self.keep_alive_count < 600:
+        if self.keep_alive_count < 1200:
             return None
         self.keep_alive_count = 0
 
@@ -536,17 +537,18 @@ class BinanceInverseRestApi(RestClient):
             callback=self.on_keep_user_stream,
             params=params,
             data=data,
+            on_failed=self.on_keep_user_stream_failed,
             on_error=self.on_keep_user_stream_error
         )
 
     def on_query_time(self, data: dict, request: Request) -> None:
-        """时间查询回报"""
+        """query server time callback"""
         local_time: int = int(time.time() * 1000)
         server_time: int = int(data["serverTime"])
         self.time_offset: int = local_time - server_time
 
     def on_query_account(self, data: dict, request: Request) -> None:
-        """资金查询回报"""
+        """query account callback"""
         for asset in data["assets"]:
             account: AccountData = AccountData(
                 accountid=asset["asset"],
@@ -555,13 +557,13 @@ class BinanceInverseRestApi(RestClient):
                 gateway_name=self.gateway_name
             )
 
-            if account.balance:
-                self.gateway.on_account(account)
+            # if account.balance:
+            self.gateway.on_account(account)
 
-        self.gateway.write_log("账户资金查询成功")
+        self.gateway.write_log("query account successfully")
 
-    def on_query_position(self, data: dict, request: Request) -> None:
-        """持仓查询回报"""
+    def on_query_position(self, data: list, request: Request) -> None:
+        """query position callback"""
         for d in data:
             position: PositionData = PositionData(
                 symbol=d["symbol"],
@@ -573,16 +575,16 @@ class BinanceInverseRestApi(RestClient):
                 gateway_name=self.gateway_name,
             )
 
-            if position.volume:
-                volume = d["positionAmt"]
-                if '.' in volume:
-                    position.volume = float(d["positionAmt"])
-                else:
-                    position.volume = int(d["positionAmt"])
+            # if position.volume:
+            volume = d["positionAmt"]
+            if '.' in volume:
+                position.volume = float(d["positionAmt"])
+            else:
+                position.volume = int(d["positionAmt"])
 
-                self.gateway.on_position(position)
+            self.gateway.on_position(position)
 
-        self.gateway.write_log("持仓信息查询成功")
+        self.gateway.write_log("query position successfully")
 
     def on_query_order(self, data: dict, request: Request) -> None:
         key = (data["type"], data["timeInForce"])
@@ -598,16 +600,16 @@ class BinanceInverseRestApi(RestClient):
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
             traded=Decimal(str(data["executedQty"])),
-            status=STATUS_BINANCES2VT.get(data["status"], None),
+            status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
             datetime=generate_datetime(data["time"]),
             gateway_name=self.gateway_name,
         )
         self.gateway.on_order(order)
 
-        self.gateway.write_log("订单信息查询成功")
+        self.gateway.write_log("query order successfully")
 
     def on_query_orders(self, data: list, request: Request) -> None:
-        """未成交委托查询回报"""
+        """query open orders callback"""
         for d in data:
             key: Tuple[str, str] = (d["type"], d["timeInForce"])
             # order_type: OrderType = ORDERTYPE_BINANCES2VT.get(key, None)
@@ -625,16 +627,16 @@ class BinanceInverseRestApi(RestClient):
                 type=order_type,
                 direction=DIRECTION_BINANCES2VT[d["side"]],
                 traded=Decimal(str(d["executedQty"])),
-                status=STATUS_BINANCES2VT.get(d["status"], None),
+                status=STATUS_BINANCES2VT.get(d["status"], Status.NOTTRADED),
                 datetime=generate_datetime(d["time"]),
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_order(order)
 
-        self.gateway.write_log("委托信息查询成功")
+        self.gateway.write_log("query open orders successfully")
 
     def on_query_contract(self, data: dict, request: Request) -> None:
-        """合约信息查询回报"""
+        """query contract callback"""
         for d in data["symbols"]:
             base_currency: str = d["baseAsset"]
             quote_currency: str = d["quoteAsset"]
@@ -665,25 +667,25 @@ class BinanceInverseRestApi(RestClient):
 
             symbol_contract_map[contract.symbol] = contract
 
-        self.gateway.write_log("合约信息查询成功")
+        self.gateway.write_log("query contract successfully")
 
     def on_send_order(self, data: dict, request: Request) -> None:
-        """委托下单回报"""
+        """send order callback"""
         pass
 
     def on_send_order_failed(self, status_code: str, request: Request) -> None:
-        """委托下单失败服务器报错回报"""
+        """send order failed callback"""
         order: OrderData = request.extra
         order.status = Status.REJECTED
         self.gateway.on_order(order)
 
-        msg: str = f"委托失败，状态码：{status_code}，信息：{request.response.text}"
+        msg: str = f"send order failed，status code：{status_code}，msg：{request.response.text}"
         self.gateway.write_log(msg)
 
     def on_send_order_error(
             self, exception_type: type, exception_value: Exception, tb, request: Request
     ) -> None:
-        """委托下单回报函数报错回报"""
+        """send order error callback"""
         order: OrderData = request.extra
         order.status = Status.REJECTED
         self.gateway.on_order(order)
@@ -692,21 +694,21 @@ class BinanceInverseRestApi(RestClient):
             self.on_error(exception_type, exception_value, tb, request)
 
     def on_cancel_order(self, data: dict, request: Request) -> None:
-        """委托撤单回报"""
+        """cancel order callback"""
         pass
 
     def on_cancel_failed(self, status_code: str, request: Request) -> None:
-        """撤单回报函数报错回报"""
+        """cancel order failed callback"""
         if request.extra:
             order = request.extra
             order.status = Status.REJECTED
             self.gateway.on_order(order)
 
-        msg = f"撤单失败，状态码：{status_code}，信息：{request.response.text}"
+        msg = f"cancel order failed，status code：{status_code}, msg：{request.response.text}"
         self.gateway.write_log(msg)
 
     def on_start_user_stream(self, data: dict, request: Request) -> None:
-        """生成listenKey回报"""
+        """query listen key callback, then connect to trade ws"""
         self.user_stream_key = data["listenKey"]
         self.keep_alive_count = 0
 
@@ -715,26 +717,28 @@ class BinanceInverseRestApi(RestClient):
         self.trade_ws_api.connect(url, self.proxy_host, self.proxy_port)
 
     def on_keep_user_stream(self, data: dict, request: Request) -> None:
-        """延长listenKey有效期回报"""
+        """extend the listen key expire time"""
         pass
+
+    def on_keep_user_stream_failed(self, status_code: str, request: Request):
+        self.start_user_stream()
 
     def on_keep_user_stream_error(
             self, exception_type: type, exception_value: Exception, tb, request: Request
     ) -> None:
-        """延长listenKey有效期函数报错回报"""
-        # 当延长listenKey有效期时，忽略超时报错
+        """put the listen key failed"""
         self.start_user_stream()
         if not issubclass(exception_type, TimeoutError):
             self.on_error(exception_type, exception_value, tb, request)
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
-        """查询历史数据"""
+        """query historical kline data"""
         history: List[BarData] = []
         limit: int = 1500
         end_time: int = int(datetime.timestamp(req.end))
 
         while True:
-            # 创建查询参数
+            # query parameters
             params: dict = {
                 "symbol": req.symbol,
                 "interval": INTERVAL_VT2BINANCES[req.interval],
@@ -745,7 +749,7 @@ class BinanceInverseRestApi(RestClient):
             path: str = "/dapi/v1/klines"
             if req.start:
                 start_time = int(datetime.timestamp(req.start))
-                params["startTime"] = start_time * 1000  # 转换成毫秒
+                params["startTime"] = start_time * 1000  # convert the start time into milliseconds
 
             resp: Response = self.request(
                 "GET",
@@ -754,15 +758,15 @@ class BinanceInverseRestApi(RestClient):
                 params=params
             )
 
-            # 如果请求失败则终止循环
+            # will break the while loop if the request failed
             if resp.status_code // 100 != 2:
-                msg: str = f"获取历史数据失败，状态码：{resp.status_code}，信息：{resp.text}"
+                msg: str = f"query historical kline data failed, status code: {resp.status_code}, msg: {resp.text}"
                 self.gateway.write_log(msg)
                 break
             else:
                 data: dict = resp.json()
                 if not data:
-                    msg: str = f"获取历史数据为空，开始时间：{start_time}"
+                    msg: str = f"historical kline data is empty, start time: {start_time}"
                     self.gateway.write_log(msg)
                     break
 
@@ -789,14 +793,14 @@ class BinanceInverseRestApi(RestClient):
 
                 buf = list(reversed(buf))
                 history.extend(buf)
-                msg: str = f"获取历史数据成功，{req.symbol} - {req.interval.value}，{begin} - {end}"
+                msg: str = f"query historical kline data successfully, {req.symbol} - {req.interval.value}，{begin} - {end}"
                 self.gateway.write_log(msg)
 
-                # 如果收到了最后一批数据则终止循环
+                # if the data len is less than limit, break the while loop
                 if len(data) < limit:
                     break
 
-                # 更新结束时间
+                # update start time
                 end_dt = begin - TIMEDELTA_MAP[req.interval]
                 end_time = int(datetime.timestamp(end_dt))
 
@@ -805,26 +809,26 @@ class BinanceInverseRestApi(RestClient):
 
 
 class BinanceInverseTradeWebsocketApi(WebsocketClient):
-    """币安反向合约的交易Websocket API"""
+    """Binance Inverse future trade ws api"""
 
     def __init__(self, gateway: BinanceInverseGateway) -> None:
-        """构造函数"""
+        """init"""
         super().__init__()
 
         self.gateway: BinanceInverseGateway = gateway
         self.gateway_name: str = gateway.gateway_name
 
     def connect(self, url: str, proxy_host: str, proxy_port: int) -> None:
-        """连接Websocket交易频道"""
+        """connect binance inverse future trade ws"""
         self.init(url, proxy_host, proxy_port)
         self.start()
 
     def on_connected(self) -> None:
-        """连接成功回报"""
-        self.gateway.write_log("交易Websocket API连接成功")
+        """trade ws connected"""
+        self.gateway.write_log("trade ws connected")
 
     def on_packet(self, packet: dict) -> None:
-        """推送数据回报"""
+        """receive data from ws server"""
         if packet["e"] == "ACCOUNT_UPDATE":
             self.on_account(packet)
         elif packet["e"] == "ORDER_TRADE_UPDATE":
@@ -833,7 +837,7 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
             self.gateway.rest_api.start_user_stream()
 
     def on_account(self, packet: dict) -> None:
-        """资金更新推送"""
+        """account data update"""
         for acc_data in packet["a"]["B"]:
             account: AccountData = AccountData(
                 accountid=acc_data["a"],
@@ -842,8 +846,7 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
                 gateway_name=self.gateway_name
             )
 
-            if account.balance:
-                self.gateway.on_account(account)
+            self.gateway.on_account(account)
 
         for pos_data in packet["a"]["P"]:
             if pos_data["ps"] == "BOTH":
@@ -865,7 +868,7 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
                 self.gateway.on_position(position)
 
     def on_order(self, packet: dict) -> None:
-        """委托更新推送"""
+        """order update"""
         ord_data: dict = packet["o"]
         key: Tuple[str, str] = (ord_data["o"], ord_data["f"])
 
@@ -913,10 +916,10 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
 
 
 class BinanceInverseDataWebsocketApi(WebsocketClient):
-    """币安反向合约的行情Websocket API"""
+    """binance inverse data ws"""
 
     def __init__(self, gateway: BinanceInverseGateway) -> None:
-        """构造函数"""
+        """init"""
         super().__init__()
 
         self.gateway: BinanceInverseGateway = gateway
@@ -930,17 +933,17 @@ class BinanceInverseDataWebsocketApi(WebsocketClient):
             proxy_host: str,
             proxy_port: int,
     ) -> None:
-        """连接Websocket行情频道"""
+        """connect market data ws"""
 
         self.init(D_WEBSOCKET_DATA_HOST, proxy_host, proxy_port)
 
         self.start()
 
     def on_connected(self) -> None:
-        """连接成功回报"""
-        self.gateway.write_log("行情Websocket API连接成功")
+        """data ws connected"""
+        self.gateway.write_log("data ws connected")
 
-        # 重新订阅行情
+        # subscribe/resubscribe market data
         if self.ticks:
             channels = []
             for symbol in self.ticks.keys():
@@ -955,17 +958,17 @@ class BinanceInverseDataWebsocketApi(WebsocketClient):
             self.send_packet(req)
 
     def subscribe(self, req: SubscribeRequest) -> None:
-        """订阅行情"""
+        """subscribe market data"""
         if req.symbol in self.ticks:
             return
 
         if req.symbol not in symbol_contract_map:
-            self.gateway.write_log(f"找不到该合约代码{req.symbol}")
+            self.gateway.write_log(f"symbol is not found: {req.symbol}")
             return
 
         self.reqid += 1
 
-        # 创建TICK对象
+        # init Tick Object
         tick: TickData = TickData(
             symbol=req.symbol,
             name=symbol_contract_map[req.symbol].name,
@@ -988,7 +991,7 @@ class BinanceInverseDataWebsocketApi(WebsocketClient):
         self.send_packet(req)
 
     def on_packet(self, packet: dict) -> None:
-        """推送数据回报"""
+        """receive subscribed data"""
         stream: str = packet.get("stream", None)
 
         if not stream:
@@ -1026,7 +1029,7 @@ class BinanceInverseDataWebsocketApi(WebsocketClient):
 
 
 def generate_datetime(timestamp: float) -> datetime:
-    """生成时间"""
+    """generate time"""
     dt: datetime = datetime.fromtimestamp(timestamp / 1000)
     dt: datetime = CHINA_TZ.localize(dt)
     return dt
