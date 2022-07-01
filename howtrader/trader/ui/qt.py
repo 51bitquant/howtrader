@@ -72,19 +72,19 @@ class ExceptionWidget(QtWidgets.QWidget):
 
     def init_ui(self) -> None:
         """"""
-        self.setWindowTitle("触发异常")
+        self.setWindowTitle("Exceptions")
         self.setFixedSize(600, 600)
 
         self.msg_edit: QtWidgets.QTextEdit = QtWidgets.QTextEdit()
         self.msg_edit.setReadOnly(True)
 
-        copy_button: QtWidgets.QPushButton = QtWidgets.QPushButton("复制")
+        copy_button: QtWidgets.QPushButton = QtWidgets.QPushButton("copy")
         copy_button.clicked.connect(self._copy_text)
 
-        community_button: QtWidgets.QPushButton = QtWidgets.QPushButton("求助")
+        community_button: QtWidgets.QPushButton = QtWidgets.QPushButton("help")
         community_button.clicked.connect(self._open_community)
 
-        close_button: QtWidgets.QPushButton = QtWidgets.QPushButton("关闭")
+        close_button: QtWidgets.QPushButton = QtWidgets.QPushButton("close")
         close_button.clicked.connect(self.close)
 
         hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()

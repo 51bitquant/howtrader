@@ -59,28 +59,28 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_dock(self) -> None:
         """"""
         self.trading_widget, trading_dock = self.create_dock(
-            TradingWidget, "交易", QtCore.Qt.LeftDockWidgetArea
+            TradingWidget, "Trading", QtCore.Qt.LeftDockWidgetArea
         )
         tick_widget, tick_dock = self.create_dock(
-            TickMonitor, "行情", QtCore.Qt.RightDockWidgetArea
+            TickMonitor, "Ticks", QtCore.Qt.RightDockWidgetArea
         )
         order_widget, order_dock = self.create_dock(
-            OrderMonitor, "委托", QtCore.Qt.RightDockWidgetArea
+            OrderMonitor, "All Orders", QtCore.Qt.RightDockWidgetArea
         )
         active_widget, active_dock = self.create_dock(
-            ActiveOrderMonitor, "活动", QtCore.Qt.RightDockWidgetArea
+            ActiveOrderMonitor, "Active Orders", QtCore.Qt.RightDockWidgetArea
         )
         trade_widget, trade_dock = self.create_dock(
-            TradeMonitor, "成交", QtCore.Qt.RightDockWidgetArea
+            TradeMonitor, "Trades", QtCore.Qt.RightDockWidgetArea
         )
         log_widget, log_dock = self.create_dock(
-            LogMonitor, "日志", QtCore.Qt.RightDockWidgetArea
+            LogMonitor, "Logs", QtCore.Qt.RightDockWidgetArea
         )
         account_widget, account_dock = self.create_dock(
-            AccountMonitor, "资金", QtCore.Qt.RightDockWidgetArea
+            AccountMonitor, "Accounts", QtCore.Qt.RightDockWidgetArea
         )
         position_widget, position_dock = self.create_dock(
-            PositionMonitor, "持仓", QtCore.Qt.RightDockWidgetArea
+            PositionMonitor, "Positions", QtCore.Qt.RightDockWidgetArea
         )
 
         self.tabifyDockWidget(order_dock, active_dock)
@@ -100,14 +100,14 @@ class MainWindow(QtWidgets.QMainWindow):
         bar.setNativeMenuBar(False)     # for mac and linux
 
         # System menu
-        sys_menu: QtWidgets.QMenu = bar.addMenu("系统")
+        sys_menu: QtWidgets.QMenu = bar.addMenu("exchanges")
 
         gateway_names: list = self.main_engine.get_all_gateway_names()
         for name in gateway_names:
             func: Callable = partial(self.connect, name)
             self.add_action(
                 sys_menu,
-                f"连接{name}",
+                f"Connect {name}",
                 get_icon_path(__file__, "connect.ico"),
                 func
             )
@@ -116,13 +116,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.add_action(
             sys_menu,
-            "退出",
+            "exit",
             get_icon_path(__file__, "exit.ico"),
             self.close
         )
 
         # App menu
-        app_menu: QtWidgets.QMenu = bar.addMenu("功能")
+        app_menu: QtWidgets.QMenu = bar.addMenu("apps")
 
         all_apps: List[BaseApp] = self.main_engine.get_all_apps()
         for app in all_apps:
@@ -134,16 +134,16 @@ class MainWindow(QtWidgets.QMainWindow):
             self.add_action(app_menu, app.display_name, app.icon_name, func, True)
 
         # Global setting editor
-        action: QtGui.QAction = QtWidgets.QAction("配置", self)
+        action: QtGui.QAction = QtWidgets.QAction("configs", self)
         action.triggered.connect(self.edit_global_setting)
         bar.addAction(action)
 
         # Help menu
-        help_menu: QtWidgets.QMenu = bar.addMenu("帮助")
+        help_menu: QtWidgets.QMenu = bar.addMenu("help")
 
         self.add_action(
             help_menu,
-            "查询合约",
+            "query contract",
             get_icon_path(__file__, "contract.ico"),
             partial(self.open_widget, ContractManager, "contract"),
             True
@@ -151,29 +151,29 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.add_action(
             help_menu,
-            "还原窗口",
+            "restore window",
             get_icon_path(__file__, "restore.ico"),
             self.restore_window_setting
         )
 
-        self.add_action(
-            help_menu,
-            "测试邮件",
-            get_icon_path(__file__, "email.ico"),
-            self.send_test_email
-        )
+        # self.add_action(
+        #     help_menu,
+        #     "测试邮件",
+        #     get_icon_path(__file__, "email.ico"),
+        #     self.send_test_email
+        # )
+        #
+        # self.add_action(
+        #     help_menu,
+        #     "社区论坛",
+        #     get_icon_path(__file__, "forum.ico"),
+        #     self.open_forum,
+        #     True
+        # )
 
         self.add_action(
             help_menu,
-            "社区论坛",
-            get_icon_path(__file__, "forum.ico"),
-            self.open_forum,
-            True
-        )
-
-        self.add_action(
-            help_menu,
-            "关于",
+            "about",
             get_icon_path(__file__, "about.ico"),
             partial(self.open_widget, AboutDialog, "about"),
         )
@@ -181,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_toolbar(self) -> None:
         """"""
         self.toolbar: QtWidgets.QToolBar = QtWidgets.QToolBar(self)
-        self.toolbar.setObjectName("工具栏")
+        self.toolbar.setObjectName("toolbar")
         self.toolbar.setFloatable(False)
         self.toolbar.setMovable(False)
 
@@ -246,8 +246,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         reply = QtWidgets.QMessageBox.question(
             self,
-            "退出",
-            "确认退出？",
+            "exit",
+            "confirm exit？",
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             QtWidgets.QMessageBox.No,
         )

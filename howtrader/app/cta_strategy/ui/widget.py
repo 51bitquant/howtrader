@@ -39,24 +39,24 @@ class CtaManager(QtWidgets.QWidget):
 
     def init_ui(self) -> None:
         """"""
-        self.setWindowTitle("CTA策略")
+        self.setWindowTitle("CTA Strategy")
 
         # Create widgets
         self.class_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
 
-        add_button: QtWidgets.QPushButton = QtWidgets.QPushButton("添加策略")
+        add_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Add Strategy")
         add_button.clicked.connect(self.add_strategy)
 
-        init_button: QtWidgets.QPushButton = QtWidgets.QPushButton("全部初始化")
+        init_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Init All Strategies")
         init_button.clicked.connect(self.cta_engine.init_all_strategies)
 
-        start_button: QtWidgets.QPushButton = QtWidgets.QPushButton("全部启动")
+        start_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Start All Strategies")
         start_button.clicked.connect(self.cta_engine.start_all_strategies)
 
-        stop_button: QtWidgets.QPushButton = QtWidgets.QPushButton("全部停止")
+        stop_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Stop All Strategies")
         stop_button.clicked.connect(self.cta_engine.stop_all_strategies)
 
-        clear_button: QtWidgets.QPushButton = QtWidgets.QPushButton("清空日志")
+        clear_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Clear Logs")
         clear_button.clicked.connect(self.clear_log)
 
         self.scroll_layout: QtWidgets.QVBoxLayout = QtWidgets.QVBoxLayout()
@@ -183,21 +183,21 @@ class StrategyManager(QtWidgets.QFrame):
         self.setFrameShape(self.Box)
         self.setLineWidth(1)
 
-        self.init_button: QtWidgets.QPushButton = QtWidgets.QPushButton("初始化")
+        self.init_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Init Strategy")
         self.init_button.clicked.connect(self.init_strategy)
 
-        self.start_button: QtWidgets.QPushButton = QtWidgets.QPushButton("启动")
+        self.start_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Start Strategy")
         self.start_button.clicked.connect(self.start_strategy)
         self.start_button.setEnabled(False)
 
-        self.stop_button: QtWidgets.QPushButton = QtWidgets.QPushButton("停止")
+        self.stop_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Stop Strategy")
         self.stop_button.clicked.connect(self.stop_strategy)
         self.stop_button.setEnabled(False)
 
-        self.edit_button: QtWidgets.QPushButton = QtWidgets.QPushButton("编辑")
+        self.edit_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Edit Strategy")
         self.edit_button.clicked.connect(self.edit_strategy)
 
-        self.remove_button: QtWidgets.QPushButton = QtWidgets.QPushButton("移除")
+        self.remove_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Remove Strategy")
         self.remove_button.clicked.connect(self.remove_strategy)
 
         strategy_name: str = self._data["strategy_name"]
@@ -342,21 +342,21 @@ class StopOrderMonitor(BaseMonitor):
 
     headers: dict = {
         "stop_orderid": {
-            "display": "停止委托号",
+            "display": "StopOrderId",
             "cell": BaseCell,
             "update": False,
         },
-        "vt_orderids": {"display": "限价委托号", "cell": BaseCell, "update": True},
-        "vt_symbol": {"display": "本地代码", "cell": BaseCell, "update": False},
-        "direction": {"display": "方向", "cell": EnumCell, "update": False},
-        "offset": {"display": "开平", "cell": EnumCell, "update": False},
-        "price": {"display": "价格", "cell": BaseCell, "update": False},
-        "volume": {"display": "数量", "cell": BaseCell, "update": False},
-        "status": {"display": "状态", "cell": EnumCell, "update": True},
-        "datetime": {"display": "时间", "cell": TimeCell, "update": False},
-        "lock": {"display": "锁仓", "cell": BaseCell, "update": False},
-        "net": {"display": "净仓", "cell": BaseCell, "update": False},
-        "strategy_name": {"display": "策略名", "cell": BaseCell, "update": False},
+        "vt_orderids": {"display": "vt_orderids", "cell": BaseCell, "update": True},
+        "vt_symbol": {"display": "vt_symbol", "cell": BaseCell, "update": False},
+        "direction": {"display": "direction", "cell": EnumCell, "update": False},
+        "offset": {"display": "offset", "cell": EnumCell, "update": False},
+        "price": {"display": "price", "cell": BaseCell, "update": False},
+        "volume": {"display": "volume", "cell": BaseCell, "update": False},
+        "status": {"display": "status", "cell": EnumCell, "update": True},
+        "datetime": {"display": "datetime", "cell": TimeCell, "update": False},
+        "lock": {"display": "lock", "cell": BaseCell, "update": False},
+        "net": {"display": "net", "cell": BaseCell, "update": False},
+        "strategy_name": {"display": "strategy_name", "cell": BaseCell, "update": False},
     }
 
     def __del__(self) -> None:
@@ -374,8 +374,8 @@ class LogMonitor(BaseMonitor):
     sorting: bool = False
 
     headers: dict = {
-        "time": {"display": "时间", "cell": TimeCell, "update": False},
-        "msg": {"display": "信息", "cell": MsgCell, "update": False},
+        "time": {"display": "time", "cell": TimeCell, "update": False},
+        "msg": {"display": "msg", "cell": MsgCell, "update": False},
     }
 
     def init_ui(self) -> None:
@@ -421,13 +421,13 @@ class SettingEditor(QtWidgets.QDialog):
 
         # Add vt_symbol and name edit if add new strategy
         if self.class_name:
-            self.setWindowTitle(f"添加策略：{self.class_name}")
-            button_text: str = "添加"
+            self.setWindowTitle(f"Add Strategy: {self.class_name}")
+            button_text: str = "Confirm"
             parameters: dict = {"strategy_name": "", "vt_symbol": ""}
             parameters.update(self.parameters)
         else:
-            self.setWindowTitle(f"参数编辑：{self.strategy_name}")
-            button_text: str = "确定"
+            self.setWindowTitle(f"Edit Parameters {self.strategy_name}")
+            button_text: str = "Confirm"
             parameters: dict = self.parameters
 
         for name, value in parameters.items():

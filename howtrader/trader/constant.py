@@ -10,8 +10,8 @@ class Direction(Enum):
     Direction of order/trade/position.
     """
     LONG = "Long"
-    SHORT = "SHORT"
-    NET = "NET"
+    SHORT = "Short"
+    NET = "Net"
 
 
 class Offset(Enum):

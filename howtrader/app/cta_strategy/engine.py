@@ -117,7 +117,7 @@ class CtaEngine(BaseEngine):
         self.load_strategy_setting()
         self.load_strategy_data()
         self.register_event()
-        self.write_log("CTA策略引擎初始化成功")
+        self.write_log("Initialize cta engine")
 
     def close(self) -> None:
         """"""
@@ -424,7 +424,7 @@ class CtaEngine(BaseEngine):
         """
         order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
         if not order:
-            self.write_log(f"撤单失败，找不到委托{vt_orderid}", strategy)
+            self.write_log(f"cancel order failed, couldn't find orderid: {vt_orderid}", strategy)
             return
 
         req: CancelRequest = order.create_cancel_request()
@@ -467,7 +467,7 @@ class CtaEngine(BaseEngine):
         """
         contract: Optional[ContractData] = self.main_engine.get_contract(strategy.vt_symbol)
         if not contract:
-            self.write_log(f"委托失败，找不到合约：{strategy.vt_symbol}", strategy)
+            self.write_log(f"send order failed, couldn't find symbol: {strategy.vt_symbol}", strategy)
             return []
 
         # Round order price and volume to nearest incremental value
@@ -602,7 +602,7 @@ class CtaEngine(BaseEngine):
             strategy.trading = False
             strategy.inited = False
 
-            msg: str = f"触发异常已停止\n{traceback.format_exc()}"
+            msg: str = f"raise exception and strategy was stopped: \n{traceback.format_exc()}"
             self.write_log(msg, strategy)
 
     def add_strategy(
@@ -612,21 +612,21 @@ class CtaEngine(BaseEngine):
         Add a new strategy.
         """
         if strategy_name in self.strategies:
-            self.write_log(f"创建策略失败，存在重名{strategy_name}")
+            self.write_log(f"create strategy failed，strategy {strategy_name} already existed")
             return
 
         strategy_class: Optional[Type[CtaTemplate]] = self.classes.get(class_name, None)
         if not strategy_class:
-            self.write_log(f"创建策略失败，找不到策略类{class_name}")
+            self.write_log(f"create strategy failed，strategy class {class_name} not found")
             return
 
         if "." not in vt_symbol:
-            self.write_log("创建策略失败，本地代码缺失交易所后缀")
+            self.write_log("create strategy failed, vt_symbol doesn't contain exchange name, correct format like BTCUSDT.BINANCE")
             return
 
         _, exchange_str = vt_symbol.split(".")
         if exchange_str not in Exchange.__members__:
-            self.write_log("创建策略失败，本地代码的交易所后缀不正确")
+            self.write_log("create strategy failed, exchange not found")
             return
 
         strategy: CtaTemplate = strategy_class(self, strategy_name, vt_symbol, setting)
@@ -654,10 +654,10 @@ class CtaEngine(BaseEngine):
         strategy: CtaTemplate = self.strategies[strategy_name]
 
         if strategy.inited:
-            self.write_log(f"{strategy_name}已经完成初始化，禁止重复操作")
+            self.write_log(f"{strategy_name} already initialzed")
             return
 
-        self.write_log(f"{strategy_name}开始执行初始化")
+        self.write_log(f"start initializing {strategy_name}")
 
         # Call on_init function of strategy
         self.call_strategy_func(strategy, strategy.on_init)
@@ -680,12 +680,12 @@ class CtaEngine(BaseEngine):
                 symbol=contract.symbol, exchange=contract.exchange)
             self.main_engine.subscribe(req, contract.gateway_name)
         else:
-            self.write_log(f"行情订阅失败，找不到合约{strategy.vt_symbol}", strategy)
+            self.write_log(f"failed to subscribe market data, symbol not found: {strategy.vt_symbol}", strategy)
 
         # Put event to update init completed status.
         strategy.inited = True
         self.put_strategy_event(strategy)
-        self.write_log(f"{strategy_name}初始化完成")
+        self.write_log(f"finish initializing {strategy_name}")
 
     def start_strategy(self, strategy_name: str) -> None:
         """
@@ -693,11 +693,11 @@ class CtaEngine(BaseEngine):
         """
         strategy: CtaTemplate = self.strategies[strategy_name]
         if not strategy.inited:
-            self.write_log(f"策略{strategy.strategy_name}启动失败，请先初始化")
+            self.write_log(f"strategy {strategy.strategy_name} failed to start，pls initialize strategy first")
             return None
 
         if strategy.trading:
-            self.write_log(f"{strategy_name}已经启动，请勿重复操作")
+            self.write_log(f"{strategy_name} already started")
             return None
 
         self.call_strategy_func(strategy, strategy.on_start)
@@ -744,7 +744,7 @@ class CtaEngine(BaseEngine):
         """
         strategy: CtaTemplate = self.strategies[strategy_name]
         if strategy.trading:
-            self.write_log(f"策略{strategy.strategy_name}移除失败，请先停止")
+            self.write_log(f"strategy {strategy.strategy_name} failed to remove，pls stop strategy first.")
             return False
 
         # Remove setting
@@ -766,7 +766,7 @@ class CtaEngine(BaseEngine):
         # Remove from strategies
         self.strategies.pop(strategy_name)
 
-        self.write_log(f"策略{strategy.strategy_name}移除移除成功")
+        self.write_log(f"strategy {strategy.strategy_name} was removed")
         return True
 
     def load_strategy_class(self) -> None:
@@ -797,7 +797,7 @@ class CtaEngine(BaseEngine):
         try:
             module: ModuleType = importlib.import_module(module_name)
 
-            # 重载模块，确保如果策略文件中有任何修改，能够立即生效。
+            # reload the model, in case any modification
             importlib.reload(module)
 
             for name in dir(module):
@@ -805,7 +805,7 @@ class CtaEngine(BaseEngine):
                 if (isinstance(value, type) and issubclass(value, CtaTemplate) and value is not CtaTemplate):
                     self.classes[value.__name__] = value
         except:  # noqa
-            msg: str = f"策略文件{module_name}加载失败，触发异常：\n{traceback.format_exc()}"
+            msg: str = f"strategy module {module_name} failed to load，raise exception: \n{traceback.format_exc()}"
             self.write_log(msg)
 
     def load_strategy_data(self) -> None:
@@ -941,6 +941,6 @@ class CtaEngine(BaseEngine):
         if strategy:
             subject: str = f"{strategy.strategy_name}"
         else:
-            subject: str = "CTA策略引擎"
+            subject: str = "CTA Engine"
 
         self.main_engine.send_email(subject, msg)
