@@ -135,7 +135,7 @@ class MainEngine:
         """
         engine: BaseEngine = self.engines.get(engine_name, None)
         if not engine:
-            self.write_log(f"missing engine：{engine_name}")
+            self.write_log(f"engine not found: {engine_name}")
         return engine
 
     def get_default_setting(self, gateway_name: str) -> Optional[Dict[str, Any]]:

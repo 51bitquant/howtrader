@@ -734,16 +734,16 @@ class DailyResult:
 
         for trade in self.trades:
             if trade.direction == Direction.LONG:
-                pos_change = trade.volume
+                pos_change = float(trade.volume)
             else:
-                pos_change = -trade.volume
+                pos_change = -float(trade.volume)
 
             self.end_pos += pos_change
 
-            turnover = trade.volume * size * trade.value
+            turnover = float(trade.volume) * size * float(trade.value)
             self.trading_pnl += pos_change * \
-                (self.close_price - trade.price) * size
-            self.slippage += trade.volume * size * slippage
+                (self.close_price - float(trade.price)) * size
+            self.slippage += float(trade.volume) * size * slippage
 
             self.turnover += turnover
             self.commission += turnover * rate

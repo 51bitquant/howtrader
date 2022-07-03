@@ -12,3 +12,4 @@ EVENT_ACCOUNT = "eAccount."
 EVENT_QUOTE = "eQuote."
 EVENT_CONTRACT = "eContract."
 EVENT_LOG = "eLog"
+EVENT_TRADINGVIEW = 'eTradingView'

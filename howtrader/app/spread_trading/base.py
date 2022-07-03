@@ -483,16 +483,15 @@ def query_bar_from_rq(
     end: datetime
 ):
     """
-    Query bar data from RQData.
+    Query bar data from RQData, remove deprecated
     """
-    datafeed: BaseDatafeed = get_datafeed()
-
-    req = HistoryRequest(
-        symbol=symbol,
-        exchange=exchange,
-        interval=interval,
-        start=start,
-        end=end
-    )
-    data = datafeed.query_bar_history(req)
-    return data
+    # datafeed: BaseDatafeed = get_datafeed()
+    # req = HistoryRequest(
+    #     symbol=symbol,
+    #     exchange=exchange,
+    #     interval=interval,
+    #     start=start,
+    #     end=end
+    # )
+    # data = datafeed.query_bar_history(req)
+    # return data
