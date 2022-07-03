@@ -26,6 +26,8 @@ SETTINGS: Dict[str, Any] = {
     "email.receiver": "",
 
     "update_interval": 600,
+    "passphrase": "howtrader",  # tv passphrase
+    "port": 9999, # tv server port
 
     "datafeed.name": "",
     "datafeed.username": "",

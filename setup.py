@@ -24,9 +24,8 @@ from setuptools import find_packages, setup
 
 def get_install_requires():
     install_requires = [
-        "six",
         "simplejson",
-        "wheel",
+        "flask",
         "PySide6",
         "pyqtgraph",
         "qdarkstyle",

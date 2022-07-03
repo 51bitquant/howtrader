@@ -12,4 +12,6 @@ EVENT_ACCOUNT = "eAccount."
 EVENT_QUOTE = "eQuote."
 EVENT_CONTRACT = "eContract."
 EVENT_LOG = "eLog"
-EVENT_TRADINGVIEW = 'eTradingView'
+EVENT_TV_SIGNAL = 'eTVSignal'
+EVENT_TV_LOG = 'eTVLog'
+EVENT_TV_STRATEGY = "eTVStrategy"

@@ -823,8 +823,8 @@ class CtaEngine(BaseEngine):
         data.pop("trading")
         self.sync_strategy_data_lock.acquire()
         self.strategy_data[strategy.strategy_name] = data
-        self.sync_strategy_data_lock.release()
         save_json(self.data_filename, self.strategy_data)
+        self.sync_strategy_data_lock.release()
 
     def get_all_strategy_class_names(self) -> list:
         """

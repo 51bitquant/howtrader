@@ -1,6 +1,7 @@
 simplejson
 requests
 aiohttp
+flask
 pytz
 peewee
 pymongo

@@ -101,7 +101,7 @@ class ExceptionWidget(QtWidgets.QWidget):
     def show_exception(self, msg: str) -> None:
         """"""
         self.msg_edit.setText(msg)
-        self.show()
+        # self.show()
 
     def _copy_text(self) -> None:
         """"""
