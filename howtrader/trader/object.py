@@ -407,7 +407,7 @@ class HistoryRequest:
     start: datetime
     end: datetime = None
     interval: Interval = None
-    limit: 1000
+    limit: int = 1000
 
     def __post_init__(self) -> None:
         """"""

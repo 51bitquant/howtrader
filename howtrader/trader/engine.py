@@ -29,7 +29,6 @@ from .object import (
     LogData,
     OrderRequest,
     OrderQueryRequest,
-    KlineRequest,
     QuoteData,
     QuoteRequest,
     SubscribeRequest,

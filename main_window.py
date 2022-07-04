@@ -7,11 +7,11 @@ from howtrader.trader.setting import SETTINGS
 from howtrader.gateway.binance import BinanceUsdtGateway, BinanceSpotGateway, BinanceInverseGateway
 
 from howtrader.app.cta_strategy import CtaStrategyApp
-from howtrader.app.data_manager import DataManagerApp
-from howtrader.app.data_recorder import DataRecorderApp
-from howtrader.app.algo_trading import AlgoTradingApp
-from howtrader.app.risk_manager import RiskManagerApp
-from howtrader.app.spread_trading import SpreadTradingApp
+# from howtrader.app.data_manager import DataManagerApp
+# from howtrader.app.data_recorder import DataRecorderApp
+# from howtrader.app.algo_trading import AlgoTradingApp
+# from howtrader.app.risk_manager import RiskManagerApp
+# from howtrader.app.spread_trading import SpreadTradingApp
 from howtrader.app.tradingview import TradingViewApp
 from threading import Thread
 import json
@@ -34,6 +34,7 @@ def webhook():
         data = json.loads(request.data)
         if data.get('passphrase', None) != passphrase:
             return {"status": "failure", "msg": "passphrase is incorrect"}
+        del data['passphrase'] # del it for safety.
         event:Event = Event(type=EVENT_TV_SIGNAL, data=data)
         event_engine.put(event)
         return {"status": "success", "msg": ""}
@@ -53,11 +54,13 @@ def main():
     main_engine.add_gateway(BinanceInverseGateway)
     main_engine.add_app(CtaStrategyApp)
     main_engine.add_app(TradingViewApp)
-    main_engine.add_app(DataManagerApp)
-    main_engine.add_app(AlgoTradingApp)
-    main_engine.add_app(DataRecorderApp)
-    main_engine.add_app(RiskManagerApp)
-    main_engine.add_app(SpreadTradingApp)
+
+    # if you don't use
+    # main_engine.add_app(DataManagerApp)
+    # main_engine.add_app(AlgoTradingApp)
+    # main_engine.add_app(DataRecorderApp)
+    # main_engine.add_app(RiskManagerApp)
+    # main_engine.add_app(SpreadTradingApp)
 
     main_window = MainWindow(main_engine, event_engine)
     main_window.showMaximized()

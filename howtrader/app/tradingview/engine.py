@@ -336,7 +336,7 @@ class TVEngine(BaseEngine):
         strategy: TVTemplate = self.strategies[strategy_name]
 
         if strategy.inited:
-            self.write_log(f"{strategy_name} already initialzed")
+            self.write_log(f"{strategy_name} already initialized")
             return
 
         self.write_log(f"start initializing {strategy_name}")

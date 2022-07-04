@@ -34,7 +34,6 @@ class TVTemplate(ABC):
         self.trading: bool = False
         self.pos: Decimal = Decimal("0")
 
-
         # Copy a new variables list here to avoid duplicate insert when multiple
         # strategy instances are created with the same strategy class.
         self.variables = copy(self.variables)
@@ -87,6 +86,7 @@ class TVTemplate(ABC):
         strategy_data: dict = {
             "strategy_name": self.strategy_name,
             "vt_symbol": self.vt_symbol,
+            "tv_id": self.tv_id,
             "class_name": self.__class__.__name__,
             "author": self.author,
             "parameters": self.get_parameters(),
@@ -135,8 +135,11 @@ class TVTemplate(ABC):
 
     @virtual
     def on_signal(self, signal: dict) -> None:
-        pass
-
+        """
+        signal from tradingview
+        signal contains key and value, the key & value depends on how you config from tradingview
+        but it should contains the tv_id, and passphrase, the passphrase for safety
+        """
 
     def buy(
         self,
