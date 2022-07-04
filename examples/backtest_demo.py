@@ -1,7 +1,7 @@
 from howtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
 from howtrader.trader.object import Interval
 from datetime import datetime
-from strategies.atr_rsi_strategy import AtrRsiStrategy
+from strategies.atr_rsi_strategy import AtrRsiStrategy  # 要导入你回测的策略，你自己开发的。
 
 engine = BacktestingEngine()
 engine.set_parameters(
@@ -30,5 +30,5 @@ setting.set_target("sharpe_ratio")
 setting.add_parameter("atr_length", 3, 39, 1)
 setting.add_parameter("atr_ma_length", 10, 30, 1)
 
-result = engine.run_ga_optimization(setting)
-print(result)
+result = engine.run_ga_optimization(setting)  # 优化策略参数
+print(result) # 打印回测的结果，结果中会有比较好的结果值。

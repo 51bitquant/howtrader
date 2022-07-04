@@ -1,5 +1,7 @@
 # HowTrader
 
+[中文文档](./README-CN.md)
+
 What does Howtrader means? It means how to be a trader, especially a
 quant trader.
 
