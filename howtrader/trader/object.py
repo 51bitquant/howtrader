@@ -10,7 +10,7 @@ from decimal import Decimal
 from .constant import Direction, Exchange, Interval, Offset, Status, Product, OptionType, OrderType
 
 ACTIVE_STATUSES = set([Status.SUBMITTING, Status.NOTTRADED, Status.PARTTRADED])
-
+import pandas as pd
 
 @dataclass
 class BaseData:
@@ -261,6 +261,19 @@ class ContractData(BaseData):
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
 
+@dataclass
+class OriginalKlineData(BaseData):
+    """
+    exchange kline data
+    """
+    symbol: str
+    exchange: Exchange
+    interval: Interval
+    kline_df: pd.DataFrame
+    klines: list
+    def __post_init__(self) -> None:
+        """"""
+        self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
 
 @dataclass
 class QuoteData(BaseData):
@@ -394,19 +407,8 @@ class HistoryRequest:
     start: datetime
     end: datetime = None
     interval: Interval = None
+    limit: 1000
 
-    def __post_init__(self) -> None:
-        """"""
-        self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
-
-@dataclass
-class KlineRequest:
-    """
-    Request sending to specific gateway for querying latest Kline data.
-    """
-    symbol: str
-    exchange: Exchange
-    interval: Interval = None
     def __post_init__(self) -> None:
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"

@@ -24,7 +24,7 @@ class CtaTemplate(ABC):
         setting: dict,
     ) -> None:
         """"""
-        self.cta_engine: Any = cta_engine
+        self.cta_engine: "CtaEngine" = cta_engine
         self.strategy_name: str = strategy_name
         self.vt_symbol: str = vt_symbol
 
@@ -307,6 +307,13 @@ class CtaTemplate(ABC):
 
         for bar in bars:
             callback(bar)
+
+    def query_latest_kline(self, interval: Interval, limit=1000):
+        """query the latest kline, to get the data you need to register event for getting the callback data
+        the event_id == EVENT_ORIGINAL_KLINE + vt_symbol
+        self.cta_engine.event_engine.register(EVENT_ORIGINAL_KLINE + vt_symbol, callback_function)
+        """
+        self.cta_engine.query_latest_kline(self.vt_symbol, interval, limit)
 
     def load_tick(self, days: int) -> None:
         """

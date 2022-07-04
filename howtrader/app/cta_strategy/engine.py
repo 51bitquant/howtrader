@@ -567,6 +567,25 @@ class CtaEngine(BaseEngine):
 
         return []
 
+    def query_latest_kline(self, vt_symbol: str, interval: Interval, limit: int = 1000) -> None:
+        symbol, exchange = extract_vt_symbol(vt_symbol)
+        contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
+        if not contract:
+            self.write_log(f"contract is not found, pls check your vt_symbol: {vt_symbol}")
+            return
+        if not contract.history_data:
+            self.write_log(f"the contract is not support querying kline data")
+            return
+
+        req: HistoryRequest = HistoryRequest(
+                symbol=symbol,
+                exchange=exchange,
+                interval=interval,
+                limit=limit
+        )
+
+        self.main_engine.query_latest_kline(req, contract.gateway_name)
+
     def load_tick(
         self,
         vt_symbol: str,

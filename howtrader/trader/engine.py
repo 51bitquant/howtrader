@@ -242,10 +242,10 @@ class MainEngine:
         if gateway:
             gateway.query_account()
 
-    def query_kline(self, req:KlineRequest, gateway_name: str):
+    def query_latest_kline(self, req: HistoryRequest, gateway_name: str):
         gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
-            gateway.query_kline(req)
+            gateway.query_latest_kline(req)
 
     def close(self) -> None:
         """

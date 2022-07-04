@@ -16,7 +16,7 @@ from json import loads
 from aiohttp import ClientSession, ClientResponse
 
 
-CALLBACK_TYPE = Callable[[dict, "Request"], None]
+CALLBACK_TYPE = Callable[[Union[dict, list], "Request"], None]
 ON_FAILED_TYPE = Callable[[int, "Request"], None]
 ON_ERROR_TYPE = Callable[[Type, Exception, TracebackType, "Request"], None]
 

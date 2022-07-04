@@ -14,6 +14,8 @@ from threading import Lock
 from typing import Any, Dict, List, Tuple
 import pytz
 from decimal import Decimal
+import pandas as pd
+import numpy as np
 
 from requests.exceptions import SSLError
 from howtrader.trader.constant import (
@@ -31,14 +33,14 @@ from howtrader.trader.object import (
     TradeData,
     AccountData,
     OrderQueryRequest,
-    KlineRequest,
     ContractData,
     PositionData,
     BarData,
     OrderRequest,
     CancelRequest,
     SubscribeRequest,
-    HistoryRequest
+    HistoryRequest,
+    OriginalKlineData
 )
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event, EventEngine
@@ -86,8 +88,20 @@ DIRECTION_BINANCES2VT: Dict[str, Direction] = {v: k for k, v in DIRECTION_VT2BIN
 # data time frame map
 INTERVAL_VT2BINANCES: Dict[Interval, str] = {
     Interval.MINUTE: "1m",
+    Interval.MINUTE_3: "3m",
+    Interval.MINUTE_5: "5m",
+    Interval.MINUTE_15: "15",
+    Interval.MINUTE_30: "30m",
     Interval.HOUR: "1h",
+    Interval.HOUR_2: "2h",
+    Interval.HOUR_4: "4h",
+    Interval.HOUR_6: "6h",
+    Interval.HOUR_8: "8h",
+    Interval.HOUR_12: "12h",
     Interval.DAILY: "1d",
+    Interval.DAILY_3: "3d",
+    Interval.WEEKLY: "1w",
+    Interval.MONTH: "1M"
 }
 
 # time delta map
@@ -178,8 +192,8 @@ class BinanceUsdtGateway(BaseGateway):
         """query position"""
         self.rest_api.query_position()
 
-    def query_kline(self, req: KlineRequest) -> None:
-        pass
+    def query_latest_kline(self, req: HistoryRequest)-> None:
+        self.rest_api.query_lastes_kline(req)
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
         """query historical kline data"""
@@ -243,6 +257,7 @@ class BinanceUsdtRestApi(RestClient):
 
         self.user_stream_key: str = ""
         self.keep_alive_count: int = 0
+        self.keep_alive_failed_count: int = 0
         self.recv_window: int = 5000
         self.time_offset: int = 0
 
@@ -535,7 +550,7 @@ class BinanceUsdtRestApi(RestClient):
             callback=self.on_keep_user_stream,
             params=params,
             data=data,
-            on_failed=self.on_keep_user_strea_failed,
+            on_failed=self.on_keep_user_stream_failed,
             on_error=self.on_keep_user_stream_error
         )
 
@@ -722,18 +737,76 @@ class BinanceUsdtRestApi(RestClient):
 
     def on_keep_user_stream(self, data: dict, request: Request) -> None:
         """extend the listen key expire time"""
-        pass
+        self.keep_alive_failed_count = 0
 
-    def on_keep_user_strea_failed(self, status_code: str, request: Request):
-        self.start_user_stream()
+    def on_keep_user_stream_failed(self, status_code: str, request: Request):
+        self.keep_alive_failed_count += 1
+        if self.keep_alive_failed_count <= 5:
+            self.keep_alive_count = 1200000
+            self.keep_user_stream()
+        else:
+            self.keep_alive_failed_count = 0
+            self.start_user_stream()
 
     def on_keep_user_stream_error(
             self, exception_type: type, exception_value: Exception, tb, request: Request
     ) -> None:
         """put the listen key failed"""
-        self.start_user_stream()
+        self.keep_alive_failed_count += 1
+        if self.keep_alive_failed_count <= 5:
+            self.keep_alive_count = 1200000
+            self.keep_user_stream()
+        else:
+            self.keep_alive_failed_count = 0
+            self.start_user_stream()
+
         if not issubclass(exception_type, TimeoutError):
             self.on_error(exception_type, exception_value, tb, request)
+
+    def query_latest_kline(self, req: HistoryRequest) -> None:
+
+        interval = INTERVAL_VT2BINANCES.get(req.interval, None)
+        if not interval:
+            print(f"unsupport interval: {req.interval}")
+            return None
+
+        # end_time: int = int(datetime.timestamp(req.end))
+        params: dict = {
+            "symbol": req.symbol,
+            "interval": interval,
+            "limit": req.limit,
+            # "endTime": end_time * 1000  # convert the start time into milliseconds
+        }
+
+        self.add_request(
+            method="GET",
+            path="/fapi/v1/klines",
+            callback=self.on_query_latest_kline,
+            params=params,
+            data={"security": Security.NONE}
+        )
+
+    def on_query_latest_kline(self, datas:list, request: Request):
+        if len(datas) > 0:
+            df = pd.DataFrame(datas, dtype=np.float64,
+                              columns=['open_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'turnover',
+                                       'a2',
+                                       'a3', 'a4', 'a5'])
+            df = df[['open_time', 'open', 'high', 'low', 'close', 'volume', 'turnover']]
+            df.set_index('open_time', inplace=True)
+            df.index = pd.to_datetime(df.index, unit='ms') # + pd.Timedelta(hours=8) # use the utc time.
+
+            symbol = request.params.get("symbol", "")
+            interval = Interval(request.params.get('interval'))
+            kline_data = OriginalKlineData(
+                symbol=symbol,
+                exchange="BINANCE",
+                interval=interval,
+                klines=datas,
+                kline_df=df
+            )
+
+            self.gateway.on_kline(kline_data)
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
         """query historical kline data"""

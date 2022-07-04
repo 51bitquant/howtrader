@@ -12,13 +12,13 @@ from .event import (
     EVENT_CONTRACT,
     EVENT_LOG,
     EVENT_QUOTE,
+    EVENT_ORIGINAL_KLINE
 )
 from .object import (
     TickData,
     OrderData,
     TradeData,
     OrderQueryRequest,
-    KlineRequest,
     PositionData,
     AccountData,
     ContractData,
@@ -30,7 +30,8 @@ from .object import (
     HistoryRequest,
     QuoteRequest,
     Exchange,
-    BarData
+    BarData,
+    OriginalKlineData
 )
 
 
@@ -133,6 +134,10 @@ class BaseGateway(ABC):
         """
         self.on_event(EVENT_ACCOUNT, account)
         self.on_event(EVENT_ACCOUNT + account.vt_accountid, account)
+
+    def on_kline(self, kline: OriginalKlineData):
+        # self.on_event(EVENT_ORIGINAL_KLINE, kline)
+        self.on_event(EVENT_ORIGINAL_KLINE + kline.vt_symbol, kline)
 
     def on_quote(self, quote: QuoteData) -> None:
         """
@@ -265,7 +270,7 @@ class BaseGateway(ABC):
         pass
 
     @abstractmethod
-    def query_kline(self, req: KlineRequest) -> None:
+    def query_latest_kline(self, req: HistoryRequest) -> None:
         """
         Query account balance.
         """
