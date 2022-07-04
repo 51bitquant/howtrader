@@ -3,22 +3,37 @@
 What does Howtrader means? It means how to be a trader, especially a
 quant trader.
 
-The project is forked from VNPY, you can refer to the vnpy project. For
+the project is forked from VNPY. you can refer to the vnpy project. For
 easy to learn and easy to install the vnpy project. I just simply remove
-the other part not related to cryptocurrency.
+the other part not related to cryptocurrency. 
+
+这个项目是fork vnpy的代码。为了方便区分，我把名字改成了howtrader,
+并对其中的部分代码进行了修改，主要为了方便大家学习和使用。vnpy的安装非常复杂，而且容易出错。主要是因为里面依赖的东西过多。
+而且很多部分我们是用不到的。
+
+# 安装 installation 
+
+1. 直接安装该软件的安装包,下载地址: https://share.weiyun.com/LhKEc3cQ
+   
+   安装软件后相应配置文件和数据库放在用户目录下面，对于MacOS系统，配置文件在:
+   /Users/你的电脑用户名/howtrader, Window系统在: C:\Users\你电脑用户名\howtrader
 
 
-## Installation
+2. 或者通过一下方式安装源码:
 
-the easies way to install the project is using pip to install it.
+直接在终端输入:
 > pip install git+https://github.com/51bitquant/howtrader.git
 
-the projejct is developed an test mainly under python 3.9, so I
-recommend you to use the python 3.9 version. To create the python 3.9
-version, we recommend you to use the anaconda to to create a virtual
-env.
+you can use pip to install the howtrader.
 
+> pip install git+https://github.com/51bitquant/howtrader.git 
 
+if you encounter the error with --use-feature=2020-resolver, you can
+solve with the following command: 
+> pip install git+https://github.com/51bitquant/howtrader.git --use-feature=2020-resolver
+
+如果安装报错，可能各个包之间存在冲突，可以通过以下命令解决:
+> pip install git+https://github.com/51bitquant/howtrader.git --use-feature=2020-resolver
 
 如果提示你没有git, 那么你需要去安装git软件，具体的话参考系列课程的第十三课的视频。
 
@@ -41,11 +56,11 @@ then script the following command
 but we recommend you using the pip to install the howtrader, for you can
 encounter some unexpected errors.
 
-# Update
-the codes is under active maintain, to upgrade to a new version, run the
-following command:
+# 更新版本 update
+直接在终端输入: 
 
 > pip install git+https://github.com/51bitquant/howtrader.git -U 
+
 
 
 # 使用 Usage
