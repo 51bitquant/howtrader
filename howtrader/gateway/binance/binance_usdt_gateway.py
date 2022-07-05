@@ -523,7 +523,7 @@ class BinanceUsdtRestApi(RestClient):
             path=path,
             callback=self.on_start_user_stream,
             on_failed=self.on_start_user_stream_failed,
-            on_error=self.on_start_user_stream_eror,
+            on_error=self.on_start_user_stream_error,
             data=data
         )
 
