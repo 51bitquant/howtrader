@@ -212,14 +212,16 @@ class BinanceUsdtGateway(BaseGateway):
     def on_order(self, order: OrderData) -> None:
         """on order update"""
         order.update_time = generate_datetime(time.time() * 1000)
-        super().on_order(copy(order))
         last_order: OrderData = self.get_order(order.orderid)
         if not last_order:
             self.orders[order.orderid] = copy(order)
+            super().on_order(copy(order))
+
         else:
             traded: Decimal = order.traded - last_order.traded
-            if traded >= 0:
+            if traded > 0 or order.status != last_order.status:
                 self.orders[order.orderid] = copy(order)
+                super().on_order(copy(order))
 
             if traded > 0:
                 trade: TradeData = TradeData(
