@@ -660,9 +660,11 @@ class BinanceUsdtRestApi(RestClient):
 
             for f in d["filters"]:
                 if f["filterType"] == "PRICE_FILTER":
-                    pricetick = Decimal(str(f["tickSize"]))
+                    tick = str(f["tickSize"]).rstrip("0")
+                    pricetick = Decimal(tick)
                 elif f["filterType"] == "LOT_SIZE":
-                    min_volume = Decimal(str(f["stepSize"]))
+                    step = str(f["stepSize"]).rstrip("0")
+                    min_volume = Decimal(step)
 
             contract: ContractData = ContractData(
                 symbol=d["symbol"],
