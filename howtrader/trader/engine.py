@@ -475,7 +475,7 @@ class OmsEngine(BaseEngine):
             self.order_update_interval = 0
             orders: List[OrderData] = self.get_all_active_orders()
             for order in orders:
-                if order.update_time and order.datetime and (datetime.now(order.datetime.tzinfo) - order.update_time).seconds > update_interval:
+                if order.update_time and (datetime.now(order.update_time.tzinfo) - order.update_time).seconds > update_interval:
                     req = order.create_query_request()
                     self.main_engine.query_order(req, order.gateway_name)
 

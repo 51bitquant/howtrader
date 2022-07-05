@@ -216,6 +216,8 @@ class BinanceInverseGateway(BaseGateway):
 
         else:
             traded: Decimal = order.traded - last_order.traded
+            if traded < 0:  # filter the order is not in sequence
+                return None
             if traded > 0 or order.status != last_order.status:
                 self.orders[order.orderid] = copy(order)
                 super().on_order(copy(order))
