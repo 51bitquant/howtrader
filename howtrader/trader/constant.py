@@ -32,7 +32,7 @@ class Status(Enum):
     NOTTRADED = "NOTTRADED"
     PARTTRADED = "PARTTRADED"
     ALLTRADED = "ALLTRADED"
-    CANCELLED = "ALLTRADED"
+    CANCELLED = "CANCELLED"
     REJECTED = "REJECTED"
 
 
@@ -147,6 +147,7 @@ class Currency(Enum):
 class Interval(Enum):
     """
     Interval of bar data.
+
     """
     MINUTE = "1m"
     MINUTE_3 = "3m"

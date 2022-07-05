@@ -40,7 +40,6 @@ class FutureProfitGridStrategy(CtaTemplate):
     profit_orders_counts = 3  # 出现多少个网格的时候，会考虑止盈.
     trailing_stop_multiplier = 2.0
     stop_minutes = 360.0  # sleep for six hour
-
     # 变量
     avg_price = 0.0
 
@@ -222,20 +221,22 @@ class FutureProfitGridStrategy(CtaTemplate):
         """
         Callback of new order data update.
         """
-        self.position_calculator.update_position(order)
-        self.avg_price = float(self.position_calculator.avg_price)
+        if order.status == Status.ALLTRADED:
+            if order.orderid in (self.long_orders + self.short_orders + self.profit_orders + self.stop_orders):
+                self.position_calculator.update_position(order)
+                self.avg_price = float(self.position_calculator.avg_price)
 
         if order.status == Status.ALLTRADED:
             if order.vt_orderid in (self.long_orders + self.short_orders):
-
                 if order.vt_orderid in self.long_orders:
                     self.long_orders.remove(order.vt_orderid)
+                    print(f"buy order filled, cancel all orders")
 
                 if order.vt_orderid in self.short_orders:
                     self.short_orders.remove(order.vt_orderid)
+                    print(f"sell order filled, cancel all orders")
 
                 self.cancel_all()
-                print(f"订单买卖单完全成交, 先撤销所有订单")
 
                 self.last_filled_order = order
 
@@ -262,7 +263,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                     self.short_orders.extend(short_ids)
 
                     print(
-                        f"订单完全成交, 分别下双边网格: LONG: {self.long_orders}:{buy_price}, SHORT: {self.short_orders}:{sell_price}")
+                        f"place long&short orders: LONG: {self.long_orders}@{buy_price}, SHORT@ {self.short_orders}@{sell_price}")
 
             elif order.vt_orderid in self.profit_orders:
                 self.profit_orders.remove(order.vt_orderid)

@@ -193,7 +193,7 @@ class BinanceUsdtGateway(BaseGateway):
         self.rest_api.query_position()
 
     def query_latest_kline(self, req: HistoryRequest)-> None:
-        self.rest_api.query_lastes_kline(req)
+        self.rest_api.query_latest_kline(req)
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
         """query historical kline data"""
@@ -614,7 +614,7 @@ class BinanceUsdtRestApi(RestClient):
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
             traded=Decimal(str(data["executedQty"])),
-            status=STATUS_BINANCES2VT.get(data["status"], None),
+            status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
             datetime=generate_datetime(data["time"]),
             gateway_name=self.gateway_name,
         )
@@ -953,7 +953,6 @@ class BinanceUsdtTradeWebsocketApi(WebsocketClient):
         # if not order_type:
         #     return
         order_type: OrderType = ORDERTYPE_BINANCES2VT.get(key, OrderType.LIMIT)
-
         order: OrderData = OrderData(
             symbol=ord_data["s"],
             exchange=Exchange.BINANCE,
@@ -963,7 +962,7 @@ class BinanceUsdtTradeWebsocketApi(WebsocketClient):
             price=Decimal(str(ord_data["p"])),
             volume=Decimal(str(ord_data["q"])),
             traded=Decimal(str(ord_data["z"])),
-            status=STATUS_BINANCES2VT[ord_data["X"]],
+            status=STATUS_BINANCES2VT.get(ord_data["X"], Status.NOTTRADED),
             datetime=generate_datetime(packet["E"]),
             gateway_name=self.gateway_name
         )

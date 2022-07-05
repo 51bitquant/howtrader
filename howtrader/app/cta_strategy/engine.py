@@ -422,10 +422,10 @@ class CtaEngine(BaseEngine):
         """
         Cancel existing order by vt_orderid.
         """
-        order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
+        order: Optional[OrderData] = self.main_engine.get_active_order(vt_orderid)
         if not order:
-            self.write_log(f"cancel order failed, couldn't find orderid: {vt_orderid}", strategy)
-            return
+            self.write_log(f"cancel order failed, order is not active: {vt_orderid}", strategy)
+            return None
 
         req: CancelRequest = order.create_cancel_request()
         self.main_engine.cancel_order(req, order.gateway_name)
