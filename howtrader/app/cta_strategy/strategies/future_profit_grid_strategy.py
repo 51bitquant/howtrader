@@ -119,12 +119,12 @@ class FutureProfitGridStrategy(CtaTemplate):
                     self.long_orders.extend(long_ids)
                     self.short_orders.extend(short_ids)
 
-                    print(
-                        f"开启网格交易，双边下单：LONG: { self.long_orders}: {buy_price}, SHORT: { self.short_orders}:{sell_price}")
-
+                    print(f"开启网格交易，双边下单：LONG: { self.long_orders}: {buy_price}, SHORT: { self.short_orders}:{sell_price}")
+                    # print(f"start grid trading, LONG: { self.long_orders}: {buy_price}, SHORT: { self.short_orders}:{sell_price}")
                 elif len(self.long_orders) == 0 or len(self.short_orders) == 0:
-                    print(f"仓位为零且单边网格没有订单, 先撤掉所有订单")
                     self.cancel_all()
+                    print(f"仓位为零且单边网格没有订单, 先撤掉所有订单")
+                    # print(f"position is small, and long or short orders is None, cancel all orders.")
 
             elif abs(self.pos) >= self.trading_size:
 
@@ -150,6 +150,7 @@ class FutureProfitGridStrategy(CtaTemplate):
                 self.long_orders.extend(long_ids)
                 self.short_orders.extend(short_ids)
                 print(f"仓位不为零, 根据上个订单下双边网格.LONG:{long_ids}:{buy_price}, SHORT: {short_ids}:{sell_price}")
+                # print(f"position is not None, place orders based on last filled order, LONG:{long_ids}:{buy_price}, SHORT: {short_ids}:{sell_price}")
 
         self.profit_order_interval += 1
 
@@ -158,20 +159,20 @@ class FutureProfitGridStrategy(CtaTemplate):
 
             if abs(self.pos) >= self.profit_orders_counts * self.trading_size and len(
                     self.profit_orders) == 0:
-                print(f"单边网格出现超过{self.profit_orders_counts}个订单以上,头寸为:{self.position_calculator.pos}, 考虑设置止盈的情况")
-
-                if self.pos > 0:
+                print(f"当前仓位: {self.pos}, 最大设置的仓位为: {self.profit_orders_counts * self.trading_size}, 考虑设置止盈的情况")
+                # print(f"The position is: {self.pos}, over max setting pos:{self.profit_orders_counts * self.trading_size}, consider take profit")
+                if self.pos > self.trading_size:
                     price = max(self.tick.ask_price_1 * (1 + 0.0001),
                                 self.position_calculator.avg_price + Decimal(self.profit_step))
                     order_ids = self.short(Decimal(price), abs(self.pos))
                     self.profit_orders.extend(order_ids)
-                    print(f"多头止盈情况: {self.position_calculator.pos}@{price}")
-                elif self.pos < 0:
+                    print(f"多头止盈情况: {self.pos}@{price}")
+                elif self.pos < 0 and abs(self.pos) > self.trading_size:
                     price = min(self.tick.bid_price_1 * (1 - 0.0001),
                                 self.position_calculator.avg_price - Decimal(self.profit_step))
-                    order_ids = self.buy(Decimal(price), abs(self.position_calculator.pos))
+                    order_ids = self.buy(Decimal(price), abs(self.pos))
                     self.profit_orders.extend(order_ids)
-                    print(f"空头止盈情况: {self.position_calculator.pos}@{price}")
+                    print(f"空头止盈情况: {self.pos}@{price}")
 
         self.stop_order_interval += 1
         if self.stop_order_interval >= STOP_TIMER_INTERVAL:
