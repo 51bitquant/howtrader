@@ -16,7 +16,9 @@ from howtrader.trader.object import BarData, Interval, Exchange
 BINANCE_SPOT_LIMIT = 1000
 BINANCE_FUTURE_LIMIT = 1500
 
-CHINA_TZ = pytz.timezone("Asia/Shanghai")
+from tzlocal import get_localzone_name
+LOCAL_TZ = pytz.timezone(get_localzone_name())
+
 from threading import Thread
 database: BaseDatabase = get_database()
 
@@ -26,7 +28,7 @@ def generate_datetime(timestamp: float) -> datetime:
     :return:
     """
     dt = datetime.fromtimestamp(timestamp / 1000)
-    dt = CHINA_TZ.localize(dt)
+    dt = LOCAL_TZ.localize(dt)
     return dt
 
 

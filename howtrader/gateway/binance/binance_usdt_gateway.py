@@ -47,9 +47,9 @@ from howtrader.event import Event, EventEngine
 
 from howtrader.api.rest import Request, RestClient, Response
 from howtrader.api.websocket import WebsocketClient
+from tzlocal import get_localzone_name
 
-# Asia/Shanghai timezone
-CHINA_TZ = pytz.timezone("Asia/Shanghai")
+LOCAL_TZ = pytz.timezone(get_localzone_name()) #pytz.timezone("Asia/Shanghai") # Asia/Shanghai timezone
 
 # rest api host
 F_REST_HOST: str = "https://fapi.binance.com"
@@ -1053,7 +1053,7 @@ class BinanceUsdtDataWebsocketApi(WebsocketClient):
             symbol=req.symbol,
             name=symbol_contract_map[req.symbol].name,
             exchange=Exchange.BINANCE,
-            datetime=datetime.now(CHINA_TZ),
+            datetime=datetime.now(LOCAL_TZ),
             gateway_name=self.gateway_name,
         )
         self.ticks[req.symbol.lower()] = tick
@@ -1111,5 +1111,5 @@ class BinanceUsdtDataWebsocketApi(WebsocketClient):
 def generate_datetime(timestamp: float) -> datetime:
     """generate time"""
     dt: datetime = datetime.fromtimestamp(timestamp / 1000)
-    dt: datetime = CHINA_TZ.localize(dt)
+    dt: datetime = LOCAL_TZ.localize(dt)
     return dt

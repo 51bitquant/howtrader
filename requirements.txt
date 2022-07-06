@@ -13,7 +13,6 @@ numpy==1.23.0
 pandas
 matplotlib
 seaborn
-ta-lib
 deap
 plotly
 importlib-metadata

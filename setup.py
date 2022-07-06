@@ -39,7 +39,6 @@ def get_install_requires():
         "matplotlib",
         "seaborn",
         "deap",
-        "ta-lib",
         "tzlocal",
         "plotly",
         "importlib-metadata"
