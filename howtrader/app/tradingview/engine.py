@@ -236,9 +236,9 @@ class TVEngine(BaseEngine):
     def cancel_order(self, strategy: TVTemplate, vt_orderid: str) -> None:
         """
         """
-        order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
+        order: Optional[OrderData] = self.main_engine.get_active_order(vt_orderid)
         if not order:
-            self.write_log(f"cancel order failed, couldn't find orderid: {vt_orderid}", strategy)
+            self.write_log(f"cancel order failed, order is not active: {vt_orderid}", strategy)
             return
 
         req: CancelRequest = order.create_cancel_request()
