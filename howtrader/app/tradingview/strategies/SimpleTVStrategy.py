@@ -110,6 +110,7 @@ class SimpleTVStrategy(TVTemplate):
                     print(f"sending sell order: {price}@{delta}, orderids:{orderids}") # for debug
                     self.orders.extend(orderids)
 
+        self.put_event()  # update UI
 
     def on_tick(self, tick: TickData) -> None:
         """
@@ -149,21 +150,18 @@ class SimpleTVStrategy(TVTemplate):
                 return None
             volume = round_to(Decimal(str(v)), self.contract.min_volume)
 
+        self.is_new_signal = True
         if action == 'long':
             self.target_pos = self.pos + volume
-            self.is_new_signal = True
 
         elif action == 'short':
             self.target_pos = self.pos - volume
-            self.is_new_signal = True
 
         elif action == 'exit':
             self.target_pos = 0
-            self.is_new_signal = True
 
         else:
             pass
-            self.is_new_signal = True
             # you can extend your signal here.
 
         self.write_log(f"received signal: {signal}")
@@ -175,4 +173,5 @@ class SimpleTVStrategy(TVTemplate):
 
         if not order.is_active():
             # if order is not active, then remove it from self.orders
-            self.orders.remove(order.vt_orderid)
+            if order.vt_orderid in self.orders:
+                self.orders.remove(order.vt_orderid)
