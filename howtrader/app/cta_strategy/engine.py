@@ -475,7 +475,7 @@ class CtaEngine(BaseEngine):
         volume: Decimal = round_to(volume, contract.min_volume)
 
         if abs(volume) < contract.min_volume:
-            self.write_log(f"order volume is: {volume}, smaller than required min_volume: {contract.min_volume}")
+            self.write_log(f"send order failed, order volume: {volume}, required min_volume: {contract.min_volume}")
             return []
 
         if stop:
