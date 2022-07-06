@@ -11,9 +11,16 @@ class SimpleTVStrategy(TVTemplate):
 
     author: str = "51bitquant"
 
-    trade_volume: float = 0
+    # the order amount you want to trade, if you trade BTCUSDT, the amount means BTC amount, if you set zero, will use from TV or other signal.
+    # 订单的数量，如果你是交易BTCUSDT, 这个数量是BTC的数量, 如果设置为零，那么交易使用会使用来自tradingview或则其他第三方的信号
+    order_amount: float = 0
+
+    # the price slippage for taker order, 0.5 means 0.5%
     max_slippage_percent: float = 0.5  # 0.5%
-    parameters: list = ["trade_volume", "max_slippage_percent"]
+
+    # wait for time interval for cancel order if order not filled.
+    timer_loop_interval: int = 5
+    parameters: list = ["order_amount", "max_slippage_percent", "timer_loop_interval"]
 
     def __init__(
             self,
@@ -31,7 +38,6 @@ class SimpleTVStrategy(TVTemplate):
         self.target_pos: Decimal = Decimal("0")
         self.is_new_signal:bool = False
         self.contract: Optional[ContractData] = tv_engine.main_engine.get_contract(vt_symbol)
-
 
     def on_init(self) -> None:
         """
@@ -63,7 +69,7 @@ class SimpleTVStrategy(TVTemplate):
             return None
 
         self.timer_count += 1
-        if self.timer_count < 5 and len(self.orders) > 0:
+        if self.timer_count < self.timer_loop_interval and len(self.orders) > 0:
             # if there are active orders, will wait 5s for the order filled.
             # 如果有未成交的订单存就等待5s，让订单尽可能成交
             return
@@ -133,13 +139,13 @@ class SimpleTVStrategy(TVTemplate):
             self.write_log('contract is None, did you connect to the exchange?')
             return None
 
-        if self.trade_volume > 0:
-            v = str(self.trade_volume)
+        if self.order_amount > 0:
+            v = str(self.order_amount)
             volume = round_to(Decimal(v), self.contract.min_volume)
         else:
             v = signal.get('volume', None)
             if v is None:
-                self.write_log("Signal missing volume for placing order volume.")
+                self.write_log("Signal missing volume from signal for placing order volume.")
                 return None
             volume = round_to(Decimal(str(v)), self.contract.min_volume)
 
