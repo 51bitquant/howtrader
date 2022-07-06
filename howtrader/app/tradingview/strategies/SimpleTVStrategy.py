@@ -11,16 +11,16 @@ class SimpleTVStrategy(TVTemplate):
 
     author: str = "51bitquant"
 
-    # the order amount you want to trade, if you trade BTCUSDT, the amount means BTC amount, if you set zero, will use from TV or other signal.
+    # the order volume you want to trade, if you trade BTCUSDT, the volume is BTC amount, if you set zero, will use from TV or other signal.
     # 订单的数量，如果你是交易BTCUSDT, 这个数量是BTC的数量, 如果设置为零，那么交易使用会使用来自tradingview或则其他第三方的信号
-    order_amount: float = 0
+    order_volume: float = 0
 
     # the price slippage for taker order, 0.5 means 0.5%
     max_slippage_percent: float = 0.5  # 0.5%
 
     # wait for time interval for cancel order if order not filled.
     timer_loop_interval: int = 5
-    parameters: list = ["order_amount", "max_slippage_percent", "timer_loop_interval"]
+    parameters: list = ["order_volume", "max_slippage_percent", "timer_loop_interval"]
 
     def __init__(
             self,
@@ -139,8 +139,8 @@ class SimpleTVStrategy(TVTemplate):
             self.write_log('contract is None, did you connect to the exchange?')
             return None
 
-        if self.order_amount > 0:
-            v = str(self.order_amount)
+        if self.order_volume > 0:
+            v = str(self.order_volume)
             volume = round_to(Decimal(v), self.contract.min_volume)
         else:
             v = signal.get('volume', None)
