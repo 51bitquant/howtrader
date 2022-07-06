@@ -467,12 +467,16 @@ class CtaEngine(BaseEngine):
         """
         contract: Optional[ContractData] = self.main_engine.get_contract(strategy.vt_symbol)
         if not contract:
-            self.write_log(f"send order failed, couldn't find symbol: {strategy.vt_symbol}", strategy)
+            self.write_log(f"send order failed, didn't find symbol: {strategy.vt_symbol}", strategy)
             return []
 
         # Round order price and volume to nearest incremental value
         price: Decimal = round_to(price, contract.pricetick)
         volume: Decimal = round_to(volume, contract.min_volume)
+
+        if abs(volume) < contract.min_volume:
+            self.write_log(f"order volume is: {volume}, smaller than required min_volume: {contract.min_volume}")
+            return []
 
         if stop:
             if contract.stop_supported:

@@ -192,7 +192,6 @@ class StrategyManager(QtWidgets.QFrame):
         self.remove_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Remove Strategy")
         self.remove_button.clicked.connect(self.remove_strategy)
 
-        print(self._data)
         strategy_name: str = self._data["strategy_name"]
         vt_symbol: str = self._data["vt_symbol"]
         class_name: str = self._data["class_name"]
