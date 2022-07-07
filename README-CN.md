@@ -4,7 +4,66 @@ HowTrader 是一个数字货币量量化交易的框架，由于核心代码是F
 VNPY,所以用法和功能基本上跟VNPY相似。但是对VNPY源码的一些bugs进行了修复，并扩展了Tradingview信号的对接，以及增加网格策略等功能。
 由于VNPY的代码依赖过多，对一些用不到的代码进行了删除，保留核心的功能。
 
-# 安装
+
+## Howtrader 和 VNPY区别对比
+1. 个别类的定义不同: OrderData(订单数据)
+   、TradeData(成交数据)、ContractData(交易对信息)
+   这几个类，为了满足下单精度要求，把float类型替换成精度更高的Decimal。
+   他们的定义在howtrader.trader.object模块中。
+  
+2. on_order和on_trade的推送顺序不同:
+   VNPY中，会先推送订单状态的改变会先推送on_order，
+   如果有成交的数据话，在继续推送on_trade成交数据,
+   然后根据成交的数据计算cta策略中的self.pos仓位数据。但是在实际使用中，由于self.pos是系统计算的，
+   如果我们要想在on_order状态改变的时候，获得当前的pos仓位数据，
+   我们需要自己定义个current_pos变量来记录数据。为改变这种方式，在howtrader框架中，我们处理方式是，先推送on_trade成交数据，然后再推送on_order订单状态。具体代码参考gateway类中的实现，部分代码如下：
+   ``` python
+       
+       def on_order(self, order: OrderData) -> None:
+        """on order update"""
+        order.update_time = generate_datetime(time.time() * 1000)
+        last_order: OrderData = self.get_order(order.orderid)
+        if not last_order:
+            self.orders[order.orderid] = copy(order)
+            super().on_order(copy(order))
+
+        else:
+            traded: Decimal = order.traded - last_order.traded
+            if traded < 0: # filter the order is not in sequence
+                return None
+
+            if traded > 0:
+                trade: TradeData = TradeData(
+                    symbol=order.symbol,
+                    exchange=order.exchange,
+                    orderid=order.orderid,
+                    direction=order.direction,
+                    price=order.price,
+                    volume=traded,
+                    datetime=order.update_time,
+                    gateway_name=self.gateway_name,
+                )
+
+                super().on_trade(trade)
+
+            if traded == 0 and order.status == last_order.status:
+                return None
+
+            self.orders[order.orderid] = copy(order)
+            super().on_order(copy(order))
+
+    def get_order(self, orderid: str) -> OrderData:
+        """get order by order id"""
+        return self.orders.get(orderid, None)
+   
+   ```
+
+3. gateay实现的不同: 里面增加了断开重连，以及更多的处理细节，具体可以参考对比代码
+
+4. 增加了Tradingview等第三方信号对接，具体可以查看howtrader.app.tradingview模块
+
+
+## 安装
 
 由于项目里面用到pandas, 
 Numpy等科学计算的库，为了方便安装，这里建议使用Anaconda进行安装。
@@ -63,7 +122,7 @@ Numpy等科学计算的库，为了方便安装，这里建议使用Anaconda进�
 但是我们直接推荐你用pip来安装，这样它能帮你把各种依赖处理好，减少错误的发生。
 
 
-# window talib安装过程
+## window talib安装过程
 
 如果提示你安装不了howtrader，那么大概率是因为ta-lib安装不成功， ta-lib具体安装过程如下：
 
@@ -79,7 +138,7 @@ Numpy等科学计算的库，为了方便安装，这里建议使用Anaconda进�
    
 > pip install TA_Lib‑0.4.24‑cp39‑cp39‑win_amd64.whl
 
-# 使用
+## 使用
 
 创建一个python空的python项目，里面创建一个main.py，然后把该项目的解析器设置为刚才创建的mytrader解析器。
 
@@ -170,7 +229,7 @@ if __name__ == "__main__":
 
 运行该main.py文件，系统会帮你创建一个叫howtrader的文件夹，里面放各种配置文件，已经log日志等。
 
-# 爬取币安数据
+## 爬取币安数据
 
 系统框架默认使用sqlite数据库，支持mongodb和mysql数据，如果你想使用mongodb或者mysql数据库，那么你需要你安装并修改howtrader/vt_setting.json进行修改，
 具体配置的字典参考框架的howtrader/trader/setting.py中的配置字典，其相应的配置字段如下：
@@ -232,7 +291,7 @@ from howtrader.trader.object import BarData, Interval, Exchange
 BINANCE_SPOT_LIMIT = 1000
 BINANCE_FUTURE_LIMIT = 1500
 
-CHINA_TZ = pytz.timezone("Asia/Shanghai")
+from howtrader.trader.constant import LOCAL_TZ
 from threading import Thread
 database: BaseDatabase = get_database()
 
@@ -242,7 +301,7 @@ def generate_datetime(timestamp: float) -> datetime:
     :return:
     """
     dt = datetime.fromtimestamp(timestamp / 1000)
-    dt = CHINA_TZ.localize(dt)
+    dt = LOCAL_TZ.localize(dt)
     return dt
 
 
@@ -492,9 +551,11 @@ print(result) # 打印回测的结果，结果中会有比较好的结果值。
 ## 联系方式
 微信: bitquant51
 
-discord: 51bitquant#8078
+discord讨论群:
+[https://discord.gg/fgySfwG9eJ](https://discord.gg/fgySfwG9eJ)
 
-[币安邀请链接](https://www.binancezh.pro/cn/futures/ref/51bitquant)
+币安邀请链接
+[https://www.binancezh.pro/cn/futures/ref/51bitquant](https://www.binancezh.pro/cn/futures/ref/51bitquant)
 
  
  
