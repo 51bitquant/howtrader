@@ -748,8 +748,10 @@ class BinanceUsdtRestApi(RestClient):
         if request.extra:
             order: OrderData = request.extra
             orderid = order.orderid
-            order.status = Status.REJECTED
-            self.gateway.on_order(copy(order))
+            # order.status = Status.REJECTED
+            # self.gateway.on_order(copy(order))
+            req: OrderQueryRequest = order.create_query_request()
+            self.query_order(req)
 
         msg = f"cancel order failed, orderid: {orderid}, status code：{status_code}, \n msg：{request.response.text}"
         self.gateway.write_log(msg)
