@@ -362,7 +362,7 @@ class BinanceInverseRestApi(RestClient):
         """query account data"""
         data: dict = {"security": Security.SIGNED}
 
-        path: str = "/dapi/v1/account"
+        path: str = "/dapi/v1/balance"
 
         self.add_request(
             method="GET",
@@ -567,13 +567,13 @@ class BinanceInverseRestApi(RestClient):
         server_time: int = int(data["serverTime"])
         self.time_offset: int = local_time - server_time
 
-    def on_query_account(self, data: dict, request: Request) -> None:
+    def on_query_account(self, datas: list, request: Request) -> None:
         """query account callback"""
-        for asset in data["assets"]:
+        for asset in datas:
             account: AccountData = AccountData(
                 accountid=asset["asset"],
-                balance=float(asset["walletBalance"]),
-                frozen=float(asset["maintMargin"]),
+                balance=float(asset["balance"]),
+                frozen=float(asset["balance"]) - float(asset["availableBalance"]),
                 gateway_name=self.gateway_name
             )
 

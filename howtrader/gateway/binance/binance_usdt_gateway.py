@@ -366,7 +366,7 @@ class BinanceUsdtRestApi(RestClient):
         """query account data"""
         data: dict = {"security": Security.SIGNED}
 
-        path: str = "/fapi/v1/account"
+        path: str = "/fapi/v2/balance"
 
         self.add_request(
             method="GET",
@@ -565,13 +565,17 @@ class BinanceUsdtRestApi(RestClient):
         server_time: int = int(data["serverTime"])
         self.time_offset: int = local_time - server_time
 
-    def on_query_account(self, data: dict, request: Request) -> None:
-        """query account callback"""
-        for asset in data["assets"]:
+    def on_query_account(self, datas: list, request: Request) -> None:
+        """query account/balance callback
+        [{'accountAlias': 'FzAufWTisR', 'asset': 'USDT', 'balance': '46.40100881', 'crossWalletBalance': '46.40100881',
+        'crossUnPnl': '-0.01080000', 'availableBalance': '45.20814881', 'maxWithdrawAmount': '45.20854881',
+        'marginAvailable': True, 'updateTime': 1657184288780}]
+        """
+        for asset in datas:
             account: AccountData = AccountData(
                 accountid=asset["asset"],
-                balance=float(asset["walletBalance"]),
-                frozen=float(asset["maintMargin"]),
+                balance=float(asset["balance"]),
+                frozen=float(asset["balance"]) - float(asset["availableBalance"]),
                 gateway_name=self.gateway_name
             )
 
