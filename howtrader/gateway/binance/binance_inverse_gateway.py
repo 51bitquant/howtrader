@@ -46,10 +46,7 @@ from howtrader.event import Event, EventEngine
 
 from howtrader.api.rest import Request, RestClient, Response
 from howtrader.api.websocket import WebsocketClient
-from tzlocal import get_localzone_name
-
-LOCAL_TZ = pytz.timezone(get_localzone_name())  # # CHINA_TZ = pytz.timezone("Asia/Shanghai")
-
+from howtrader.trader.constant import LOCAL_TZ
 # rest api host for inverse future
 D_REST_HOST: str = "https://dapi.binance.com"
 

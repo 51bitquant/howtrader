@@ -40,9 +40,7 @@ from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event, EventEngine
 from howtrader.api.rest import RestClient, Request, Response
 from howtrader.api.websocket import WebsocketClient
-from tzlocal import get_localzone_name
-
-LOCAL_TZ = pytz.timezone(get_localzone_name()) #pytz.timezone("Asia/Shanghai")
+from howtrader.trader.constant import LOCAL_TZ
 
 # REST API HOST
 REST_HOST: str = "https://api.binance.com"

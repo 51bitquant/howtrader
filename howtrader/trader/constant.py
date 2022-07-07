@@ -3,7 +3,10 @@ General constant enums used in the trading platform.
 """
 
 from enum import Enum
+import pytz
+from tzlocal import get_localzone_name
 
+LOCAL_TZ = pytz.timezone(get_localzone_name()) #pytz.timezone("Asia/Shanghai")
 
 class Direction(Enum):
     """
