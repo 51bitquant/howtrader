@@ -478,7 +478,7 @@ class BinanceSpotRestAPi(RestClient):
             callback=self.on_cancel_order,
             params=params,
             data=data,
-            on_failed=self.on_cancel_failed,
+            on_failed=self.on_cancel_order_failed,
             extra=order
         )
 
@@ -622,15 +622,18 @@ class BinanceSpotRestAPi(RestClient):
 
     def on_send_order(self, data: dict, request: Request) -> None:
         """send order callback"""
-        pass
+        order: OrderData = request.extra
+        order.traded = Decimal(data.get('executedQty', "0"))
+        order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.NOTTRADED)
+        self.gateway.on_order(copy(order))
 
     def on_send_order_failed(self, status_code: str, request: Request) -> None:
         """send order failed callback"""
         order: OrderData = request.extra
         order.status = Status.REJECTED
-        self.gateway.on_order(order)
+        self.gateway.on_order(copy(order))
 
-        msg: str = f"send order failed，status code：{status_code}，msg：{request.response.text}"
+        msg: str = f"send order failed, orderid: {order.vt_orderid}, status code：{status_code}, \n msg：{request.response.text}"
         self.gateway.write_log(msg)
 
     def on_send_order_error(
@@ -639,7 +642,7 @@ class BinanceSpotRestAPi(RestClient):
         """send order error callback"""
         order: OrderData = request.extra
         order.status = Status.REJECTED
-        self.gateway.on_order(order)
+        self.gateway.on_order(copy(order))
 
         if not issubclass(exception_type, (ConnectionError, SSLError)):
             self.on_error(exception_type, exception_value, tb, request)
@@ -648,14 +651,16 @@ class BinanceSpotRestAPi(RestClient):
         """cancel order callback"""
         pass
 
-    def on_cancel_failed(self, status_code: str, request: Request) -> None:
+    def on_cancel_order_failed(self, status_code: str, request: Request) -> None:
         """cancel order failed callback"""
+        orderid = ""
         if request.extra:
-            order = request.extra
+            order:OrderData = request.extra
+            orderid = order.vt_orderid
             order.status = Status.REJECTED
-            self.gateway.on_order(order)
+            self.gateway.on_order(copy(order))
 
-        msg = f"cancel order failed，status code：{status_code}，msg：{request.response.text}"
+        msg = f"cancel order failed, orderid: {orderid}, status code: {status_code}, \n msg：{request.response.text}"
         self.gateway.write_log(msg)
 
     def on_start_user_stream(self, data: dict, request: Request) -> None:
