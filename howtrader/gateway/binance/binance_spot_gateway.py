@@ -212,10 +212,6 @@ class BinanceSpotGateway(BaseGateway):
             if traded < 0: # filter the order is not in sequence
                 return None
 
-            if traded > 0 or order.status != last_order.status:
-                self.orders[order.orderid] = copy(order)
-                super().on_order(copy(order))
-
             if traded > 0:
                 trade: TradeData = TradeData(
                     symbol=order.symbol,
@@ -227,8 +223,13 @@ class BinanceSpotGateway(BaseGateway):
                     datetime=order.update_time,
                     gateway_name=self.gateway_name,
                 )
-
                 super().on_trade(trade)
+
+            if traded == 0 and order.status == last_order.status:
+                return None
+
+            self.orders[order.orderid] = copy(order)
+            super().on_order(copy(order))
 
     def get_order(self, orderid: str) -> OrderData:
         """get order by orderid"""
