@@ -163,6 +163,7 @@ class BinanceUsdtGateway(BaseGateway):
         self.rest_api.connect(key, secret, proxy_host, proxy_port)
         self.market_ws_api.connect(proxy_host, proxy_port)
 
+        self.event_engine.unregister(EVENT_TIMER, self.process_timer_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
 
     def subscribe(self, req: SubscribeRequest) -> None:
