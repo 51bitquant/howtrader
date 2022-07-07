@@ -2,120 +2,581 @@
 
 [中文文档](./README-CN.md)
 
+
 What does Howtrader means? It means how to be a trader, especially a
 quant trader.
 
-The project is forked from VNPY, you can refer to the vnpy project. For
-easy to learn and easy to install the vnpy project. I just simply remove
-the other part not related to cryptocurrency.
+HowTrader crypto quantitative trading framework, and was forked from
+VNPY, so the core codes、functions and useages are pretty similar to
+VNPY, but would be more easy to install and use. By the way, Howtrader
+fixes some bugs, add more functions and strategies to framework. We
+extend the TradingView signals and grid strategies to Howtrader and more
+codes.
+
+
+## Howtrader VS VNPY
+1. some classes' definition are pretty different: for OrderData
+   、TradeData、ContractData, we replace float with Decimal to meet the
+   precision, theses classes are defined in howtrader.trader.object
+   module.
+  
+2. on_order and on_trade update sequence are different: in VNPY, ，the
+   on_order is always updated before the on_trade if the order was
+   traded. And in the cta strategy, the self.pos(the position data) was
+   calculated in the on_trade callback. So if we want to get the latest
+   self.pos value, we may need to define a variable to calculate the
+   latest position data. To solve this issue, we push the on_trade
+   before the on_order callback. check out the code to find out the
+   details: 
+   ``` python
+       
+       def on_order(self, order: OrderData) -> None:
+        """on order update"""
+        order.update_time = generate_datetime(time.time() * 1000)
+        last_order: OrderData = self.get_order(order.orderid)
+        if not last_order:
+            self.orders[order.orderid] = copy(order)
+            super().on_order(copy(order))
+
+        else:
+            traded: Decimal = order.traded - last_order.traded
+            if traded < 0: # filter the order is not in sequence
+                return None
+
+            if traded > 0:
+                trade: TradeData = TradeData(
+                    symbol=order.symbol,
+                    exchange=order.exchange,
+                    orderid=order.orderid,
+                    direction=order.direction,
+                    price=order.price,
+                    volume=traded,
+                    datetime=order.update_time,
+                    gateway_name=self.gateway_name,
+                )
+
+                super().on_trade(trade)
+
+            if traded == 0 and order.status == last_order.status:
+                return None
+
+            self.orders[order.orderid] = copy(order)
+            super().on_order(copy(order))
+
+    def get_order(self, orderid: str) -> OrderData:
+        """get order by order id"""
+        return self.orders.get(orderid, None)
+   
+   ```
+
+3. gateways are different: solve issues like disconnecting from
+   exchange, and reconnecting.
+
+4. TradingView app to receive other 3rd party signals and algo trading
+   strategies, checkout the module: howtrader.app.tradingview
 
 
 ## Installation
 
-the easies way to install the project is using pip to install it.
-> pip install git+https://github.com/51bitquant/howtrader.git
+the framework depends on pandas, Numpy libraries, so we higly recommend
+you to install [Anaconda](https://www.anaconda.com/products/distribution).
 
-the projejct is developed an test mainly under python 3.9, so I
-recommend you to use the python 3.9 version. To create the python 3.9
-version, we recommend you to use the anaconda to to create a virtual
-env.
+1. Install Anaconda, the Anaconda download website is
+   [here](https://www.anaconda.com/products/distribution), remember to
+   click "Add Conda to System Path" in the process of Anaconda
+   Installation. If you forget to do so, you might need to unistall and
+   reinstall the Anaconda, or just search how to add conda to you system
+   path, if you encounter the problem of "not found conda command".
+   
+   If you already install the anaconda before, you can simply update
+   your conda by runing the following command:
+   > conda update conda
+   
+   > conda update anaconda
 
+2. install git 
 
+Install git is pretty simple, just download git from
+[https://git-scm.com/downloads], then install it, remember to add git to
+your system path. If you're using MacOX, git was integrated into the
+system, so you may not need to install git.
+3. create virtual env by conda
+> conda create -n mytrader python==3.9
 
-如果提示你没有git, 那么你需要去安装git软件，具体的话参考系列课程的第十三课的视频。
-
-或者你直接把代码下载下来，然后切换到你的虚拟环境，或者使用当前的环境也是可以的，
-在终端输入：
-
-> pip install -r requirements.txt 
-
-> python setup.py install 
-
-or you can directly download the source code. then open your termal,
-then script the following command
-
-> pip install -r requirements.txt 
-
-> python setup.py install 
-
-但是我们直接推荐你用pip来安装，这样它能帮你把各种依赖处理好，减少错误的发生。
-
-but we recommend you using the pip to install the howtrader, for you can
-encounter some unexpected errors.
-
-# Update
-the codes is under active maintain, to upgrade to a new version, run the
+mytrader is the name of your virtual env, if you have the mytrader
+virtual env before and the version is not 3.9, you can unistall it by
 following command:
 
-> pip install git+https://github.com/51bitquant/howtrader.git -U 
+> conda remove -n mytrader --all
 
+if you encounter an error, you may need to deactivate the mytrader by
+the command:
+> conda deactivate 
 
-# 使用 Usage
-你需要在项目下面创建一个文件夹howtrader, 这个主要是存放一些日记和配置文件的信息。
-如果不不知道配置文件如何配置，你可以启动examples文件目录下面的main_window.py文件，就可以看到其下面的一些日志和配置文件信息了。
+then remove it:
+> conda remove -n mytrader --all
 
-1. firstly you need to create a folder(howtrader) at your project, at
-   this folder, there are log file or configuration file. If you're not
-   sure how to config, you can simply run the main_window.py at examples
-   folder, you can play with UI.
-# 数据爬取
-howtrader可以通过data_manager的app直接下载数据，但是这个过程比较慢，适合少量数据的更新。
-如果你想批量获取数据，可以参考examples下面的download_data_demo2.py文件.
+4. activate your virtual env:
+> conda activate mytrader
 
-you can download the data through data_manage app, but it's pretty slow,
-it just designs for small piece of data updating and strategy data
-warming. If you want to download the data as soon as possible, you can
-try the download_data_demo2.py or download_data_demo1.py at examples
-folder by using the multi-threads for speeding.
+5. install howtrader
 
-## learning materials 学习资料
+run the command: 
+> pip install git+https://github.com/51bitquant/howtrader.git
 
-学习资料请参考网易云课堂[《VNPY数字货币量化交易从零到实盘》](https://study.163.com/course/courseMain.htm?courseId=1210904816)
-你也可以在youtube或者b站找到相应的视频，搜索51bitquant即可找到视频。
+if you want to update to the latest version, use the command:
+> > pip install git+https://github.com/51bitquant/howtrader.git -U 
 
-## updates
+if encounter the failure of installation TA-Lib, checkout the next step.
 
-1. V2.1.7.3 update the binance gateway for klines, subscribe the 1min
-   kline for kline update, V2.1.7.3版本更新了币安的K线数据的更新。
-2. V2.1.7.4 Order Status management for bad network or disconnection,
-   V2.1.7.4版本对订单状态查询和更新,
-   特别是在在网络失去连接的时候能够进行查询和更新。
+## Install TA-Lib
 
-3. V2.1.7.5 update the on_trade event and binance future api position
-   更新对on_trade交易事件的推送，websocket断开的时候订单的成交能够重新推送，并且能够计算策略的仓位。
+If you can't install the howtrader in Window system, the main reason may
+be the TA-Lib, here we go in to the detail of installing TA-Lib:
 
-4. V2.1.7.6 : update the position. 对订阅的交易对，都会推送其头寸的更新.
+1. open this url in your browser:[https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib](https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib)
 
-5. V2.1.7.7 add the position_update_interval and order_update_interval,
-   添加对订单和仓位信息的更新频率.
+2. search ta-lib in the website and download the TA-Lib.whl file: here
+   we found the TA_Lib‑0.4.24‑cp39‑cp39‑win_amd64.whl in the website and
+   we click download, for the TA_Lib-0.4.24, it means TA-Lib version is
+   0.4.24， cp39 is the python version is 3.9， amd64 your system
+   version is 64 bit, choose the right one and download it.
+
+3. change your directory to your TA-Lib folder, and remember to activate
+   your virtual env to mytrader(if you use mytrader as your vitrual
+   env), then execute the following command: 
    
-6. V2.1.7.8 move the default strategies to example/strategies folders
-   把内置的策略移到example/strategies文件夹.
-  
-7. V2.1.7.9 account update interval and binance_spot_grid_strategy
-   添加资产更新的定时推送和币安现货网格交易的策略。
-  
-8. V2.1.8 增加现货和合约网格策略 add spot and future grid strategies
+> pip install TA_Lib‑0.4.24‑cp39‑cp39‑win_amd64.whl
 
-9. V2.1.8.1 修改接口的api关于资产的推送问题.
+## how-to-use
 
-10. V2.2.0 修改接口的bug,仓位模式为both,防止币安推送错误数据。 Change the
-    position mode to BOTH to avoid the rubbish data pushed from Binance
-    Exchange.
-    
-11. V2.2.1 添加策略编辑功能 Edit Strategy
+create a python proejct, and create a main.py file,and set your
+project's interpreter to the mytrader(the virtual env you just create
+and config).
 
-12. V2.2.3 添加马丁策略 martingle strategies
+then copy and paste the following code to main.py and run it, and you
+will see a howtrader folder beside the main.py, the howtrader folder
+contains the configs data(like exchange api key)、 your strategy
+settings and datas etc.
 
-13. V2.2.4 修改自动设置单项持仓.
+``` python
 
 
-## 联系方式
-微信: bitquant51
+from howtrader.event import EventEngine, Event
+from howtrader.trader.event import EVENT_TV_SIGNAL
+from howtrader.trader.engine import MainEngine
+from howtrader.trader.ui import MainWindow, create_qapp
+from howtrader.trader.setting import SETTINGS
+from howtrader.gateway.binance import BinanceUsdtGateway, BinanceSpotGateway, BinanceInverseGateway
 
-discord: 51bitquant#8078
+from howtrader.app.cta_strategy import CtaStrategyApp
+# from howtrader.app.data_manager import DataManagerApp
+# from howtrader.app.data_recorder import DataRecorderApp
+# from howtrader.app.algo_trading import AlgoTradingApp
+# from howtrader.app.risk_manager import RiskManagerApp
+# from howtrader.app.spread_trading import SpreadTradingApp
+from howtrader.app.tradingview import TradingViewApp
+from threading import Thread
+import json
+from flask import Flask, request
 
-[币安邀请链接](https://www.binancezh.pro/cn/futures/ref/51bitquant)
+# create global event_engine
+event_engine: EventEngine = EventEngine()
+passphrase = SETTINGS.get("passphrase", "")
+port = SETTINGS.get("port", 9999)
+
+app = Flask(__name__)
+
+@app.route('/', methods=['GET'])
+def welcome():
+    return "Hi, this is tv server!"
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    try:
+        data = json.loads(request.data)
+        if data.get('passphrase', None) != passphrase:
+            return {"status": "failure", "msg": "passphrase is incorrect"}
+        del data['passphrase'] # del it for safety.
+        event:Event = Event(type=EVENT_TV_SIGNAL, data=data)
+        event_engine.put(event)
+        return {"status": "success", "msg": ""}
+    except Exception as error:
+        return {"status": "error", "msg": str(error)}
+
+def start_tv_server():
+    app.run(host="127.0.0.1", port=port)
+
+def main():
+    """"""
+    qapp = create_qapp()
+    main_engine = MainEngine(event_engine)
+
+    main_engine.add_gateway(BinanceSpotGateway)
+    main_engine.add_gateway(BinanceUsdtGateway)
+    main_engine.add_gateway(BinanceInverseGateway)
+    main_engine.add_app(CtaStrategyApp)
+    main_engine.add_app(TradingViewApp)
+
+    # if you don't use
+    # main_engine.add_app(DataManagerApp)
+    # main_engine.add_app(AlgoTradingApp)
+    # main_engine.add_app(DataRecorderApp)
+    # main_engine.add_app(RiskManagerApp)
+    # main_engine.add_app(SpreadTradingApp)
+
+    main_window = MainWindow(main_engine, event_engine)
+    main_window.showMaximized()
+
+    t1 = Thread(target=start_tv_server)
+    t1.daemon = True
+    t1.start()
+
+    qapp.exec()
+
+
+if __name__ == "__main__":
+    main()
+
+```
+
+
+## how-to-crawl binance kline data
+
+howdtrader use sliqte database as default, and also support mongodb and
+mysql if you want to use it. If you want to use other database, you can
+change the configuration in howtrader/vt_setting.json, here is the full
+configuration key, you can just config the corresponding value.
+
+```dict
+{
+    "font.family": "",
+    "font.size": 12,
+
+    "log.active": True,
+    "log.level": CRITICAL,
+    "log.console": True,
+    "log.file": True,
+
+    "email.server": "smtp.qq.com",
+    "email.port": 465,
+    "email.username": "",
+    "email.password": "",
+    "email.sender": "",
+    "email.receiver": "",
+
+    "update_interval": 600,
+    "passphrase": "howtrader",  # tv passphrase
+    "port": 9999, # tv server port
+
+    "datafeed.name": "",
+    "datafeed.username": "",
+    "datafeed.password": "",
+
+    "database.timezone": get_localzone_name(),
+    "database.name": "sqlite",
+    "database.database": "database.db",
+    "database.host": "",
+    "database.port": 0,
+    "database.user": "",
+    "database.password": ""
+}
+
+```
+
+to crawl the Binance exchange kline data for backtesting, you just need
+to create a crawl_data.py file, just in the main.py directory. copy and
+paste the following codes:
+
+```
+"""
+use the binance api to crawl data then save into the sqlite database.
+
+"""
+
+import pandas as pd
+import time
+from datetime import datetime
+import requests
+import pytz
+from howtrader.trader.database import get_database, BaseDatabase
+
+pd.set_option('expand_frame_repr', False)  #
+from howtrader.trader.object import BarData, Interval, Exchange
+
+BINANCE_SPOT_LIMIT = 1000
+BINANCE_FUTURE_LIMIT = 1500
+
+from howtrader.trader.constant import LOCAL_TZ
+
+from threading import Thread
+database: BaseDatabase = get_database()
+
+def generate_datetime(timestamp: float) -> datetime:
+    """
+    :param timestamp:
+    :return:
+    """
+    dt = datetime.fromtimestamp(timestamp / 1000)
+    dt = LOCAL_TZ.localize(dt)
+    return dt
+
+
+def get_binance_data(symbol: str, exchange: str, start_time: str, end_time: str):
+    """
+    crawl binance exchange data
+    :param symbol: BTCUSDT.
+    :param exchange: spot、usdt_future, inverse_future.
+    :param start_time: format :2020-1-1 or 2020-01-01 year-month-day
+    :param end_time: format: 2020-1-1 or 2020-01-01 year-month-day
+    :param gate_way the gateway name for binance is:BINANCE_SPOT, BINANCE_USDT, BINANCE_INVERSE
+    :return:
+    """
+
+    api_url = ''
+    save_symbol = symbol
+    gateway = "BINANCE_USDT"
+    if exchange == 'spot':
+        print("spot")
+        limit = BINANCE_SPOT_LIMIT
+        save_symbol = symbol.lower()
+        gateway = 'BINANCE_SPOT'
+        api_url = f'https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&limit={limit}'
+
+    elif exchange == 'usdt_future':
+        print('usdt_future')
+        limit = BINANCE_FUTURE_LIMIT
+        gateway = "BINANCE_USDT"
+        api_url = f'https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1m&limit={limit}'
+
+    elif exchange == 'inverse_future':
+        print("inverse_future")
+        limit = BINANCE_FUTURE_LIMIT
+        gateway = "BINANCE_INVERSE"
+        f'https://dapi.binance.com/dapi/v1/klines?symbol={symbol}&interval=1m&limit={limit}'
+
+    else:
+        raise Exception('the exchange name should be one of ：spot, usdt_future, inverse_future')
+
+    start_time = int(datetime.strptime(start_time, '%Y-%m-%d').timestamp() * 1000)
+    end_time = int(datetime.strptime(end_time, '%Y-%m-%d').timestamp() * 1000)
+
+    while True:
+        try:
+            print(start_time)
+            url = f'{api_url}&startTime={start_time}'
+            print(url)
+            datas = requests.get(url=url, timeout=10, proxies=proxies).json()
+
+            """
+            [
+                [
+                    1591258320000,      // open time
+                    "9640.7",           // open price
+                    "9642.4",           // highest price
+                    "9640.6",           // lowest price
+                    "9642.0",           // close price(latest price if the kline is not close)
+                    "206",              // volume
+                    1591258379999,      // close time
+                    "2.13660389",       // turnover
+                    48,                 // trade count 
+                    "119",              // buy volume
+                    "1.23424865",       //  buy turnover
+                    "0"                 // ignore
+                ]
+
+            """
+
+            buf = []
+
+            for row in datas:
+                bar: BarData = BarData(
+                    symbol=save_symbol,
+                    exchange=Exchange.BINANCE,
+                    datetime=generate_datetime(row[0]),
+                    interval=Interval.MINUTE,
+                    volume=float(row[5]),
+                    turnover=float(row[7]),
+                    open_price=float(row[1]),
+                    high_price=float(row[2]),
+                    low_price=float(row[3]),
+                    close_price=float(row[4]),
+                    gateway_name=gateway
+                )
+                buf.append(bar)
+
+            database.save_bar_data(buf)
+
+            # exit the loop, if close time is greater than the current time
+            if (datas[-1][0] > end_time) or datas[-1][6] >= (int(time.time() * 1000) - 60 * 1000):
+                break
+
+            start_time = datas[-1][0]
+
+        except Exception as error:
+            print(error)
+            time.sleep(10)
+
+
+def download_spot(symbol):
+    """
+    download binance spot data, config your start date and end date(format: year-month-day)
+    :return:
+    """
+    t1 = Thread(target=get_binance_data, args=(symbol, 'spot', "2018-1-1", "2018-6-1"))
+    t2 = Thread(target=get_binance_data, args=(symbol, 'spot', "2018-6-1", "2018-12-1"))
+
+    t3 = Thread(target=get_binance_data, args=(symbol, 'spot', "2018-12-1", "2019-6-1"))
+    t4 = Thread(target=get_binance_data, args=(symbol, 'spot', "2019-6-1", "2019-12-1"))
+
+    t5 = Thread(target=get_binance_data, args=(symbol, 'spot', "2019-12-1", "2020-6-1"))
+    t6 = Thread(target=get_binance_data, args=(symbol, 'spot', "2020-6-1", "2020-12-1"))
+
+    t7 = Thread(target=get_binance_data, args=(symbol, 'spot', "2020-12-1", "2021-6-1"))
+    t8 = Thread(target=get_binance_data, args=(symbol, 'spot', "2021-6-1", "2021-12-1"))
+    t9 = Thread(target=get_binance_data, args=(symbol, 'spot', "2021-12-1", "2022-6-28"))
+
+    t1.start()
+    t2.start()
+    t3.start()
+    t4.start()
+    t5.start()
+    t6.start()
+    t7.start()
+    t8.start()
+    t9.start()
+
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+    t5.join()
+    t6.join()
+    t7.join()
+    t8.join()
+    t9.join()
+
+
+def download_future(symbol):
+    """
+    download binance future data, config your start date and end date(format: year-month-day)
+    :return:
+
+    """
+
+    t1 = Thread(target=get_binance_data, args=(symbol, 'usdt_future', "2020-1-1", "2020-6-1"))
+    t2 = Thread(target=get_binance_data, args=(symbol, 'usdt_future', "2020-6-1", "2020-12-1"))
+    t3 = Thread(target=get_binance_data, args=(symbol, 'usdt_future', "2020-12-1", "2021-6-1"))
+    t4 = Thread(target=get_binance_data, args=(symbol, 'usdt_future', "2021-6-1", "2021-12-1"))
+    t5 = Thread(target=get_binance_data, args=(symbol, 'usdt_future', "2021-12-1", "2022-6-28"))
+
+    t1.start()
+    t2.start()
+    t3.start()
+    t4.start()
+    t5.start()
+
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+    t5.join()
+
+
+
+if __name__ == '__main__':
+
+    """
+    read the code before run it. the software crawl the binance data then save into the sqlite database.
+    you may need to change the start date and end date.
+    """
+
+    # proxy_host , if you can directly connect to the binance exchange, then set it to None or empty string ""，如果没有你就设置为 None 或者空的字符串 "",
+    # you can use the command  ping api.binance.com to check whether your network work well: 你可以在终端运行 ping api.binance.com 查看你的网络是否正常。
+    proxy_host = "127.0.0.1"  # set it to your proxy_host 如果没有就设置为"", 如果有就设置为你的代理主机如：127.0.0.1
+    proxy_port = 1087  # set it to your proxy_port  设置你的代理端口号如: 1087, 没有你修改为0,但是要保证你能访问api.binance.com这个主机。
+
+    proxies = None
+    if proxy_host and proxy_port:
+        proxy = f'http://{proxy_host}:{proxy_port}'
+        proxies = {'http': proxy, 'https': proxy}
+
+    download_future(symbol="BTCUSDT")  # crawl usdt_future data. 下载合约的数据
+
+    download_spot(symbol="BTCUSDT") # crawl binance spot data.
+
+
+
+
+```
+
+if you want to change start date or end date, you check out the codes.
+And the data will be stored in howtrader/database.db file.
+
+
+## backtesting
+
+for backtesting, here is the example. vt_symbol format like
+BTCUSDT.BINANCE, the first part is symbol, and other part is exchange
+name. Howtrader uses lower case for spot market, and upper case for
+future market.
+
+```
+from howtrader.app.cta_strategy.backtesting import BacktestingEngine, OptimizationSetting
+from howtrader.trader.object import Interval
+from datetime import datetime
+from strategies.atr_rsi_strategy import AtrRsiStrategy  # import your strategy.
+
+engine = BacktestingEngine()
+engine.set_parameters(
+    vt_symbol="BTCUSDT.BINANCE",
+    interval=Interval.MINUTE,
+    start=datetime(2020, 1, 1),
+    end=datetime(2020, 5, 1),
+    rate=4/10000,
+    slippage=0,
+    size=1,
+    pricetick=0.01,
+    capital=1000000,
+)
+
+engine.add_strategy(AtrRsiStrategy, {})
+
+
+engine.load_data()
+engine.run_backtesting()
+df = engine.calculate_result()
+engine.calculate_statistics()
+engine.show_chart()
+
+setting = OptimizationSetting()
+setting.set_target("sharpe_ratio")
+setting.add_parameter("atr_length", 3, 39, 1)
+setting.add_parameter("atr_ma_length", 10, 30, 1)
+
+result = engine.run_ga_optimization(setting)  # optimization result
+print(result) # you can print the result.
+
+
+```
+
+for more example codes, checkout this repo
+: https://github.com/51bitquant/howtrader/tree/main/examples中的examples代码。
+
+## material codes:
+
+you can check out my github profile: [https:github.com/51bitquant](https:github.com/51bitquant)
+
+howtrader course_codes: [https://github.com/51bitquant/course_codes](https://github.com/51bitquant/course_codes)
+
+## Contact
+Twitter: 51bitquant.eth
+
+discord-community:
+[https://discord.gg/fgySfwG9eJ](https://discord.gg/fgySfwG9eJ)
+
+Binance Invite Link: 
+[https://www.binancezh.pro/cn/futures/ref/51bitquant](https://www.binancezh.pro/cn/futures/ref/51bitquant)
 
  
  
