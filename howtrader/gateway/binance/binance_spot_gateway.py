@@ -592,8 +592,9 @@ class BinanceSpotRestAPi(RestClient):
             quote_currency: str = d["quoteAsset"]
             name: str = f"{base_currency.upper()}/{quote_currency.upper()}"
 
-            pricetick: int = Decimal("1")
-            min_volume: int = Decimal("1")
+            pricetick: Decimal = Decimal("1")
+            min_volume: Decimal = Decimal("1")
+            min_notional: Decimal = Decimal("10")
 
             for f in d["filters"]:
                 if f["filterType"] == "PRICE_FILTER":
@@ -602,6 +603,9 @@ class BinanceSpotRestAPi(RestClient):
                 elif f["filterType"] == "LOT_SIZE":
                     step = str(f["stepSize"]).rstrip("0")
                     min_volume = Decimal(step)
+                elif f.get('filterType') == 'MIN_NOTIONAL':
+                    notional = str(f["minNotional"]).rstrip("0")
+                    min_notional = Decimal(notional)
 
             contract: ContractData = ContractData(
                 symbol=d["symbol"].lower(),
@@ -610,6 +614,7 @@ class BinanceSpotRestAPi(RestClient):
                 pricetick=pricetick,
                 size=Decimal("1"),
                 min_volume=min_volume,
+                min_notional=min_notional,
                 product=Product.SPOT,
                 history_data=True,
                 gateway_name=self.gateway_name,

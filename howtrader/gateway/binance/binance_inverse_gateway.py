@@ -664,6 +664,8 @@ class BinanceInverseRestApi(RestClient):
 
             pricetick: Decimal = Decimal("1")
             min_volume: Decimal = Decimal("1")
+            size = str(d.get("contractSize", '10'))
+            min_notional: Decimal = Decimal(size)  # 10 usd
 
             for f in d["filters"]:
                 if f["filterType"] == "PRICE_FILTER":
@@ -678,8 +680,9 @@ class BinanceInverseRestApi(RestClient):
                 exchange=Exchange.BINANCE,
                 name=name,
                 pricetick=pricetick,
-                size=Decimal(str(d["contractSize"])),
+                size=size,
                 min_volume=min_volume,
+                min_notional=min_notional,
                 product=Product.FUTURES,
                 net_position=True,
                 history_data=True,

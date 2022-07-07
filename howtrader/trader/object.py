@@ -243,6 +243,7 @@ class ContractData(BaseData):
     product: Product
     size: Decimal
     pricetick: Decimal
+    min_notional: Decimal  # order's value, price * amount >= min_notional
 
     min_volume: Decimal = Decimal("1")           # minimum trading volume of the contract
     stop_supported: bool = False    # whether server supports stop order

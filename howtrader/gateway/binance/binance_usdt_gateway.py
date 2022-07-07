@@ -666,14 +666,18 @@ class BinanceUsdtRestApi(RestClient):
 
             pricetick: Decimal = Decimal("1")
             min_volume: Decimal = Decimal("1")
+            min_notional: Decimal = Decimal("5")
 
             for f in d["filters"]:
-                if f["filterType"] == "PRICE_FILTER":
+                if f.get("filterType") == "PRICE_FILTER":
                     tick = str(f["tickSize"]).rstrip("0")
                     pricetick = Decimal(tick)
-                elif f["filterType"] == "LOT_SIZE":
+                elif f.get("filterType") == "LOT_SIZE":
                     step = str(f["stepSize"]).rstrip("0")
                     min_volume = Decimal(step)
+                elif f.get('filterType') == 'MIN_NOTIONAL':
+                    notional = str(f.get('notional')).rstrip("0")
+                    min_notional = Decimal(notional)
 
             contract: ContractData = ContractData(
                 symbol=d["symbol"],
@@ -682,6 +686,7 @@ class BinanceUsdtRestApi(RestClient):
                 pricetick=pricetick,
                 size=Decimal("1"),
                 min_volume=min_volume,
+                min_notional=min_notional,
                 product=Product.FUTURES,
                 net_position=True,
                 history_data=True,
