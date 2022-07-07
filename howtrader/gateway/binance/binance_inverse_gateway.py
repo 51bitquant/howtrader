@@ -614,13 +614,13 @@ class BinanceInverseRestApi(RestClient):
             orderid=data["clientOrderId"],
             symbol=data["symbol"],
             exchange=Exchange.BINANCE,
-            price=Decimal(str(data["price"])),
-            volume=Decimal(str(data["origQty"])),
+            price=Decimal(data["price"]),
+            volume=Decimal(data["origQty"]),
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
-            traded=Decimal(str(data["executedQty"])),
+            traded=Decimal(data.get("executedQty", "0")),
             status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
-            datetime=generate_datetime(data["time"]),
+            datetime=generate_datetime(data.get("time", time.time()*1000)),
             gateway_name=self.gateway_name,
         )
         self.gateway.on_order(order)
@@ -645,7 +645,7 @@ class BinanceInverseRestApi(RestClient):
                 volume=Decimal(str(d["origQty"])),
                 type=order_type,
                 direction=DIRECTION_BINANCES2VT[d["side"]],
-                traded=Decimal(str(d["executedQty"])),
+                traded=Decimal(d.get("executedQty", "0")),
                 status=STATUS_BINANCES2VT.get(d["status"], Status.NOTTRADED),
                 datetime=generate_datetime(d["time"]),
                 gateway_name=self.gateway_name,
@@ -704,7 +704,7 @@ class BinanceInverseRestApi(RestClient):
         order.status = Status.REJECTED
         self.gateway.on_order(copy(order))
 
-        msg: str = f"send order failed, orderid: {order.vt_orderid}, status code：{status_code}, \n msg：{request.response.text}"
+        msg: str = f"send order failed, orderid: {order.orderid}, status code：{status_code}, \n msg：{request.response.text}"
         self.gateway.write_log(msg)
 
     def on_send_order_error(
@@ -720,14 +720,29 @@ class BinanceInverseRestApi(RestClient):
 
     def on_cancel_order(self, data: dict, request: Request) -> None:
         """cancel order callback"""
-        pass
+        key = (data["type"], data["timeInForce"])
+        order_type = ORDERTYPE_BINANCES2VT.get(key, OrderType.LIMIT)
+        order = OrderData(
+            orderid=data["clientOrderId"],
+            symbol=data["symbol"],
+            exchange=Exchange.BINANCE,
+            price=Decimal(data["price"]),
+            volume=Decimal(data["origQty"]),
+            type=order_type,
+            direction=DIRECTION_BINANCES2VT[data["side"]],
+            traded=Decimal(data.get("executedQty", "0")),
+            status=STATUS_BINANCES2VT.get(data["status"], Status.CANCELLED),
+            datetime=generate_datetime(data.get("updateTime", time.time()*1000)),
+            gateway_name=self.gateway_name,
+        )
+        self.gateway.on_order(order)
 
     def on_cancel_order_failed(self, status_code: str, request: Request) -> None:
         """cancel order failed callback"""
         orderid = ""
         if request.extra:
             order: OrderData = request.extra
-            orderid = order.vt_orderid
+            orderid = order.orderid
             order.status = Status.REJECTED
             self.gateway.on_order(order)
 

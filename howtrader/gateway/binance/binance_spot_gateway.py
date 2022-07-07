@@ -548,11 +548,11 @@ class BinanceSpotRestAPi(RestClient):
             orderid=data["clientOrderId"],
             symbol=data["symbol"].lower(),
             exchange=Exchange.BINANCE,
-            price=Decimal(str(data["price"])),
-            volume=Decimal(str(data["origQty"])),
+            price=Decimal(data["price"]),
+            volume=Decimal(data["origQty"]),
             type=ORDERTYPE_BINANCE2VT.get(data["type"],OrderType.LIMIT),
             direction=DIRECTION_BINANCE2VT[data["side"]],
-            traded=Decimal(str(data["executedQty"])),
+            traded=Decimal(data.get("executedQty", "0")),
             status=STATUS_BINANCE2VT.get(data["status"], Status.NOTTRADED),
             datetime=generate_datetime(data["time"]),
             gateway_name=self.gateway_name,
@@ -571,11 +571,11 @@ class BinanceSpotRestAPi(RestClient):
                 orderid=d["clientOrderId"],
                 symbol=d["symbol"].lower(),
                 exchange=Exchange.BINANCE,
-                price=Decimal(str(d["price"])),
-                volume=Decimal(str(d["origQty"])),
+                price=Decimal(d["price"]),
+                volume=Decimal(d["origQty"]),
                 type=ORDERTYPE_BINANCE2VT.get(d["type"], OrderType.LIMIT),
                 direction=DIRECTION_BINANCE2VT[d["side"]],
-                traded=Decimal(str(d["executedQty"])),
+                traded=Decimal(d.get("executedQty", "0")),
                 status=STATUS_BINANCE2VT.get(d["status"], Status.NOTTRADED),
                 datetime=generate_datetime(d["time"]),
                 gateway_name=self.gateway_name,
@@ -633,7 +633,7 @@ class BinanceSpotRestAPi(RestClient):
         order.status = Status.REJECTED
         self.gateway.on_order(copy(order))
 
-        msg: str = f"send order failed, orderid: {order.vt_orderid}, status code：{status_code}, \n msg：{request.response.text}"
+        msg: str = f"send order failed, orderid: {order.orderid}, status code：{status_code}, \n msg：{request.response.text}"
         self.gateway.write_log(msg)
 
     def on_send_order_error(
@@ -649,14 +649,34 @@ class BinanceSpotRestAPi(RestClient):
 
     def on_cancel_order(self, data: dict, request: Request) -> None:
         """cancel order callback"""
-        pass
+        if request.extra:
+            order: OrderData = request.extra
+            order.traded = Decimal(data.get('executedQty', "0"))
+            order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.CANCELLED)
+            self.gateway.on_order(copy(order))
+        else:
+            order: OrderData = OrderData(
+                symbol=data.get("symbol").lower(),
+                exchange=Exchange.BINANCE,
+                orderid=data.get("clientOrderId"),
+                type=ORDERTYPE_BINANCE2VT.get(data.get("type"), OrderType.LIMIT),
+                direction=DIRECTION_BINANCE2VT.get(data.get("side")),
+                price=Decimal(data.get('price')),
+                volume=Decimal(data.get('origQty')),
+                traded=Decimal(data.get('executedQty', "0")),
+                status=STATUS_BINANCE2VT.get(data.get('status'), Status.CANCELLED),
+                gateway_name=self.gateway_name
+            )
+
+            self.gateway.on_order(order)
+
 
     def on_cancel_order_failed(self, status_code: str, request: Request) -> None:
         """cancel order failed callback"""
         orderid = ""
         if request.extra:
             order:OrderData = request.extra
-            orderid = order.vt_orderid
+            orderid = order.orderid
             order.status = Status.REJECTED
             self.gateway.on_order(copy(order))
 
