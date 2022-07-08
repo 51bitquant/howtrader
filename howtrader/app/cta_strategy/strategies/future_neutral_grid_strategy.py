@@ -6,9 +6,9 @@ from howtrader.app.cta_strategy import (
 from howtrader.trader.object import TickData, BarData, TradeData, OrderData
 
 from howtrader.app.cta_strategy.engine import CtaEngine
-from howtrader.trader.object import Status, Direction
+from howtrader.trader.object import Status
 from typing import Optional
-from howtrader.trader.utility import floor_to, BarGenerator
+from howtrader.trader.utility import BarGenerator
 from decimal import Decimal
 
 
@@ -129,7 +129,8 @@ class FutureNeutralGridStrategy(CtaTemplate):
                     self.short_orders.extend(orders)
 
                 if len(self.long_orders) < self.max_open_orders:
-                    long_price = order.price - Decimal(self.step_price) * Decimal(self.max_open_orders)
+                    count = len(self.long_orders) + 1
+                    long_price = order.price - Decimal(self.step_price) * Decimal(str(count))
                     if long_price >= self.low_price:
                         orders = self.buy(long_price, Decimal(self.order_volume))
                         self.long_orders.extend(orders)
@@ -143,7 +144,8 @@ class FutureNeutralGridStrategy(CtaTemplate):
                     self.long_orders.extend(orders)
 
                 if len(self.short_orders) < self.max_open_orders:
-                    short_price = order.price + Decimal(self.step_price) * Decimal(self.max_open_orders)
+                    count = len(self.long_orders) + 1
+                    short_price = order.price + Decimal(self.step_price) * Decimal(str(count))
                     if short_price <= self.high_price:
                         orders = self.short(short_price, Decimal(self.order_volume))
                         self.short_orders.extend(orders)
