@@ -105,6 +105,8 @@ class BestLimitTVStrategy(TVTemplate):
                 return None
             volume = round_to(Decimal(str(v)), self.contract.min_volume)
 
+        volume = abs(volume)
+
         if action == 'long':
             self.target_volume = volume
             self.direction = Direction.LONG
@@ -125,7 +127,7 @@ class BestLimitTVStrategy(TVTemplate):
                 self.direction = Direction.LONG
         else:
             pass
-            # you can extend your signal here.
+            # extend your signal here.
 
         self.write_log(f"received signal: {signal}")
 
