@@ -78,8 +78,7 @@ class SimpleTVStrategy(TVTemplate):
             return None
 
         volume = self.target_volume - self.traded_volume
-        volume = abs(volume)
-        if volume < self.contract.min_volume:
+        if volume < self.contract.min_volume or volume < 0:
             return
 
         if self.direction == Direction.LONG:

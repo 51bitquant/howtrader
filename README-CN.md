@@ -5,6 +5,9 @@ VNPY,所以用法和功能基本上跟VNPY相似。但是对VNPY源码的一些b
 由于VNPY的代码依赖过多，对一些用不到的代码进行了删除，保留核心的功能。
 
 
+[howtrader开发文档](./docs/howtrader文档说明.md)
+
+
 ## Howtrader 和 VNPY区别对比
 1. 个别类的定义不同: OrderData(订单数据)
    、TradeData(成交数据)、ContractData(交易对信息)
