@@ -55,7 +55,6 @@ class HighFrequencyStrategy(CtaTemplate):
 
         self.tick: Optional[TickData] = None
         self.last_filled_order: Optional[OrderData] = None
-        self.size: Decimal = Decimal(str(self.trading_size))
 
     def on_init(self):
         """
@@ -132,7 +131,7 @@ class HighFrequencyStrategy(CtaTemplate):
 
         # print(f"self.pos: {self.pos}, long_order: {self.long_orders} = {len(self.long_orders)}, short_orders: {self.short_orders}={len(self.short_orders)}")
 
-        if abs(self.pos) < self.size:
+        if abs(self.pos) < Decimal(str(self.trading_size)):
             if len(self.long_orders) == 0 or len(self.short_orders) == 0:
                 self.cancel_all()
                 print("当前没有仓位，多空单子不对等，需要重新开始. 先撤销所有订单.")
@@ -172,7 +171,7 @@ class HighFrequencyStrategy(CtaTemplate):
             self.write_log(f"tick价格异常: bid1: {tick.bid_price_1}, ask1: {tick.ask_price_1}")
             return
 
-        if abs(self.pos) < self.size:  # 仓位为零的情况.
+        if abs(self.pos) < Decimal(str(self.trading_size)):  # 仓位为零的情况.
 
             if len(self.long_orders) == 0 and len(self.short_orders) == 0:
                 buy_price = tick.bid_price_1 - self.grid_step / 2
