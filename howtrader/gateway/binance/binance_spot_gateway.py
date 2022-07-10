@@ -627,27 +627,30 @@ class BinanceSpotRestAPi(RestClient):
 
     def on_send_order(self, data: dict, request: Request) -> None:
         """send order callback"""
-        order: OrderData = request.extra
-        order.traded = Decimal(data.get('executedQty', "0"))
-        order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.NOTTRADED)
-        self.gateway.on_order(copy(order))
+        if request.extra:
+            order: OrderData = copy(request.extra)
+            order.traded = Decimal(data.get('executedQty', "0"))
+            order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.NOTTRADED)
+            self.gateway.on_order(order)
 
     def on_send_order_failed(self, status_code: str, request: Request) -> None:
         """send order failed callback"""
-        order: OrderData = request.extra
-        order.status = Status.REJECTED
-        self.gateway.on_order(copy(order))
+        if request.extra:
+            order: OrderData = copy(request.extra)
+            order.status = Status.REJECTED
+            self.gateway.on_order(order)
 
-        msg: str = f"send order failed, orderid: {order.orderid}, status code：{status_code}, msg：{request.response.text}"
-        self.gateway.write_log(msg)
+            msg: str = f"send order failed, orderid: {order.orderid}, status code：{status_code}, msg：{request.response.text}"
+            self.gateway.write_log(msg)
 
     def on_send_order_error(
             self, exception_type: type, exception_value: Exception, tb, request: Request
     ) -> None:
         """send order error callback"""
-        order: OrderData = request.extra
-        order.status = Status.REJECTED
-        self.gateway.on_order(copy(order))
+        if request.extra:
+            order: OrderData = copy(request.extra)
+            order.status = Status.REJECTED
+            self.gateway.on_order(order)
 
         if not issubclass(exception_type, (ConnectionError, SSLError)):
             self.on_error(exception_type, exception_value, tb, request)
@@ -655,10 +658,10 @@ class BinanceSpotRestAPi(RestClient):
     def on_cancel_order(self, data: dict, request: Request) -> None:
         """cancel order callback"""
         if request.extra:
-            order: OrderData = request.extra
+            order: OrderData = copy(request.extra)
             order.traded = Decimal(data.get('executedQty', "0"))
             order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.CANCELLED)
-            self.gateway.on_order(copy(order))
+            self.gateway.on_order(order)
         else:
             order: OrderData = OrderData(
                 symbol=data.get("symbol").lower(),
@@ -680,7 +683,7 @@ class BinanceSpotRestAPi(RestClient):
         """cancel order failed callback"""
         orderid = ""
         if request.extra:
-            order:OrderData = request.extra
+            order:OrderData = copy(request.extra)
             orderid = order.orderid
             # order.status = Status.REJECTED
             # self.gateway.on_order(copy(order))
