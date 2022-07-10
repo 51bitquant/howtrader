@@ -465,51 +465,49 @@ class GridPositionCalculator(object):
         self.avg_price: Decimal = Decimal("0")
         self.grid_step: Decimal = Decimal(str(grid_step))
 
-    def update_position(self, order: OrderData):
-        if order.status != Status.ALLTRADED:
-            return
+    def update_position(self, trade: TradeData):
 
         previous_pos = self.pos
         previous_avg = self.avg_price
 
-        if order.direction == Direction.LONG:
-            self.pos += order.volume
+        if trade.direction == Direction.LONG:
+            self.pos += trade.volume
 
             if self.pos == Decimal("0"):
                 self.avg_price = Decimal("0")
             else:
 
                 if previous_pos == Decimal("0"):
-                    self.avg_price = order.price
+                    self.avg_price = trade.price
 
                 elif previous_pos > 0:
-                    self.avg_price = (previous_pos * previous_avg + order.volume * order.price) / abs(self.pos)
+                    self.avg_price = (previous_pos * previous_avg + trade.volume * trade.price) / abs(self.pos)
 
                 elif previous_pos < 0 and self.pos < 0:
                     self.avg_price = (previous_avg * abs(self.pos) - (
-                            order.price - previous_avg) * order.volume - order.volume * self.grid_step) / abs(
+                            trade.price - previous_avg) * trade.volume - trade.volume * self.grid_step) / abs(
                         self.pos)
 
                 elif previous_pos < 0 < self.pos:
-                    self.avg_price = order.price
+                    self.avg_price = trade.price
 
-        elif order.direction == Direction.SHORT:
-            self.pos -= order.volume
+        elif trade.direction == Direction.SHORT:
+            self.pos -= trade.volume
 
             if self.pos == Decimal("0"):
                 self.avg_price = Decimal("0")
             else:
 
                 if previous_pos == Decimal("0"):
-                    self.avg_price = order.price
+                    self.avg_price = trade.price
 
                 elif previous_pos < 0:
-                    self.avg_price = (abs(previous_pos) * previous_avg + order.volume * order.price) / abs(self.pos)
+                    self.avg_price = (abs(previous_pos) * previous_avg + trade.volume * trade.price) / abs(self.pos)
 
                 elif previous_pos > 0 and self.pos > 0:
                     self.avg_price = (previous_avg * self.pos - (
-                            order.price - previous_avg) * order.volume + order.volume * self.grid_step) / abs(
+                            trade.price - previous_avg) * trade.volume + trade.volume * self.grid_step) / abs(
                         self.pos)
 
                 elif previous_pos > 0 > self.pos:
-                    self.avg_price = order.price
+                    self.avg_price = trade.price

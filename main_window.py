@@ -1,4 +1,3 @@
-
 from howtrader.event import EventEngine, Event
 from howtrader.trader.event import EVENT_TV_SIGNAL
 from howtrader.trader.engine import MainEngine
@@ -24,9 +23,11 @@ port = SETTINGS.get("port", 9999)
 
 app = Flask(__name__)
 
+
 @app.route('/', methods=['GET'])
 def welcome():
     return "Hi, this is tv server!"
+
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -34,15 +35,17 @@ def webhook():
         data = json.loads(request.data)
         if data.get('passphrase', None) != passphrase:
             return {"status": "failure", "msg": "passphrase is incorrect"}
-        del data['passphrase'] # del it for safety.
-        event:Event = Event(type=EVENT_TV_SIGNAL, data=data)
+        del data['passphrase']  # del it for safety.
+        event: Event = Event(type=EVENT_TV_SIGNAL, data=data)
         event_engine.put(event)
         return {"status": "success", "msg": ""}
     except Exception as error:
         return {"status": "error", "msg": str(error)}
 
+
 def start_tv_server():
     app.run(host="127.0.0.1", port=port)
+
 
 def main():
     """"""
