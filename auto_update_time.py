@@ -1,6 +1,6 @@
 # pip install ntplib
 
-## 如果你地电脑更新的时间有问题，可以尝试下这个代码。
+## 如果你的window电脑更新的时间有问题，可以尝试下这个代码。
 
 import os
 import time
