@@ -141,6 +141,7 @@ class BinanceInverseGateway(BaseGateway):
         self.rest_api: "BinanceInverseRestApi" = BinanceInverseRestApi(self)
 
         self.orders: Dict[str, OrderData] = {}
+        self.get_server_time_interval: int = 0
 
     def connect(self, setting: dict) -> None:
         """connect exchange api rest & ws"""
@@ -203,6 +204,12 @@ class BinanceInverseGateway(BaseGateway):
     def process_timer_event(self, event: Event) -> None:
         """process the listen key update"""
         self.rest_api.keep_user_stream()
+        self.get_server_time_interval += 1
+        if self.get_server_time_interval < 300:  # get the server time for every five miute
+            return None
+
+        self.rest_api.query_time()
+        self.get_server_time_interval = 0
 
     def on_order(self, order: OrderData) -> None:
         """order update"""

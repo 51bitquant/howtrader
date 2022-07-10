@@ -136,6 +136,7 @@ class BinanceSpotGateway(BaseGateway):
         self.rest_api: "BinanceSpotRestAPi" = BinanceSpotRestAPi(self)
 
         self.orders: Dict[str, OrderData] = {}
+        self.get_server_time_interval: int = 0
 
     def connect(self, setting: dict):
         """connect binance api"""
@@ -197,6 +198,12 @@ class BinanceSpotGateway(BaseGateway):
     def process_timer_event(self, event: Event) -> None:
         """process timer event, for updating the listen key"""
         self.rest_api.keep_user_stream()
+        self.get_server_time_interval += 1
+        if self.get_server_time_interval < 300:  # get the server time for every five miute
+            return None
+
+        self.rest_api.query_time()
+        self.get_server_time_interval = 0
 
     def on_order(self, order: OrderData) -> None:
         """on order, order update"""
