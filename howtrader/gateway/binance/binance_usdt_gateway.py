@@ -711,7 +711,7 @@ class BinanceUsdtRestApi(RestClient):
         order.status = Status.REJECTED
         self.gateway.on_order(copy(order))
 
-        msg: str = f"send order failed, orderid: {order.orderid}, status code：{status_code}, \n msg：{request.response.text}"
+        msg: str = f"send order failed, orderid: {order.orderid}, status code：{status_code}, msg：{request.response.text}"
         self.gateway.write_log(msg)
 
     def on_send_order_error(
@@ -762,7 +762,7 @@ class BinanceUsdtRestApi(RestClient):
             req: OrderQueryRequest = order.create_query_request()
             self.query_order(req)
 
-        msg = f"cancel order failed, orderid: {orderid}, status code：{status_code}, \n msg：{request.response.text}"
+        msg = f"cancel order failed, orderid: {orderid}, status code：{status_code}, msg：{request.response.text}"
         self.gateway.write_log(msg)
 
     def on_start_user_stream(self, data: dict, request: Request) -> None:

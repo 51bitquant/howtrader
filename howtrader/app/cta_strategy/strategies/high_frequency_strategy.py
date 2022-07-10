@@ -78,8 +78,10 @@ class HighFrequencyStrategy(CtaTemplate):
         self.write_log("策略停止")
         self.cta_engine.event_engine.unregister(EVENT_TIMER, self.process_timer_event)
 
-    def process_timer_event(self, event: Event):
+    def process_timer_event(self, event: Event) -> None:
 
+        if not self.tick:
+            return None
         self.timer_count += 1
 
         if self.timer_count >= 60:
@@ -92,30 +94,29 @@ class HighFrequencyStrategy(CtaTemplate):
         if self.trigger_stop_loss:
             self.stop_loss_interval += 1
             # 记录设置过的止损条件.
-            if self.stop_loss_interval < self.stop_mins * 60:  # 休息15分钟.
-                return
+            if self.stop_loss_interval < self.stop_mins * 60:  # sleep time in seconds
+                return None
             else:
                 self.trigger_stop_loss = False
                 self.stop_loss_interval = 0
 
         # 止盈的条件, 可以放到tick里面，也可以放到定时器这里.
-        if abs(self.pos) > 0 and self.tick:
+        if abs(self.pos) > 0 and len(self.profit_orders) == 0:
 
-            if self.pos > 0 and len(self.profit_orders) == 0:
-
+            if self.pos > 0:
                 price = float(self.position.avg_price) + self.grid_step
                 price = max(price, self.tick.ask_price_1 * (1 + 0.0001))
 
-                vts = self.sell(Decimal(price), abs(self.pos))
+                vts = self.short(Decimal(price), abs(self.pos))
                 self.profit_orders.extend(vts)
                 print(f"多头重新下止盈单子: {vts}@{price}")
 
-            elif self.pos < 0 and len(self.profit_orders) == 0:
+            elif self.pos < 0:
 
                 price = float(self.position.avg_price) - self.grid_step
                 price = min(price, self.tick.bid_price_1 * (1 - 0.0001))
 
-                vts = self.cover(Decimal(price), abs(self.pos))
+                vts = self.buy(Decimal(price), abs(self.pos))
                 self.profit_orders.extend(vts)
                 print(f"空头重新下止盈单子: {vts}@{price}")
 
@@ -144,7 +145,6 @@ class HighFrequencyStrategy(CtaTemplate):
                     step = self.get_step()
                     price = float(self.last_filled_order.price) + self.grid_step * step
                     price = max(price, self.tick.ask_price_1 * (1 + 0.0001))
-
                     ids = self.short(Decimal(price), Decimal(self.trading_size))
                     self.short_orders.extend(ids)
 
@@ -167,8 +167,8 @@ class HighFrequencyStrategy(CtaTemplate):
                 buy_price = tick.bid_price_1 - self.grid_step / 2
                 sell_price = tick.bid_price_1 + self.grid_step / 2
 
-                long_ids = self.buy(Decimal(buy_price), Decimal(self.trading_size))
-                short_ids = self.short(Decimal(sell_price), Decimal(self.trading_size))
+                long_ids = self.buy(Decimal(str(buy_price)), Decimal(str(self.trading_size)))
+                short_ids = self.short(Decimal(str(sell_price)), Decimal(str(self.trading_size)))
 
                 self.long_orders.extend(long_ids)
                 self.short_orders.extend(short_ids)
@@ -180,7 +180,7 @@ class HighFrequencyStrategy(CtaTemplate):
             if self.pos > 0:
                 long_stop_price = float(self.position.avg_price) - self.stop_multiplier * self.grid_step
                 if tick.ask_price_1 < long_stop_price:
-                    vt_ids = self.sell(Decimal(tick.ask_price_1), abs(self.pos))
+                    vt_ids = self.short(Decimal(str(tick.ask_price_1)), abs(self.pos))
                     self.stop_orders.extend(vt_ids)
                     self.trigger_stop_loss = True
                     print(f"下多头止损单: stop_price: {long_stop_price}stop@{tick.ask_price_1}")
@@ -188,7 +188,7 @@ class HighFrequencyStrategy(CtaTemplate):
             elif self.pos < 0:
                 short_stop_price = float(self.position.avg_price) + self.stop_multiplier * self.grid_step
                 if tick.bid_price_1 > short_stop_price:
-                    vt_ids = self.cover(Decimal(tick.bid_price_1), abs(self.pos))
+                    vt_ids = self.buy(Decimal(str(tick.bid_price_1)), abs(self.pos))
                     self.stop_orders.extend(vt_ids)
                     self.trigger_stop_loss = True
                     print(f"下空头止损单: stop_price: {short_stop_price}stop@{tick.bid_price_1}")
@@ -224,8 +224,11 @@ class HighFrequencyStrategy(CtaTemplate):
         """
         Callback of new order data update.
         """
-        self.position.update_position(order)
-        self.avg_price = float(self.position.avg_price)
+
+        if order.status == Status.ALLTRADED:
+            if order.vt_orderid in (self.long_orders + self.short_orders + self.stop_orders + self.profit_orders):
+                self.position.update_position(order)
+                self.avg_price = float(self.position.avg_price)
 
         if order.vt_orderid in self.long_orders:
             if order.status == Status.ALLTRADED:
