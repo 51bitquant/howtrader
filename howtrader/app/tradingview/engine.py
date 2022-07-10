@@ -344,9 +344,6 @@ class TVEngine(BaseEngine):
 
         self.write_log(f"start initializing {strategy_name}")
 
-        # Call on_init function of strategy
-        self.call_strategy_func(strategy, strategy.on_init)
-
         # Restore strategy data(variables)
         data: Optional[dict] = self.strategy_data.get(strategy_name, None)
         if data:
@@ -357,6 +354,9 @@ class TVEngine(BaseEngine):
                         setattr(strategy, name, Decimal(str(value)))
                     else:
                         setattr(strategy, name, value)
+
+        # Call on_init function of strategy
+        self.call_strategy_func(strategy, strategy.on_init)
 
         # Subscribe market data
         contract: Optional[ContractData] = self.main_engine.get_contract(strategy.vt_symbol)
