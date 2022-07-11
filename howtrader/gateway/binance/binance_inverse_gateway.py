@@ -468,6 +468,7 @@ class BinanceInverseRestApi(RestClient):
             "side": DIRECTION_VT2BINANCES[req.direction],
             "quantity": req.volume,
             "newClientOrderId": orderid,
+            "newOrderRespType":"RESULT"
         }
 
         if req.type == OrderType.MARKET:
@@ -622,11 +623,11 @@ class BinanceInverseRestApi(RestClient):
             orderid=data["clientOrderId"],
             symbol=data["symbol"],
             exchange=Exchange.BINANCE,
-            price=Decimal(data["price"]),
-            volume=Decimal(data["origQty"]),
+            price=Decimal(str(data["price"])),
+            volume=Decimal(str(data["origQty"])),
+            traded=Decimal(str(data.get("executedQty", "0"))),
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
-            traded=Decimal(data.get("executedQty", "0")),
             status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
             datetime=generate_datetime(data.get("time", time.time()*1000)),
             gateway_name=self.gateway_name,
@@ -651,9 +652,9 @@ class BinanceInverseRestApi(RestClient):
                 exchange=Exchange.BINANCE,
                 price=Decimal(str(d["price"])),
                 volume=Decimal(str(d["origQty"])),
+                traded=Decimal(str(d.get("executedQty", "0"))),
                 type=order_type,
                 direction=DIRECTION_BINANCES2VT[d["side"]],
-                traded=Decimal(d.get("executedQty", "0")),
                 status=STATUS_BINANCES2VT.get(d["status"], Status.NOTTRADED),
                 datetime=generate_datetime(d["time"]),
                 gateway_name=self.gateway_name,
@@ -706,7 +707,7 @@ class BinanceInverseRestApi(RestClient):
         """send order callback"""
         if request.extra:
             order: OrderData = copy(request.extra)
-            order.traded = Decimal(data.get('executedQty', "0"))
+            order.traded = Decimal(str(data.get('executedQty', "0")))
             order.status = STATUS_BINANCES2VT.get(data.get('status'), Status.NOTTRADED)
             self.gateway.on_order(order)
 
@@ -740,11 +741,11 @@ class BinanceInverseRestApi(RestClient):
             orderid=data["clientOrderId"],
             symbol=data["symbol"],
             exchange=Exchange.BINANCE,
-            price=Decimal(data["price"]),
-            volume=Decimal(data["origQty"]),
+            price=Decimal(str(data["price"])),
+            volume=Decimal(str(data["origQty"])),
+            traded=Decimal(str(data.get("executedQty", "0"))),
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
-            traded=Decimal(data.get("executedQty", "0")),
             status=STATUS_BINANCES2VT.get(data["status"], Status.CANCELLED),
             datetime=generate_datetime(data.get("updateTime", time.time()*1000)),
             gateway_name=self.gateway_name,

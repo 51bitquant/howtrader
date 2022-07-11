@@ -472,6 +472,7 @@ class BinanceUsdtRestApi(RestClient):
             "side": DIRECTION_VT2BINANCES[req.direction],
             "quantity": req.volume,
             "newClientOrderId": orderid,
+            "newOrderRespType":"RESULT"
         }
 
         if req.type == OrderType.MARKET:
@@ -625,9 +626,9 @@ class BinanceUsdtRestApi(RestClient):
             orderid=data["clientOrderId"],
             symbol=data["symbol"],
             exchange=Exchange.BINANCE,
-            price=Decimal(str(data["price"]).rstrip("0")),
-            volume=Decimal(str(data["origQty"]).rstrip("0")),
-            traded=Decimal(str(data.get("executedQty", "0")).rstrip("0")),
+            price=Decimal(str(data["price"])),
+            volume=Decimal(str(data["origQty"])),
+            traded=Decimal(str(data.get("executedQty", "0"))),
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
             status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
@@ -651,9 +652,9 @@ class BinanceUsdtRestApi(RestClient):
                 orderid=d["clientOrderId"],
                 symbol=d["symbol"],
                 exchange=Exchange.BINANCE,
-                price=Decimal(str(d["price"]).rstrip("0")),
-                volume=Decimal(str(d["origQty"]).rstrip("0")),
-                traded=Decimal(str(d.get("executedQty","0")).rstrip("0")),
+                price=Decimal(str(d["price"])),
+                volume=Decimal(str(d["origQty"])),
+                traded=Decimal(str(d.get("executedQty","0"))),
                 type=order_type,
                 direction=DIRECTION_BINANCES2VT[d["side"]],
                 status=STATUS_BINANCES2VT.get(d["status"], Status.NOTTRADED),
@@ -709,7 +710,7 @@ class BinanceUsdtRestApi(RestClient):
         """send order callback"""
         if request.extra:
             order: OrderData = copy(request.extra)
-            order.traded = Decimal(str(data.get('executedQty', "0")).rstrip("0"))
+            order.traded = Decimal(str(data.get('executedQty', "0")))
             order.status = STATUS_BINANCES2VT.get(data.get('status'), Status.NOTTRADED)
             self.gateway.on_order(order)
 
@@ -739,7 +740,7 @@ class BinanceUsdtRestApi(RestClient):
         """cancel order callback"""
         if request.extra:
             order: OrderData = copy(request.extra)
-            order.traded = Decimal(str(data.get('executedQty', "0")).rstrip("0"))
+            order.traded = Decimal(str(data.get('executedQty', "0")))
             order.status = STATUS_BINANCES2VT.get(data.get('status'), Status.CANCELLED)
             self.gateway.on_order(order)
         else:
@@ -749,9 +750,9 @@ class BinanceUsdtRestApi(RestClient):
                 orderid=data.get("clientOrderId"),
                 symbol=data.get("symbol"),
                 exchange=Exchange.BINANCE,
-                price=Decimal(str(data.get("price")).rstrip("0")),
-                volume=Decimal(str(data.get("origQty")).rstrip("0")),
-                traded=Decimal(str(data.get("executedQty", "0")).rstrip("0")),
+                price=Decimal(str(data.get("price"))),
+                volume=Decimal(str(data.get("origQty"))),
+                traded=Decimal(str(data.get("executedQty", "0"))),
                 type=order_type,
                 direction=DIRECTION_BINANCES2VT.get(data.get("side")),
                 status=STATUS_BINANCES2VT.get(data.get("status"), Status.CANCELLED),
@@ -1011,9 +1012,9 @@ class BinanceUsdtTradeWebsocketApi(WebsocketClient):
             orderid=str(ord_data["c"]),
             type=order_type,
             direction=DIRECTION_BINANCES2VT[ord_data["S"]],
-            price=Decimal(str(ord_data["p"]).rstrip("0")),
-            volume=Decimal(str(ord_data["q"]).rstrip("0")),
-            traded=Decimal(str(ord_data["z"]).rstrip("0")),
+            price=Decimal(str(ord_data["p"])),
+            volume=Decimal(str(ord_data["q"])),
+            traded=Decimal(str(ord_data["z"])),
             status=STATUS_BINANCES2VT.get(ord_data["X"], Status.NOTTRADED),
             datetime=generate_datetime(packet["E"]),
             gateway_name=self.gateway_name
