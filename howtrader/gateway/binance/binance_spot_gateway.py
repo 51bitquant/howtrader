@@ -445,7 +445,7 @@ class BinanceSpotRestAPi(RestClient):
             "type": ORDERTYPE_VT2BINANCE[req.type],
             "quantity": req.volume, # format(req.volume, "f")
             "newClientOrderId": orderid,
-            "newOrderRespType": "ACK"
+            "newOrderRespType": "RESULT"
         }
 
         if req.type == OrderType.LIMIT:
@@ -556,7 +556,7 @@ class BinanceSpotRestAPi(RestClient):
             exchange=Exchange.BINANCE,
             price=Decimal(str(data["price"]).rstrip("0")),
             volume=Decimal(str(data["origQty"]).rstrip("0")),
-            traded=Decimal(str(data.get("executedQty", "0")).rstrip("0")),
+            traded=Decimal(str(data.get("executedQty", "0.0")).rstrip("0")),
             type=ORDERTYPE_BINANCE2VT.get(data["type"],OrderType.LIMIT),
             direction=DIRECTION_BINANCE2VT[data["side"]],
             status=STATUS_BINANCE2VT.get(data["status"], Status.NOTTRADED),
@@ -579,7 +579,7 @@ class BinanceSpotRestAPi(RestClient):
                 exchange=Exchange.BINANCE,
                 price=Decimal(str(d["price"]).rstrip("0")),
                 volume=Decimal(str(d["origQty"]).rstrip("0")),
-                traded=Decimal(str(d.get("executedQty", "0")).rstrip("0")),
+                traded=Decimal(str(d.get("executedQty", "0.0")).rstrip("0")),
                 type=ORDERTYPE_BINANCE2VT.get(d["type"], OrderType.LIMIT),
                 direction=DIRECTION_BINANCE2VT[d["side"]],
                 status=STATUS_BINANCE2VT.get(d["status"], Status.NOTTRADED),
@@ -635,7 +635,7 @@ class BinanceSpotRestAPi(RestClient):
         """send order callback"""
         if request.extra:
             order: OrderData = copy(request.extra)
-            order.traded = Decimal(str(data.get('executedQty', "0")).rstrip("0"))
+            order.traded = Decimal(str(data.get('executedQty', "0.0")).rstrip("0"))
             order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.NOTTRADED)
             self.gateway.on_order(order)
 
@@ -665,7 +665,7 @@ class BinanceSpotRestAPi(RestClient):
         """cancel order callback"""
         if request.extra:
             order: OrderData = copy(request.extra)
-            order.traded = Decimal(str(data.get('executedQty', "0")).rstrip("0"))
+            order.traded = Decimal(str(data.get('executedQty', "0.0")).rstrip("0"))
             order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.CANCELLED)
             self.gateway.on_order(order)
         else:
@@ -677,7 +677,7 @@ class BinanceSpotRestAPi(RestClient):
                 direction=DIRECTION_BINANCE2VT.get(data.get("side")),
                 price=Decimal(str(data.get('price')).rstrip("0")),
                 volume=Decimal(str(data.get('origQty')).rstrip("0")),
-                traded=Decimal(str(data.get('executedQty', "0")).rstrip("0")),
+                traded=Decimal(str(data.get('executedQty', "0.0")).rstrip("0")),
                 status=STATUS_BINANCE2VT.get(data.get('status'), Status.CANCELLED),
                 gateway_name=self.gateway_name
             )
