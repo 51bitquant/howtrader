@@ -6,7 +6,6 @@ from copy import copy
 from datetime import datetime, timedelta
 from enum import Enum
 from threading import Lock
-import pytz
 from typing import Any, Dict, List
 from decimal import Decimal
 import pandas as pd
@@ -555,11 +554,11 @@ class BinanceSpotRestAPi(RestClient):
             orderid=data["clientOrderId"],
             symbol=data["symbol"].lower(),
             exchange=Exchange.BINANCE,
-            price=Decimal(data["price"]),
-            volume=Decimal(data["origQty"]),
+            price=Decimal(str(data["price"]).rstrip("0")),
+            volume=Decimal(str(data["origQty"]).rstrip("0")),
+            traded=Decimal(str(data.get("executedQty", "0")).rstrip("0")),
             type=ORDERTYPE_BINANCE2VT.get(data["type"],OrderType.LIMIT),
             direction=DIRECTION_BINANCE2VT[data["side"]],
-            traded=Decimal(data.get("executedQty", "0")),
             status=STATUS_BINANCE2VT.get(data["status"], Status.NOTTRADED),
             datetime=generate_datetime(data["time"]),
             gateway_name=self.gateway_name,
@@ -578,11 +577,11 @@ class BinanceSpotRestAPi(RestClient):
                 orderid=d["clientOrderId"],
                 symbol=d["symbol"].lower(),
                 exchange=Exchange.BINANCE,
-                price=Decimal(d["price"]),
-                volume=Decimal(d["origQty"]),
+                price=Decimal(str(d["price"]).rstrip("0")),
+                volume=Decimal(str(d["origQty"]).rstrip("0")),
+                traded=Decimal(str(d.get("executedQty", "0")).rstrip("0")),
                 type=ORDERTYPE_BINANCE2VT.get(d["type"], OrderType.LIMIT),
                 direction=DIRECTION_BINANCE2VT[d["side"]],
-                traded=Decimal(d.get("executedQty", "0")),
                 status=STATUS_BINANCE2VT.get(d["status"], Status.NOTTRADED),
                 datetime=generate_datetime(d["time"]),
                 gateway_name=self.gateway_name,
@@ -636,7 +635,7 @@ class BinanceSpotRestAPi(RestClient):
         """send order callback"""
         if request.extra:
             order: OrderData = copy(request.extra)
-            order.traded = Decimal(data.get('executedQty', "0"))
+            order.traded = Decimal(str(data.get('executedQty', "0")).rstrip("0"))
             order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.NOTTRADED)
             self.gateway.on_order(order)
 
@@ -666,7 +665,7 @@ class BinanceSpotRestAPi(RestClient):
         """cancel order callback"""
         if request.extra:
             order: OrderData = copy(request.extra)
-            order.traded = Decimal(data.get('executedQty', "0"))
+            order.traded = Decimal(str(data.get('executedQty', "0")).rstrip("0"))
             order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.CANCELLED)
             self.gateway.on_order(order)
         else:
@@ -676,9 +675,9 @@ class BinanceSpotRestAPi(RestClient):
                 orderid=data.get("clientOrderId"),
                 type=ORDERTYPE_BINANCE2VT.get(data.get("type"), OrderType.LIMIT),
                 direction=DIRECTION_BINANCE2VT.get(data.get("side")),
-                price=Decimal(data.get('price')),
-                volume=Decimal(data.get('origQty')),
-                traded=Decimal(data.get('executedQty', "0")),
+                price=Decimal(str(data.get('price')).rstrip("0")),
+                volume=Decimal(str(data.get('origQty')).rstrip("0")),
+                traded=Decimal(str(data.get('executedQty', "0")).rstrip("0")),
                 status=STATUS_BINANCE2VT.get(data.get('status'), Status.CANCELLED),
                 gateway_name=self.gateway_name
             )
@@ -920,9 +919,9 @@ class BinanceSpotTradeWebsocketApi(WebsocketClient):
             orderid=orderid,
             type=ORDERTYPE_BINANCE2VT.get(packet["o"], OrderType.LIMIT),
             direction=DIRECTION_BINANCE2VT[packet["S"]],
-            price=Decimal(str(packet["p"])),
-            volume=Decimal(str(packet["q"])),
-            traded=Decimal(str(packet["z"])),
+            price=Decimal(str(packet["p"]).rstrip("0")),
+            volume=Decimal(str(packet["q"]).rstrip("0")),
+            traded=Decimal(str(packet["z"]).rstrip("0")),
             status=STATUS_BINANCE2VT.get(packet["X"], Status.NOTTRADED),
             datetime=generate_datetime(packet["O"]),
             gateway_name=self.gateway_name
