@@ -8,8 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict, Tuple, Union, Optional
-from decimal import Decimal, ROUND_DOWN
-from math import floor, ceil
+from decimal import Decimal, ROUND_DOWN, ROUND_UP
 
 import numpy as np
 import talib
@@ -115,44 +114,33 @@ def save_json(filename: str, data: dict) -> None:
         )
 
 
-def round_to(value: Decimal, target: Decimal) -> Decimal:
+def round_to(value: Union[Decimal, float, int], target: Union[Decimal, float, int]) -> Decimal:
     """
     Round price to price tick value.
     """
-    if not isinstance(value, Decimal):
-        value = Decimal(str(value))
-    if not isinstance(target, Decimal):
-        target = Decimal(str(target))
-
+    value = Decimal(str(value))
+    target = Decimal(str(target).rstrip("0"))
     rounded = value.quantize(target)
     return rounded
 
-def floor_to(value: Decimal, target: Decimal) -> Decimal:
+def floor_to(value: Union[Decimal, float, int], target: Union[Decimal, float, int]) -> Decimal:
     """
     Similar to math.floor function, but to target float number.
     """
-    # value = Decimal(str(value))
-    # target = Decimal(str(target))
-    if not isinstance(value, Decimal):
-        value = Decimal(str(value))
-    if not isinstance(target, Decimal):
-        target = Decimal(str(target))
+    value = Decimal(str(value))
+    target = Decimal(str(target).rstrip("0"))
     result = value.quantize(target, rounding=ROUND_DOWN)
 
     return result
 
 
-def ceil_to(value: float, target: float) -> float:
+def ceil_to(value: Union[Decimal, float, int], target: Union[Decimal, float, int]) -> Decimal:
     """
     Similar to math.ceil function, but to target float number.
     """
-    if target >= 1:
-        target = int(target)
-
     value = Decimal(str(value))
-    target = Decimal(str(target))
-    result = float(int(ceil(value / target)) * target)
-    return result
+    target = Decimal(str(target).rstrip("0"))
+    return value.quantize(target, rounding=ROUND_UP)
 
 
 def get_digits(value: float) -> int:
