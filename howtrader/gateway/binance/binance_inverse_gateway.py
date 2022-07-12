@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from threading import Lock
 from typing import Any, Dict, List, Tuple
-import pytz
+import json
 from decimal import Decimal
 import pandas as pd
 import numpy as np
@@ -565,6 +565,7 @@ class BinanceInverseRestApi(RestClient):
         )
 
     def on_start_user_stream_failed(self, status_code: str, request: Request):
+        self.failed_with_timestamp(request)
         self.start_user_stream()
 
     def on_start_user_stream_error(self, exception_type: type, exception_value: Exception, tb, request: Request):
@@ -764,6 +765,7 @@ class BinanceInverseRestApi(RestClient):
 
     def on_send_order_failed(self, status_code: str, request: Request) -> None:
         """send order failed callback"""
+        self.failed_with_timestamp(request)
         if request.extra:
             order: OrderData = copy(request.extra)
             order.status = Status.REJECTED
@@ -807,6 +809,7 @@ class BinanceInverseRestApi(RestClient):
 
     def on_cancel_order_failed(self, status_code: str, request: Request) -> None:
         """cancel order failed callback"""
+        self.failed_with_timestamp(request)
         orderid = ""
         if request.extra:
             order: OrderData = request.extra
@@ -833,6 +836,7 @@ class BinanceInverseRestApi(RestClient):
         self.keep_alive_failed_count = 0
 
     def on_keep_user_stream_failed(self, status_code: str, request: Request):
+        self.failed_with_timestamp(request)
         self.keep_alive_failed_count += 1
         if self.keep_alive_failed_count <= 5:
             self.keep_alive_count = 1200000
@@ -976,6 +980,17 @@ class BinanceInverseRestApi(RestClient):
 
         history = list(reversed(history))
         return history
+
+    def failed_with_timestamp(self, request: Request):
+        # request.response.text
+        # -1021 INVALID_TIMESTAMP
+        try:
+            if request and request.response and request.response.text:
+                resp = json.loads(request.response.text)
+                if resp.get('code') == -1021:
+                    self.query_time()
+        except Exception:
+            pass
 
 
 class BinanceInverseTradeWebsocketApi(WebsocketClient):
