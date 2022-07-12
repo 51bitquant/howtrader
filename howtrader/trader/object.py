@@ -191,8 +191,8 @@ class PositionData(BaseData):
     volume: float = 0
     frozen: float = 0
     price: float = 0
-    # liquidation_price: float = 0
-    # leverage: int = 1
+    liquidation_price: float = 0
+    leverage: int = 1
     pnl: float = 0
     yd_volume: float = 0
 

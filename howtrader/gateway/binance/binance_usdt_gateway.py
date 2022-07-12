@@ -144,6 +144,7 @@ class BinanceUsdtGateway(BaseGateway):
         self.rest_api: "BinanceUsdtRestApi" = BinanceUsdtRestApi(self)
 
         self.orders: Dict[str, OrderData] = {}
+        self.positions:Dict[str, PositionData] = {}
         self.get_server_time_interval: int = 0
 
     def connect(self, setting: dict) -> None:
@@ -251,6 +252,12 @@ class BinanceUsdtGateway(BaseGateway):
         """get order by order id"""
         return self.orders.get(orderid, None)
 
+    def on_position(self, position: PositionData) -> None:
+        self.positions[position.symbol] = position
+        super().on_position(position)
+
+    def get_position(self, symbol: str):
+        return self.positions.get(symbol, None)
 
 class BinanceUsdtRestApi(RestClient):
     """Binance USDT/BUSD future rest api"""
@@ -601,6 +608,8 @@ class BinanceUsdtRestApi(RestClient):
                 direction=Direction.NET,
                 volume=float(d["positionAmt"]),
                 price=float(d["entryPrice"]),
+                liquidation_price=float(d['liquidationPrice']),
+                leverage=int(d['leverage']),
                 pnl=float(d["unRealizedProfit"]),
                 gateway_name=self.gateway_name,
             )
@@ -988,15 +997,23 @@ class BinanceUsdtTradeWebsocketApi(WebsocketClient):
                 else:
                     volume = int(volume)
 
-                position: PositionData = PositionData(
+                symbol: str = pos_data.get('s')
+                position = self.gateway.get_position(symbol)
+                if position:
+                    position = copy(position)
+                    position.price = float(pos_data["ep"])
+                    position.volume = volume
+                    position.pnl = float(pos_data["up"])
+
+                else:
+                    position: PositionData = PositionData(
                     symbol=pos_data["s"],
                     exchange=Exchange.BINANCE,
                     direction=Direction.NET,
                     volume=volume,
                     price=float(pos_data["ep"]),
                     pnl=float(pos_data["up"]),
-                    gateway_name=self.gateway_name,
-                )
+                    gateway_name=self.gateway_name)
 
                 self.gateway.on_position(position)
 

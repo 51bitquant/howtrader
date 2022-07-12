@@ -141,6 +141,7 @@ class BinanceInverseGateway(BaseGateway):
         self.rest_api: "BinanceInverseRestApi" = BinanceInverseRestApi(self)
 
         self.orders: Dict[str, OrderData] = {}
+        self.positions: Dict[str, PositionData] = {}
         self.get_server_time_interval: int = 0
 
     def connect(self, setting: dict) -> None:
@@ -247,6 +248,13 @@ class BinanceInverseGateway(BaseGateway):
     def get_order(self, orderid: str) -> OrderData:
         """get order by order id"""
         return self.orders.get(orderid, None)
+
+    def on_position(self, position: PositionData) -> None:
+        self.positions[position.symbol] = position
+        super().on_position(position)
+
+    def get_position(self, symbol: str):
+        return self.positions.get(symbol, None)
 
 
 class BinanceInverseRestApi(RestClient):
@@ -599,6 +607,8 @@ class BinanceInverseRestApi(RestClient):
                 direction=Direction.NET,
                 volume=float(d["positionAmt"]),
                 price=float(d["entryPrice"]),
+                liquidation_price=float(d['liquidationPrice']),
+                leverage=int(d['leverage']),
                 pnl=float(d["unRealizedProfit"]),
                 gateway_name=self.gateway_name,
             )
@@ -975,15 +985,23 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
                 else:
                     volume = int(volume)
 
-                position: PositionData = PositionData(
-                    symbol=pos_data["s"],
-                    exchange=Exchange.BINANCE,
-                    direction=Direction.NET,
-                    volume=volume,
-                    price=float(pos_data["ep"]),
-                    pnl=float(pos_data["up"]),
-                    gateway_name=self.gateway_name,
-                )
+                symbol = pos_data["s"]
+                position = self.gateway.get_position(symbol)
+                if position:
+                    position = copy(position)
+                    position.price = float(pos_data["ep"])
+                    position.volume = volume
+                    position.pnl = float(pos_data["up"])
+                else:
+                    position: PositionData = PositionData(
+                        symbol=pos_data["s"],
+                        exchange=Exchange.BINANCE,
+                        direction=Direction.NET,
+                        volume=volume,
+                        price=float(pos_data["ep"]),
+                        pnl=float(pos_data["up"]),
+                        gateway_name=self.gateway_name,
+                    )
                 self.gateway.on_position(position)
 
     def on_order(self, packet: dict) -> None:
