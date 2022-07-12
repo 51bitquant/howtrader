@@ -15,6 +15,7 @@ from howtrader.event import Event, EventEngine
 from howtrader.trader.engine import BaseEngine, MainEngine
 from howtrader.trader.object import (
     OrderRequest,
+    OrderQueryRequest,
     SubscribeRequest,
     CancelRequest,
     LogData,
@@ -246,6 +247,12 @@ class TVEngine(BaseEngine):
 
         req: CancelRequest = order.create_cancel_request()
         self.main_engine.cancel_order(req, order.gateway_name)
+
+    def query_order(self, vt_orderid: str) -> None:
+        order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
+        if order:
+            req: OrderQueryRequest = order.create_query_request()
+            self.main_engine.query_order(req, order.gateway_name)
 
     def cancel_all(self, strategy: TVTemplate) -> None:
         """

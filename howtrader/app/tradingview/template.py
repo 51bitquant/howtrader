@@ -224,6 +224,9 @@ class TVTemplate(ABC):
         if self.trading:
             self.tv_engine.cancel_order(self, vt_orderid)
 
+    def query_order(self, vt_orderid: str) -> None:
+        self.tv_engine.query_order(vt_orderid)
+
     def cancel_all(self) -> None:
         """
         Cancel all orders sent by strategy.

@@ -17,6 +17,7 @@ from howtrader.event import Event, EventEngine
 from howtrader.trader.engine import BaseEngine, MainEngine
 from howtrader.trader.object import (
     OrderRequest,
+    OrderQueryRequest,
     SubscribeRequest,
     HistoryRequest,
     CancelRequest,
@@ -525,6 +526,12 @@ class CtaEngine(BaseEngine):
             return contract.pricetick
         else:
             return None
+
+    def query_order(self, vt_orderid: str) -> None:
+        order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
+        if order:
+            req: OrderQueryRequest = order.create_query_request()
+            self.main_engine.query_order(req, order.gateway_name)
 
     def load_bar(
         self,
