@@ -266,6 +266,23 @@ class ContractData(BaseData):
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
 
 @dataclass
+class PremiumRateData(BaseData):
+    """
+    PremiumRate
+    """
+    symbol:str
+    exchange: Exchange
+    last_funding_rate: Decimal = Decimal("0")
+    interest_rate: Decimal = Decimal("0")
+    next_funding_time: datetime
+    updated_datetime: datetime
+
+    def __post_init__(self):
+        """"""
+        self.vt_symbol = f"{self.symbol}.{self.exchange.value}"
+
+
+@dataclass
 class OriginalKlineData(BaseData):
     """
     exchange kline data

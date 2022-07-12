@@ -16,3 +16,5 @@ EVENT_LOG = "eLog"
 EVENT_TV_SIGNAL = 'eTVSignal'
 EVENT_TV_LOG = 'eTVLog'
 EVENT_TV_STRATEGY = "eTVStrategy"
+EVENT_PREMIUM_RATE = 'ePremiumRate'
+

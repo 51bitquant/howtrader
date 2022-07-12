@@ -39,7 +39,8 @@ from howtrader.trader.object import (
     CancelRequest,
     SubscribeRequest,
     HistoryRequest,
-    OriginalKlineData
+    OriginalKlineData,
+    PremiumRateData
 )
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event, EventEngine
@@ -191,6 +192,10 @@ class BinanceInverseGateway(BaseGateway):
     def query_position(self) -> None:
         """query position"""
         self.rest_api.query_position()
+
+    def query_premium_rate(self) -> None:
+        """query premium rate/index"""
+        self.rest_api.query_premium_rate()
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
         """query historical kline data"""
@@ -446,6 +451,21 @@ class BinanceInverseRestApi(RestClient):
             method="GET",
             path=path,
             callback=self.on_query_contract,
+            data=data
+        )
+
+    def query_premium_rate(self) -> None:
+        """query premium rate/index"""
+        data = {
+            "security": Security.NONE
+        }
+
+        path = "/dapi/v1/premiumIndex"
+
+        self.add_request(
+            method="GET",
+            path=path,
+            callback=self.on_query_premium_rate,
             data=data
         )
 
@@ -712,6 +732,27 @@ class BinanceInverseRestApi(RestClient):
             symbol_contract_map[contract.symbol] = contract
 
         self.gateway.write_log("query contract successfully")
+
+    def on_query_premium_rate(self, data: list, request: Request) -> None:
+        for d in data:
+            if int(d['nextFundingTime']) == 0:
+                continue
+
+            next_funding_datetime = generate_datetime(d['nextFundingTime'])
+            updated_datetime = generate_datetime(d['time'])
+
+            premium_rate = PremiumRateData(
+                symbol=d['symbol'],
+                exchange=Exchange.BINANCE,
+                last_funding_rate=Decimal(d['lastFundingRate']),
+                interest_rate=Decimal(d['interestRate']),
+                next_funding_datetime=next_funding_datetime,
+                updated_datetime=updated_datetime,
+                gateway_name=self.gateway_name
+            )
+
+            self.gateway.on_premium_rate(premium_rate)
+
 
     def on_send_order(self, data: dict, request: Request) -> None:
         """send order callback"""
