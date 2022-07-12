@@ -125,6 +125,7 @@ class OrderData(BaseData):
     datetime: datetime = datetime.now()
     update_time: datetime = datetime.now()
     reference: str = ""
+    rejected_reason: str = ""  # Order Rejected Reason
 
     def __post_init__(self) -> None:
         """"""

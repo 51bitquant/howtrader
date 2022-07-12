@@ -644,6 +644,7 @@ class BinanceSpotRestAPi(RestClient):
         if request.extra:
             order: OrderData = copy(request.extra)
             order.status = Status.REJECTED
+            order.rejected_reason = request.response.text if request.response.text else ""
             self.gateway.on_order(order)
 
             msg: str = f"send order failed, orderid: {order.orderid}, status code：{status_code}, msg：{request.response.text}"
@@ -656,6 +657,7 @@ class BinanceSpotRestAPi(RestClient):
         if request.extra:
             order: OrderData = copy(request.extra)
             order.status = Status.REJECTED
+            order.rejected_reason = "on_send_order_error"
             self.gateway.on_order(order)
 
         if not issubclass(exception_type, (ConnectionError, SSLError)):
