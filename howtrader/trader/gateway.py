@@ -275,20 +275,18 @@ class BaseGateway(ABC):
         """
         pass
 
-    @abstractmethod
     def query_latest_kline(self, req: HistoryRequest) -> None:
         """
         Query account balance.
         """
         pass
 
-    @abstractmethod
     def query_position(self) -> None:
         """
         Query holding positions.
         """
         pass
-    @abstractmethod
+
     def query_premium_rate(self) -> None:
         """query premium rate/index of the perpetual product"""
         pass

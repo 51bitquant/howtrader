@@ -272,10 +272,10 @@ class PremiumRateData(BaseData):
     """
     symbol:str
     exchange: Exchange
-    last_funding_rate: Decimal = Decimal("0")
-    interest_rate: Decimal = Decimal("0")
     next_funding_time: datetime
     updated_datetime: datetime
+    last_funding_rate: Decimal = Decimal("0")
+    interest_rate: Decimal = Decimal("0")
 
     def __post_init__(self):
         """"""
