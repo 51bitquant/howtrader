@@ -117,6 +117,8 @@ class SimpleTVStrategy(TVTemplate):
         """
         the signal contains
         """
+        self.write_log(f"received signal: {signal}")
+
         action = signal.get('action', None)
         if action is None:
             self.write_log("the signal dict doesn't contain action key: long/short/exit")
@@ -161,8 +163,6 @@ class SimpleTVStrategy(TVTemplate):
         else:
             pass
             # extend your signal here.
-
-        self.write_log(f"received signal: {signal}")
 
     def on_order(self, order: OrderData) -> None:
         """

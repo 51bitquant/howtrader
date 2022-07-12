@@ -85,6 +85,8 @@ class BestLimitTVStrategy(TVTemplate):
         """
         the signal contains
         """
+        self.write_log(f"received signal: {signal}")
+
         action = signal.get('action', None)
         if action is None:
             self.write_log("the signal doesn't contain action: long/short/exit")
@@ -128,8 +130,6 @@ class BestLimitTVStrategy(TVTemplate):
         else:
             pass
             # extend your signal here.
-
-        self.write_log(f"received signal: {signal}")
 
     def on_order(self, order: OrderData) -> None:
         """
