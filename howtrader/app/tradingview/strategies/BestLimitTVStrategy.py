@@ -20,7 +20,7 @@ class BestLimitTVStrategy(TVTemplate):
 
     # the order volume you want to trade, if you trade BTCUSDT, the volume is BTC amount, if you set zero, will use from TV or other signal.
     # 订单的数量，如果你是交易BTCUSDT, 这个数量是BTC的数量, 如果设置为零，那么交易使用会使用来自tradingview或则其他第三方的信号
-    order_volume: float = 0
+    order_volume: float = 0.0
 
     # place max order volume per order 单次最大的下单数量.
     min_volume_per_order: float = 0.0

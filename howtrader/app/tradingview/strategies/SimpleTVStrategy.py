@@ -13,7 +13,7 @@ class SimpleTVStrategy(TVTemplate):
 
     # the order volume you want to trade, if you trade BTCUSDT, the volume is BTC amount, if you set zero, will use from TV or other signal.
     # 订单的数量，如果你是交易BTCUSDT, 这个数量是BTC的数量, 如果设置为零，那么交易使用会使用来自tradingview或则其他第三方的信号
-    order_volume: float = 0
+    order_volume: float = 0.0
 
     # the price slippage for taker order, 0.5 means 0.5%
     max_slippage_percent: float = 0.5  # 0.5%

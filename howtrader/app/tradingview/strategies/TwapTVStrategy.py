@@ -17,7 +17,7 @@ class TwapTVStrategy(TVTemplate):
 
     # the order volume you want to trade, if you trade BTCUSDT, the volume is BTC amount, if you set zero, will use from TV or other signal.
     # 订单的数量，如果你是交易BTCUSDT, 这个数量是BTC的数量, 如果设置为零，那么交易使用会使用来自tradingview或则其他第三方的信号
-    order_volume: float = 0  # the total order you want to trade
+    order_volume: float = 0.0  # the total order you want to trade
     interval: int = 5  # place order recycle.
     total_order_time: int = 30 # total time for placing order in seconds.
 
