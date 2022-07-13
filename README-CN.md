@@ -124,8 +124,19 @@ Numpy等科学计算的库，为了方便安装，这里建议使用Anaconda进�
 
 但是我们直接推荐你用pip来安装，这样它能帮你把各种依赖处理好，减少错误的发生。
 
+## 卸载howtrader
+如果你发现代码更新不了或者其他问题，可以先卸载再安装, 命令如下：
+> pip uninstall howtrader
 
-## window talib安装过程
+## 查看版本
+```
+import howtrader
+
+print(howtrader.__version__)
+
+```
+
+## window TA-Lib安装过程
 
 如果提示你安装不了howtrader，那么大概率是因为ta-lib安装不成功， ta-lib具体安装过程如下：
 
@@ -140,6 +151,26 @@ Numpy等科学计算的库，为了方便安装，这里建议使用Anaconda进�
    mytrader来激活你的python解析器，同时命令行要切换到下载Ta-Lib的文件目录，不然提示你找不到要安装的TA_Lib文件，最后通过命令行来安装：
    
 > pip install TA_Lib‑0.4.24‑cp39‑cp39‑win_amd64.whl
+
+## macOS 安装TA-Lib
+1. 安装Xcode
+2. 安装brew, 文档地址https://docs.brew.sh/Installation
+
+3. 执行安装命令
+> brew install ta-lib
+
+4. 安装ta-lib的python库
+> pip install TA-Lib
+
+
+## 安装howtrader问题
+1. ssl错误，
+   可以参考该文档：[https://wenku.baidu.com/view/e6ad1208b7daa58da0116c175f0e7cd1842518e4.html](https://wenku.baidu.com/view/e6ad1208b7daa58da0116c175f0e7cd1842518e4.html)
+
+2. 安装完成后，提示没有找到QT，如提示***this application failed to start
+   because no QT platform plugin could be initialized***,
+   具体可以参考下面的博客: [https://www.freesion.com/article/8447805324/](https://www.freesion.com/article/8447805324/)
+   
 
 ## 使用
 
