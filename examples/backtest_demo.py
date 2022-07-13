@@ -2,6 +2,7 @@ from howtrader.app.cta_strategy.backtesting import BacktestingEngine, Optimizati
 from howtrader.trader.object import Interval
 from datetime import datetime
 from strategies.atr_rsi_strategy import AtrRsiStrategy  # 要导入你回测的策略，你自己开发的。
+from strategies.atr_rsi_15min_strategy import AtrRsi15MinStrategy
 
 engine = BacktestingEngine()
 engine.set_parameters(
@@ -16,8 +17,8 @@ engine.set_parameters(
     capital=1000000,
 )
 
-engine.add_strategy(AtrRsiStrategy, {})
-
+# engine.add_strategy(AtrRsiStrategy, {})
+engine.add_strategy(AtrRsi15MinStrategy, {})
 
 engine.load_data()
 engine.run_backtesting()
