@@ -576,6 +576,10 @@ print(result) # 打印回测的结果，结果中会有比较好的结果值。
 
 更多部分可以参考https://github.com/51bitquant/howtrader/tree/main/examples中的examples代码。
 
+## 文档
+
+其他教程可以参考[文档](./docs/howtrader文档说明.md)
+
 ## learning materials 学习资料
 
 学习资料请参考网易云课堂[《VNPY数字货币量化交易从零到实盘》](https://study.163.com/course/courseMain.htm?courseId=1210904816)
