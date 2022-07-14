@@ -1,5 +1,9 @@
 # linux系统下如何安装anaconda
 
+
+linux系统的如何部署和安装anaconda可以参考我的博客文章：[https://www.jianshu.com/p/50fc54ca5ead](https://www.jianshu.com/p/50fc54ca5ead)
+里面有讲解如何在linux下安装anaconda。
+
 linux下安装也很简单，anaconda的下载地址可以在下面网址找到:
 
 > https://repo.anaconda.com/archive/

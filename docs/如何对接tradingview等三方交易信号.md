@@ -128,7 +128,7 @@ server {
 **Window服务器推荐**：[https://www.ucloud.cn/site/active/kuaijie.html?invitation_code=C1x2EA81CD79B8C#dongjing](https://www.ucloud.cn/site/active/kuaijie.html?invitation_code=C1x2EA81CD79B8C#dongjing)
 
 
-linux系统的使用可以参考我的博客文章：[https://www.jianshu.com/p/50fc54ca5ead](https://www.jianshu.com/p/50fc54ca5ead)
+linux系统的如何部署和安装anaconda可以参考我的博客文章：[https://www.jianshu.com/p/50fc54ca5ead](https://www.jianshu.com/p/50fc54ca5ead)
 里面有讲解如何在linux下安装anaconda。
 
 使用前，更新下linux的一些库和依赖
