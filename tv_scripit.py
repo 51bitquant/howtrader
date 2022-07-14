@@ -6,7 +6,7 @@ from howtrader.trader.setting import SETTINGS
 from howtrader.trader.engine import MainEngine, LogEngine
 
 from howtrader.gateway.binance import BinanceSpotGateway, BinanceUsdtGateway
-from howtrader.app.cta_strategy import CtaStrategyApp, CtaEngine
+# from howtrader.app.cta_strategy import CtaStrategyApp, CtaEngine
 from howtrader.app.cta_strategy.base import EVENT_CTA_LOG
 from howtrader.event import Event
 from howtrader.trader.event import EVENT_TV_SIGNAL
@@ -67,7 +67,7 @@ def run():
     event_engine = EventEngine()
     main_engine: MainEngine = MainEngine(event_engine)
     main_engine.add_gateway(BinanceUsdtGateway)
-    cta_engine: CtaEngine = main_engine.add_app(CtaStrategyApp)
+    # cta_engine: CtaEngine = main_engine.add_app(CtaStrategyApp)
     tv_engine: TVEngine = main_engine.add_app(TradingViewApp)
     main_engine.write_log("setup main engine")
 

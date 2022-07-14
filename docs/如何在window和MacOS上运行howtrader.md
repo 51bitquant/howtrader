@@ -112,6 +112,7 @@ if __name__ == "__main__":
 
 在运行前，记得设置该python项目的解析器为刚才创建的mytrader。然后运行main.py文件。
 
+## 
 
 ## contact
 

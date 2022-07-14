@@ -170,7 +170,15 @@ print(howtrader.__version__)
 2. 安装完成后，提示没有找到QT，如提示***this application failed to start
    because no QT platform plugin could be initialized***,
    具体可以参考下面的博客: [https://www.freesion.com/article/8447805324/](https://www.freesion.com/article/8447805324/)
-   
+
+3. 如果安装talib有问题，可以通过以下方式处理：
+> brew uninstall ta-lib
+
+> pip uninstall ta-lib
+
+> conda install -y -c conda-forge ta-lib
+
+具体参考改ta-lib的issue: [https://github.com/mrjbq7/ta-lib/issues/381](https://github.com/mrjbq7/ta-lib/issues/381)
 
 ## 使用
 
