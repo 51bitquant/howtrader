@@ -123,6 +123,66 @@ server {
 
 修改nginx.conf后需要重启nginx 或者重新加载，你的配置才会生效， 最后运行main.py。
 
+## linux 系统下安装nginx
+
+**Window服务器推荐**：[https://www.ucloud.cn/site/active/kuaijie.html?invitation_code=C1x2EA81CD79B8C#dongjing](https://www.ucloud.cn/site/active/kuaijie.html?invitation_code=C1x2EA81CD79B8C#dongjing)
+
+
+linux系统的使用可以参考我的博客文章：[https://www.jianshu.com/p/50fc54ca5ead](https://www.jianshu.com/p/50fc54ca5ead)
+里面有讲解如何在linux下安装anaconda。
+
+使用前，更新下linux的一些库和依赖
+
+> sudo apt-get update
+
+> sudo apt-get upgrade
+
+> sudo apt-get install build-essential libssl-dev libffi-dev python3-dev
+
+执行命令安装nginx:
+> sudo apt-get install nginx
+
+
+nginx进程管理工具:
+
+> sudo serice nginx start # 启动服务器
+  
+> sudo service nginx stop # 停止服务
+
+> sudo service nginx restart # 重启服务
+
+> sudo service nginx reload # 重载
+
+> sudo service disable nginx # 默认情况下，Nginx配置为在服务器引导时自动启动。如果这不是您想要的，可以使用这条命令来禁用此行为
+
+> sudo service enable nginx # 要重新启用服务以在启动时启动
+
+> ps -ef|grep nginx # 查看进程号 
+
+> kill -QUIT 927 # 杀掉进程927进程
+
+
+接下来修改nginx配置文件, 配置文件的路径为：/etc/nginx/nginx.conf，
+在该文件添加上下面的配置：
+
+```
+server {
+        listen 80;
+        server_name your_ip or your.domain.com; 
+        charset utf-8;
+
+        location / {
+          proxy_pass http://localhost:9999;
+        }
+
+    }
+
+```
+
+server_name
+为填写你的ip地址或者你的域名，如果填写域名的话，需要解析你的域名到你服务器的ip地址。
+
+
 ### 创建webhook信号提醒
 
  创建webhook提醒的时候，勾选Webhook Url 选项,

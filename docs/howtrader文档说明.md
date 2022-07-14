@@ -11,3 +11,5 @@
 4. [策略重启时如何获取策略保存中的数据](./策略重启时如何获取策略保存中的数据.md)
 
 5. [如何对接tradingview等三方交易信号](./如何对接tradingview等三方交易信号.md)
+
+6. [linux下如何安装anaconda](./linux下安装anaconda.md)
