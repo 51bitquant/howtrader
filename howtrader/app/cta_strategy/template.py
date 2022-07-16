@@ -1,9 +1,9 @@
 from abc import ABC
 from copy import copy
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 from howtrader.trader.constant import Interval, Direction, Offset
-from howtrader.trader.object import BarData, TickData, OrderData, TradeData
+from howtrader.trader.object import BarData, TickData, OrderData, TradeData, PositionData
 from howtrader.trader.utility import virtual
 
 from .base import StopOrder, EngineType
@@ -287,6 +287,12 @@ class CtaTemplate(ABC):
         Return pricetick data of trading contract.
         """
         return self.cta_engine.get_pricetick(self)
+
+    def get_position(self, vt_positionid=None) -> Optional[PositionData]:
+        """"""
+        if vt_positionid is None:
+            vt_positionid = self.vt_symbol + '.NET'
+        return self.cta_engine.get_position(vt_positionid)
 
     def load_bar(
         self,

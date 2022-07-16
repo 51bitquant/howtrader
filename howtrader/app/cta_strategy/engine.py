@@ -527,6 +527,9 @@ class CtaEngine(BaseEngine):
         else:
             return None
 
+    def get_position(self, vt_positionid) -> Optional[PositionData]:
+        return self.main_engine.get_position(vt_positionid)
+
     def query_order(self, vt_orderid: str) -> None:
         order: Optional[OrderData] = self.main_engine.get_order(vt_orderid)
         if order:
