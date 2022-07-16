@@ -214,11 +214,11 @@ class BinanceUsdtGateway(BaseGateway):
         """process the listen key update"""
         self.rest_api.keep_user_stream()
         self.get_server_time_interval += 1
-        if self.get_server_time_interval < 300: # get the server time for every five miute
-            return None
+        if self.get_server_time_interval >= 300: # get the server time for every five miute
+            self.rest_api.query_time()
+            self.rest_api.query_position()
+            self.get_server_time_interval = 0
 
-        self.rest_api.query_time()
-        self.get_server_time_interval = 0
 
     def on_order(self, order: OrderData) -> None:
         """on order update"""

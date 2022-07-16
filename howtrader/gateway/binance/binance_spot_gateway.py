@@ -199,11 +199,9 @@ class BinanceSpotGateway(BaseGateway):
         """process timer event, for updating the listen key"""
         self.rest_api.keep_user_stream()
         self.get_server_time_interval += 1
-        if self.get_server_time_interval < 300:  # get the server time for every five miute
-            return None
-
-        self.rest_api.query_time()
-        self.get_server_time_interval = 0
+        if self.get_server_time_interval >= 300:  # get the server time for every five miute
+            self.rest_api.query_time()
+            self.get_server_time_interval = 0
 
     def on_order(self, order: OrderData) -> None:
         """on order, order update"""
