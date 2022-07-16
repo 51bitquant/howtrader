@@ -13,3 +13,5 @@
 5. [如何对接tradingview等三方交易信号](./如何对接tradingview等三方交易信号.md)
 
 6. [linux下如何安装anaconda](./linux下安装anaconda.md)
+
+7. [如何订阅仓位数据](./如何订阅仓位数据.md)
