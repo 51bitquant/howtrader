@@ -1,17 +1,15 @@
-import sys
 from time import sleep
-from datetime import datetime, time
 from logging import INFO
 
 from howtrader.event import EventEngine
 from howtrader.trader.setting import SETTINGS
 from howtrader.trader.engine import MainEngine, LogEngine
 
-from howtrader.gateway.binance import BinanceSpotGateway, BinanceUsdtGateway
+from howtrader.gateway.binance import BinanceSpotGateway, BinanceUsdtGateway, BinanceInverseGateway
 from howtrader.app.cta_strategy import CtaStrategyApp, CtaEngine
 from howtrader.app.cta_strategy.base import EVENT_CTA_LOG
 from howtrader.event import Event
-from howtrader.trader.event import EVENT_TV_SIGNAL
+from howtrader.trader.event import EVENT_TV_SIGNAL, EVENT_TV_LOG
 from howtrader.app.tradingview import TradingViewApp, TVEngine
 from threading import Thread
 import json
@@ -66,23 +64,22 @@ def run():
     """
     SETTINGS["log.file"] = True
 
-    event_engine = EventEngine()
     main_engine: MainEngine = MainEngine(event_engine)
     main_engine.add_gateway(BinanceUsdtGateway)
-    cta_engine: CtaEngine = main_engine.add_app(CtaStrategyApp)
     tv_engine: TVEngine = main_engine.add_app(TradingViewApp)
     main_engine.write_log("setup main engine")
 
     log_engine: LogEngine  = main_engine.get_engine("log")
-    event_engine.register(EVENT_CTA_LOG, log_engine.process_log_event)
+    event_engine.register(EVENT_TV_LOG, log_engine.process_log_event)
     main_engine.write_log("register event listener")
 
-    main_engine.connect(usdt_gateway_setting, "BINANCE_USDT")
+    main_engine.connect(usdt_gateway_setting, "BINANCE_USDT") # BINANCE_SPOT, BINANCE_INVERSE
     main_engine.write_log("connect binance usdt gate way")
 
     sleep(10)
 
     ##  cta engine if you need.
+    # cta_engine: CtaEngine = main_engine.add_app(CtaStrategyApp)
     # cta_engine.init_engine()
     # main_engine.write_log("set up cta engine")
     #
