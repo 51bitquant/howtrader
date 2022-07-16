@@ -21,8 +21,8 @@ linux下安装也很简单，anaconda的下载地址可以在下面网址找到:
 
 > vi ~/.bashrc
 
-然后再最后一行添加:export PATH=/root/anaconda3/bin:$PATH, 有的可能是export
-PATH=/home/anaconda3/bin:$PATH, 具体要看你anaconda3安装的目录。
+conda 默认安装的目录是：home/anaconda3，然后再最后一行添加:
+PATH=/home/anaconda3/bin:$PATH, 具体的目录要看你的anaconda3安装在哪里。
 
 添加完成后，输入：
 

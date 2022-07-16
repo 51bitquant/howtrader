@@ -1,0 +1,1 @@
+nohup python -u tv_scripit.py > nohup_log.out 2>&1 &
