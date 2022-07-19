@@ -171,8 +171,9 @@ class RestClient(object):
             extra,
         )
 
-        coro: coroutine = self._process_request(request)
-        run_coroutine_threadsafe(coro, self.loop)
+        self._process_request(request)
+        # coro: coroutine = self._process_request(request)
+        # run_coroutine_threadsafe(coro, self.loop)
         return request
 
     def request(
