@@ -357,6 +357,7 @@ class BinanceInverseRestApi(RestClient):
         self.gateway.write_log("start connecting rest api")
 
         self.query_time()
+        self.query_position_side()
         self.query_account()
         self.query_position()
         self.query_orders()
@@ -387,6 +388,19 @@ class BinanceInverseRestApi(RestClient):
             method="GET",
             path=path,
             callback=self.on_query_account,
+            data=data
+        )
+
+    def query_position_side(self):
+        """query position side/mode"""
+        data: dict = {"security": Security.SIGNED}
+
+        path: str = "/dapi/v1/positionSide/dual"
+
+        self.add_request(
+            method="GET",
+            path=path,
+            callback=self.on_query_position_side,
             data=data
         )
 
@@ -617,6 +631,29 @@ class BinanceInverseRestApi(RestClient):
             self.gateway.on_account(account)
 
         self.gateway.write_log("query account successfully")
+
+    def on_query_position_side(self, data: dict, request: Request) -> None:
+        if data.get("dualSidePosition", False): # true will means dual position side
+            self.set_position_side()
+
+    def set_position_side(self) -> None:
+        data: dict = {"security": Security.SIGNED}
+
+        path: str = "/dapi/v1/positionSide/dual"
+
+        params: dict = {
+            "dualSidePosition": False
+        }
+
+        self.add_request(
+            method="POST",
+            path=path,
+            params=params,
+            callback=self.on_set_position_side,
+            data=data
+        )
+    def on_set_position_side(self, data: dict, request:Request) -> None:
+        self.gateway.write_log("set position side to one-way mode")
 
     def on_query_position(self, data: list, request: Request) -> None:
         """query position callback"""
