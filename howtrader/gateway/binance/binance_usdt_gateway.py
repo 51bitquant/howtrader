@@ -582,7 +582,7 @@ class BinanceUsdtRestApi(RestClient):
     def keep_user_stream(self) -> None:
         """extend listenKey expire time"""
         self.keep_alive_count += 1
-        if self.keep_alive_count < 1200:
+        if self.keep_alive_count < 600:
             return None
         self.keep_alive_count = 0
 
@@ -678,8 +678,6 @@ class BinanceUsdtRestApi(RestClient):
 
             self.gateway.on_position(position)
 
-        self.gateway.write_log("query position successfully")
-
     def on_query_order(self, data:dict, request: Request) -> None:
 
         key = (data["type"], data["timeInForce"])
@@ -700,8 +698,6 @@ class BinanceUsdtRestApi(RestClient):
             gateway_name=self.gateway_name,
         )
         self.gateway.on_order(order)
-
-        self.gateway.write_log("query order successfully")
 
     def on_query_orders(self, data: list, request: Request) -> None:
         """query open orders callback"""
@@ -886,7 +882,7 @@ class BinanceUsdtRestApi(RestClient):
     def on_keep_user_stream_failed(self, status_code: str, request: Request):
         self.failed_with_timestamp(request)
         self.keep_alive_failed_count += 1
-        if self.keep_alive_failed_count <= 5:
+        if self.keep_alive_failed_count <= 3:
             self.keep_alive_count = 1200000
             self.keep_user_stream()
         else:
@@ -898,7 +894,7 @@ class BinanceUsdtRestApi(RestClient):
     ) -> None:
         """put the listen key failed"""
         self.keep_alive_failed_count += 1
-        if self.keep_alive_failed_count <= 5:
+        if self.keep_alive_failed_count <= 3:
             self.keep_alive_count = 1200000
             self.keep_user_stream()
         else:
