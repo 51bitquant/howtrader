@@ -102,6 +102,10 @@ def run():
     tv_engine.start_all_strategies()
     main_engine.write_log("start all tv strategies")
 
+    t1 = Thread(target=start_tv_server)
+    t1.daemon = True
+    t1.start()
+
     while True:
         sleep(10)
 
