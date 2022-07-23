@@ -112,6 +112,7 @@ class FixedVolumeBestLimitTVStrategy(TVTemplate):
             volume = round_to(Decimal(str(v)), self.contract.min_volume)
 
         volume = abs(volume)
+        self.traded_volume = Decimal("0")
 
         if action == 'long':
             if self.pos >= self.contract.min_volume:

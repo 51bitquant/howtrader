@@ -68,7 +68,7 @@ class SimpleTVStrategy(TVTemplate):
 
         self.timer_count += 1
 
-        if self.timer_count < 10:
+        if self.timer_count < 3:
             return None
 
         self.timer_count = 0
@@ -140,13 +140,21 @@ class SimpleTVStrategy(TVTemplate):
             volume = round_to(Decimal(str(v)), self.contract.min_volume)
 
         volume = abs(volume)
+        self.traded_volume = Decimal("0")
 
         if action == 'long':
-            self.target_volume = volume
+            if self.pos < 0:
+                self.target_volume = volume + abs(self.pos)
+            else:
+                self.target_volume = volume
             self.direction = Direction.LONG
 
         elif action == 'short':
-            self.target_volume = volume
+            if self.pos > 0:
+                self.target_volume = volume + self.pos
+            else:
+                self.target_volume = volume
+
             self.direction = Direction.SHORT
 
         elif action == 'exit':

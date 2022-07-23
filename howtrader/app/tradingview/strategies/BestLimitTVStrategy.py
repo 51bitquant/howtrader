@@ -108,13 +108,20 @@ class BestLimitTVStrategy(TVTemplate):
             volume = round_to(Decimal(str(v)), self.contract.min_volume)
 
         volume = abs(volume)
+        self.traded_volume = Decimal("0")
 
         if action == 'long':
-            self.target_volume = volume
+            if self.pos < 0:
+                self.target_volume = volume + abs(self.pos)
+            else:
+                self.target_volume = volume
             self.direction = Direction.LONG
 
         elif action == 'short':
-            self.target_volume = volume
+            if self.pos > 0:
+                self.target_volume = volume + self.pos
+            else:
+                self.target_volume = volume
             self.direction = Direction.SHORT
 
         elif action == 'exit':
