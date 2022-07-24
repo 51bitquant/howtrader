@@ -15,3 +15,5 @@
 6. [linux下如何安装anaconda](./linux下安装anaconda.md)
 
 7. [如何订阅仓位数据](./如何订阅仓位数据.md)
+
+8. [howtrader项目下面的配置文件讲解](./howtrader项目下面的配置文件讲解.md)
