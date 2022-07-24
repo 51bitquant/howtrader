@@ -582,7 +582,7 @@ class BinanceUsdtRestApi(RestClient):
     def keep_user_stream(self) -> None:
         """extend listenKey expire time"""
         self.keep_alive_count += 1
-        if self.keep_alive_count < 600:
+        if self.keep_alive_count < 300:
             return None
         self.keep_alive_count = 0
 
