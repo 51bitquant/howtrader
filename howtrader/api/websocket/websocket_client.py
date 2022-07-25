@@ -69,6 +69,13 @@ class WebsocketClient:
         will call the on_connected callback when connected
         subscribe the data when call the on_connected callback
         """
+        if self._ws:
+            coro = self._ws.close()
+            run_coroutine_threadsafe(coro, self._loop)
+
+        if self._active:
+            return None
+
         self._active = True
 
         if not self._loop:
@@ -198,6 +205,7 @@ class WebsocketClient:
                 self.on_error(et, ev, tb)
                 break
 
+        self._active = False
         self.on_exit_loop()
 
     def _record_last_sent_text(self, text: str):

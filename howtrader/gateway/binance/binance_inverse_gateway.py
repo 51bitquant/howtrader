@@ -839,7 +839,7 @@ class BinanceInverseRestApi(RestClient):
         )
         self.gateway.on_order(order)
 
-    def on_cancel_order_failed(self, status_code: str, request: Request) -> None:
+    def on_cancel_order_failed(self, status_code: int, request: Request) -> None:
         """cancel order failed callback"""
         self.failed_with_timestamp(request)
         orderid = ""
@@ -867,7 +867,7 @@ class BinanceInverseRestApi(RestClient):
         """extend the listen key expire time"""
         self.keep_alive_failed_count = 0
 
-    def on_keep_user_stream_failed(self, status_code: str, request: Request):
+    def on_keep_user_stream_failed(self, status_code: int, request: Request):
         self.failed_with_timestamp(request)
         self.keep_alive_failed_count += 1
         if self.keep_alive_failed_count <= 3:

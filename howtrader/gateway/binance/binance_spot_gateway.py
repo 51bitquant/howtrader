@@ -710,7 +710,7 @@ class BinanceSpotRestAPi(RestClient):
 
         self.trade_ws_api.connect(url, self.proxy_host, self.proxy_port)
 
-    def on_start_user_stream_failed(self, status_code: str, request: Request):
+    def on_start_user_stream_failed(self, status_code: int, request: Request):
         self.failed_with_timestamp(request)
         self.start_user_stream()
 
@@ -721,7 +721,7 @@ class BinanceSpotRestAPi(RestClient):
         """extend the listen key expire time"""
         self.keep_alive_failed_count = 0
 
-    def on_keep_user_stream_failed(self, status_code: str, request: Request):
+    def on_keep_user_stream_failed(self, status_code: int, request: Request):
         self.failed_with_timestamp(request)
         self.keep_alive_failed_count += 1
         if self.keep_alive_failed_count <= 3:
