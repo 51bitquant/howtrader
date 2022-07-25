@@ -1062,6 +1062,9 @@ class BinanceUsdtTradeWebsocketApi(WebsocketClient):
         elif packet['e'] == 'listenKeyExpired':
             self.gateway.rest_api.start_user_stream()
 
+    def on_exit_loop(self):
+        self.gateway.rest_api.start_user_stream()
+
     def on_account(self, packet: dict) -> None:
         """account data update"""
         for acc_data in packet["a"]["B"]:

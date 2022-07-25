@@ -141,6 +141,9 @@ class WebsocketClient:
         except Exception:
             traceback.print_exc()
 
+    def on_exit_loop(self):
+        pass
+
     def exception_detail(
         self,
         exception_type: type,
@@ -193,6 +196,9 @@ class WebsocketClient:
             except Exception:
                 et, ev, tb = sys.exc_info()
                 self.on_error(et, ev, tb)
+                break
+
+        self.on_exit_loop()
 
     def _record_last_sent_text(self, text: str):
         """record the last send text for debugging"""
