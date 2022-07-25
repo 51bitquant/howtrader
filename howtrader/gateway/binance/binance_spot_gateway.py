@@ -902,8 +902,6 @@ class BinanceSpotTradeWebsocketApi(WebsocketClient):
             self.on_account(packet)
         elif packet["e"] == "executionReport":
             self.on_order(packet)
-        elif packet['e'] == 'listenKeyExpired':
-            self.gateway.rest_api.start_user_stream()
 
     def on_exit_loop(self):
         self.gateway.rest_api.start_user_stream()
