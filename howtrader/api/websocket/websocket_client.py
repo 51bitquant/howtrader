@@ -142,7 +142,7 @@ class WebsocketClient:
             traceback.print_exc()
 
     def on_exit_loop(self):
-        pass
+        self.start()
 
     def exception_detail(
         self,
