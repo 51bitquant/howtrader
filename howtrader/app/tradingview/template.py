@@ -17,12 +17,12 @@ class TVTemplate(ABC):
     variables: list = []
 
     def __init__(
-        self,
-        tv_engine: Any,
-        strategy_name: str,
-        tv_id: str,
-        vt_symbol: str,
-        setting: dict,
+            self,
+            tv_engine: Any,
+            strategy_name: str,
+            tv_id: str,
+            vt_symbol: str,
+            setting: dict,
     ) -> None:
         """"""
         self.tv_engine: Any = tv_engine
@@ -107,6 +107,7 @@ class TVTemplate(ABC):
         Callback when strategy is started.
         """
         pass
+
     @virtual
     def on_stop(self) -> None:
         """callback when strategy is stop"""
@@ -142,9 +143,10 @@ class TVTemplate(ABC):
         """
 
     def buy(
-        self,
-        price: Decimal,
-        volume: Decimal
+            self,
+            price: Decimal,
+            volume: Decimal,
+            maker: bool = False
     ) -> list:
         """
         Send buy order to open a long position.
@@ -153,13 +155,15 @@ class TVTemplate(ABC):
             Direction.LONG,
             Offset.OPEN,
             price,
-            volume
+            volume,
+            maker=maker
         )
 
     def sell(
-        self,
-        price: Decimal,
-        volume: Decimal
+            self,
+            price: Decimal,
+            volume: Decimal,
+            maker: bool = False
     ) -> list:
         """
         Send sell order to close a long position.
@@ -168,13 +172,15 @@ class TVTemplate(ABC):
             Direction.SHORT,
             Offset.CLOSE,
             price,
-            volume
+            volume,
+            maker=maker
         )
 
     def short(
-        self,
-        price: Decimal,
-        volume: Decimal
+            self,
+            price: Decimal,
+            volume: Decimal,
+            maker: bool = False
     ) -> list:
         """
         Send short order to open as short position.
@@ -183,13 +189,15 @@ class TVTemplate(ABC):
             Direction.SHORT,
             Offset.OPEN,
             price,
-            volume
+            volume,
+            maker=maker
         )
 
     def cover(
-        self,
-        price: Decimal,
-        volume: Decimal
+            self,
+            price: Decimal,
+            volume: Decimal,
+            maker: bool = False
     ) -> list:
         """
         Send cover order to close a short position.
@@ -198,21 +206,23 @@ class TVTemplate(ABC):
             Direction.LONG,
             Offset.CLOSE,
             price,
-            volume
+            volume,
+            maker=maker
         )
 
     def send_order(
-        self,
-        direction: Direction,
-        offset: Offset,
-        price: Decimal,
-        volume: Decimal
+            self,
+            direction: Direction,
+            offset: Offset,
+            price: Decimal,
+            volume: Decimal,
+            maker: bool = False
     ) -> list:
         """
         Send a new order.
         """
         if self.trading:
-            vt_orderids: list = self.tv_engine.send_order(self, direction, offset, price, volume)
+            vt_orderids: list = self.tv_engine.send_order(self, direction, offset, price, volume, maker=maker)
             return vt_orderids
         else:
             return []

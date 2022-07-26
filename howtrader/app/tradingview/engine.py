@@ -186,7 +186,8 @@ class TVEngine(BaseEngine):
         direction: Direction,
         offset: Offset,
         price: Decimal,
-        volume: Decimal
+        volume: Decimal,
+        maker: bool = False
     ) -> list:
         """
         send order to exchange
@@ -203,12 +204,13 @@ class TVEngine(BaseEngine):
             self.write_log(f"send order failed, order volume: {volume}, required min_volume: {contract.min_volume}")
             return []
 
+        order_type = OrderType.MAKER if maker else OrderType.LIMIT
         original_req: OrderRequest = OrderRequest(
             symbol=contract.symbol,
             exchange=contract.exchange,
             direction=direction,
             offset=offset,
-            type=OrderType.LIMIT,
+            type=order_type,
             price=price,
             volume=volume,
             reference=f"{APP_NAME}_{strategy.strategy_name}"

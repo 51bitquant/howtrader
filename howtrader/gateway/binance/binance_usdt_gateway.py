@@ -31,6 +31,7 @@ from howtrader.trader.object import (
     TickData,
     OrderData,
     TradeData,
+    Offset,
     AccountData,
     OrderQueryRequest,
     ContractData,
@@ -70,9 +71,10 @@ STATUS_BINANCES2VT: Dict[str, Status] = {
 # order type map
 ORDERTYPE_VT2BINANCES: Dict[OrderType, Tuple[str, str]] = {
     OrderType.LIMIT: ("LIMIT", "GTC"),
-    OrderType.MARKET: ("MARKET", "GTC"),
+    OrderType.TAKER: ("MARKET", "GTC"),
     OrderType.FAK: ("LIMIT", "IOC"),
     OrderType.FOK: ("LIMIT", "FOK"),
+    OrderType.MAKER: ("LIMIT", "GTX")
 }
 ORDERTYPE_BINANCES2VT: Dict[Tuple[str, str], OrderType] = {v: k for k, v in ORDERTYPE_VT2BINANCES.items()}
 
@@ -514,13 +516,16 @@ class BinanceUsdtRestApi(RestClient):
             "newOrderRespType":"RESULT"
         }
 
-        if req.type == OrderType.MARKET:
+        if req.type == OrderType.TAKER:
             params["type"] = "MARKET"
         else:
             order_type, time_condition = ORDERTYPE_VT2BINANCES[req.type]
             params["type"] = order_type
             params["timeInForce"] = time_condition
             params["price"] = req.price
+
+        if req.offset == Offset.CLOSE:
+            params['reduceOnly'] = True
 
         path: str = "/fapi/v1/order"
 

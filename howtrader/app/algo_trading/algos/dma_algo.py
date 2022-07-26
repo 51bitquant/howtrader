@@ -15,7 +15,7 @@ class DmaAlgo(AlgoTemplate):
         "vt_symbol": "",
         "direction": [Direction.LONG.value, Direction.SHORT.value],
         "order_type": [
-            OrderType.MARKET.value,
+            OrderType.TAKER.value,
             OrderType.LIMIT.value,
             OrderType.STOP.value,
             OrderType.FAK.value,

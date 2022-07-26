@@ -61,7 +61,7 @@ class OrderType(Enum):
     Order type.
     """
     LIMIT = "LIMIT"
-    MARKET = "MARKET"
+    TAKER = "TAKER"
     MAKER = "MAKER"
     STOP = "STOP"
     FAK = "FAK"

@@ -334,11 +334,13 @@ class CtaEngine(BaseEngine):
         price: Decimal,
         volume: Decimal,
         lock: bool,
-        net: bool
+        net: bool,
+        maker: bool = False
     ) -> list:
         """
         Send a limit order to server.
         """
+        order_type = OrderType.MAKER if maker else OrderType.LIMIT
         return self.send_server_order(
             strategy,
             contract,
@@ -346,7 +348,7 @@ class CtaEngine(BaseEngine):
             offset,
             price,
             volume,
-            OrderType.LIMIT,
+            order_type,
             lock,
             net
         )
@@ -462,7 +464,8 @@ class CtaEngine(BaseEngine):
         volume: Decimal,
         stop: bool,
         lock: bool,
-        net: bool
+        net: bool,
+        maker: bool = False
     ) -> list:
         """
         """
@@ -490,7 +493,7 @@ class CtaEngine(BaseEngine):
                 )
         else:
             return self.send_limit_order(
-                strategy, contract, direction, offset, price, volume, lock, net
+                strategy, contract, direction, offset, price, volume, lock, net, maker
             )
 
     def cancel_order(self, strategy: CtaTemplate, vt_orderid: str) -> None:
