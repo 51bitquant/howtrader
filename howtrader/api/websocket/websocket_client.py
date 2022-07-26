@@ -69,9 +69,12 @@ class WebsocketClient:
         will call the on_connected callback when connected
         subscribe the data when call the on_connected callback
         """
-        if self._ws:
-            coro = self._ws.close()
-            run_coroutine_threadsafe(coro, self._loop)
+        try:
+            if self._ws:
+                coro = self._ws.close()
+                run_coroutine_threadsafe(coro, self._loop)
+        except Exception as error:
+            pass
 
         if self._active:
             return None

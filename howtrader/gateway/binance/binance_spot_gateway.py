@@ -63,7 +63,8 @@ STATUS_BINANCE2VT: Dict[str, Status] = {
 # order type mapping
 ORDERTYPE_VT2BINANCE: Dict[OrderType, str] = {
     OrderType.LIMIT: "LIMIT",
-    OrderType.MARKET: "MARKET"
+    OrderType.MARKET: "MARKET",
+    OrderType.MAKER: "LIMIT_MAKER",
 }
 ORDERTYPE_BINANCE2VT: Dict[str, OrderType] = {v: k for k, v in ORDERTYPE_VT2BINANCE.items()}
 
@@ -449,6 +450,8 @@ class BinanceSpotRestAPi(RestClient):
 
         if req.type == OrderType.LIMIT:
             params["timeInForce"] = "GTC"
+            params["price"] = req.price
+        elif req.type == OrderType.MAKER:
             params["price"] = req.price
 
         self.add_request(
