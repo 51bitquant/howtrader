@@ -966,7 +966,8 @@ class BacktestingEngine:
         volume: Decimal,
         stop: bool,
         lock: bool,
-        net: bool
+        net: bool,
+        maker: bool = False
     ) -> List[str]:
         """"""
         price = round_to(price, Decimal(str(self.pricetick)))
