@@ -6,8 +6,8 @@ from howtrader.event import Event, EVENT_TIMER
 from decimal import Decimal
 from howtrader.trader.utility import round_to
 
-class SimpleTVStrategy(TVTemplate):
-    """Simple TradingView Strategy"""
+class SimpleMultiTVSignalsStrategy(TVTemplate):
+    """Simple Multi TV Signals Strategy"""
 
     author: str = "51bitquant"
 
@@ -40,6 +40,7 @@ class SimpleTVStrategy(TVTemplate):
         self.timer_count = 0
 
         self.contract: Optional[ContractData] = tv_engine.main_engine.get_contract(vt_symbol)
+        self.signals = [] # store signals.
 
     def on_init(self) -> None:
         """
@@ -77,31 +78,36 @@ class SimpleTVStrategy(TVTemplate):
             self.cancel_all()
             return None
 
-        volume = self.target_volume - self.traded_volume
-        if volume < self.contract.min_volume or volume < 0:
-            self.traded_volume = Decimal("0")
-            self.target_volume = Decimal("0")
-            self.direction = None
-            return
+        if self.direction is None:
+            if len(self.signals) > 0:
+                signal = self.signals.pop(0)
+                self.resolve_signal(signal)
+        else:
+            volume = self.target_volume - self.traded_volume
+            if volume < self.contract.min_volume or volume < 0:
+                self.direction = None
+                self.traded_volume = Decimal("0")
+                self.target_volume = Decimal("0")
+                return None
 
-        if self.direction == Direction.LONG:
-            price = Decimal(tick.ask_price_1 * (1 + self.max_slippage_percent / 100))
-            price = round_to(price, self.contract.pricetick)
+            if self.direction == Direction.LONG:
+                price = Decimal(tick.ask_price_1 * (1 + self.max_slippage_percent / 100))
+                price = round_to(price, self.contract.pricetick)
 
-            orderids = self.buy(price, volume)
-            self.orders.extend(orderids)
-
-        elif self.direction == Direction.SHORT:
-            price = Decimal(tick.bid_price_1 * (1-self.max_slippage_percent/100))
-            price = round_to(price, self.contract.pricetick)
-
-            if self.contract.product == Product.FUTURES:  # for futures market
-                orderids = self.short(price, volume)
+                orderids = self.buy(price, volume)
                 self.orders.extend(orderids)
 
-            elif self.contract.product == Product.SPOT:  # for spot market
-                orderids = self.sell(price, volume)
-                self.orders.extend(orderids)
+            elif self.direction == Direction.SHORT:
+                price = Decimal(tick.bid_price_1 * (1-self.max_slippage_percent/100))
+                price = round_to(price, self.contract.pricetick)
+
+                if self.contract.product == Product.FUTURES:  # for futures market
+                    orderids = self.short(price, volume)
+                    self.orders.extend(orderids)
+
+                elif self.contract.product == Product.SPOT:  # for spot market
+                    orderids = self.sell(price, volume)
+                    self.orders.extend(orderids)
 
     def on_trade(self, trade: TradeData) -> None:
         """
@@ -121,6 +127,9 @@ class SimpleTVStrategy(TVTemplate):
         the signal contains
         """
         self.write_log(f"received signal: {signal}")
+        self.signals.append(signal)
+
+    def resolve_signal(self, signal: dict):
 
         action = signal.get('action', None)
         if action is None:

@@ -8,8 +8,8 @@ from howtrader.trader.utility import round_to
 from random import uniform
 from howtrader.trader.object import Direction
 
-class BestLimitTVStrategy(TVTemplate):
-    """Place Best Limit order for TV strategy
+class BestLimitMultiTVSignalsStrategy(TVTemplate):
+    """Place Best Limit order for TV strategy for multi signals
 
     split a large order to small order, and use best limit price to place order automatically until it filled. For more detail, read the codes below.
 
@@ -48,6 +48,8 @@ class BestLimitTVStrategy(TVTemplate):
 
         self.contract: Optional[ContractData] = tv_engine.main_engine.get_contract(vt_symbol)
 
+        self.signals = []  # store the signals.
+
     def on_init(self) -> None:
         """
         Callback when strategy is inited.
@@ -80,13 +82,13 @@ class BestLimitTVStrategy(TVTemplate):
                 self.sell_best_limit()
             elif self.order_price != self.last_tick.ask_price_1:
                 self.cancel_all()
+        else:
 
-    def on_signal(self, signal: dict) -> None:
-        """
-        the signal contains
-        """
-        self.write_log(f"received signal: {signal}")
+            if len(self.signals) > 0:
+                signal = self.signals.pop(0)
+                self.resolve_signal(signal)
 
+    def resolve_signal(self, signal: dict) -> None:
         action = signal.get('action', None)
         if action is None:
             self.write_log("the signal doesn't contain action: long/short/exit")
@@ -138,6 +140,13 @@ class BestLimitTVStrategy(TVTemplate):
             pass
             # extend your signal here.
 
+    def on_signal(self, signal: dict) -> None:
+        """
+        the signal contains
+        """
+        self.write_log(f"received signal: {signal}")
+        self.signals.append(signal)
+
     def on_order(self, order: OrderData) -> None:
         """
         Callback of new order data update.
@@ -167,9 +176,6 @@ class BestLimitTVStrategy(TVTemplate):
         order_volume = min(rand_volume, volume_left)
         order_volume = round_to(order_volume, self.contract.min_volume)
         if order_volume < self.contract.min_volume or order_volume < 0:
-            self.traded_volume = Decimal("0")
-            self.target_volume = Decimal("0")
-            self.direction = None
             return None
 
         self.order_price = self.last_tick.bid_price_1
@@ -183,9 +189,6 @@ class BestLimitTVStrategy(TVTemplate):
         order_volume = min(rand_volume, volume_left)
         order_volume = round_to(order_volume, self.contract.min_volume)
         if order_volume < self.contract.min_volume or order_volume < 0:
-            self.traded_volume = Decimal("0")
-            self.target_volume = Decimal("0")
-            self.direction = None
             return None
 
         self.order_price = self.last_tick.ask_price_1
