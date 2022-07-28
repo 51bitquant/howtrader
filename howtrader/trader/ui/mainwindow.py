@@ -10,7 +10,7 @@ from typing import Callable, Dict, List, Tuple
 
 import howtrader
 from howtrader.event import EventEngine
-
+from decimal import Decimal
 from .qt import QtCore, QtGui, QtWidgets
 from .widget import (
     TickMonitor,
@@ -27,7 +27,9 @@ from .widget import (
     GlobalDialog
 )
 from ..engine import MainEngine, BaseApp
-from ..utility import get_icon_path, TRADER_DIR
+from ..utility import get_icon_path, TRADER_DIR, round_to, floor_to, extract_vt_symbol
+from ..setting import QUICK_TRADER_SETTINGS
+from howtrader.trader.object import ContractData, OrderRequest, Direction, OrderType, Offset, TickData, PositionData, Product
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -320,3 +322,117 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         dialog: GlobalDialog = GlobalDialog()
         dialog.exec_()
+
+    def keyReleaseEvent(self, key_event: QtGui.QKeyEvent):
+        if isinstance(self.trading_widget, TradingWidget):
+            vt_symbol: str = self.trading_widget.vt_symbol
+            if not vt_symbol:
+                return None
+        else:
+            return None
+
+        if key_event.key() == QtCore.Qt.Key_Z:
+            # Z key.
+            order_list = self.main_engine.get_all_active_orders()
+            for order in order_list:
+                req = order.create_cancel_request()
+                self.main_engine.cancel_order(req, order.gateway_name)
+
+            self.main_engine.write_log("Press Z key: cancel all orders")
+            return None
+
+        keys = {QtCore.Qt.Key_0: "0",
+                QtCore.Qt.Key_1: "1",
+                QtCore.Qt.Key_2: "2",
+                QtCore.Qt.Key_3: "3",
+                QtCore.Qt.Key_4: "4",
+                QtCore.Qt.Key_5: "5",
+                QtCore.Qt.Key_6: "6",
+                QtCore.Qt.Key_7: "7",
+                QtCore.Qt.Key_8: "8",
+                QtCore.Qt.Key_9: "9"
+                }
+
+        key = keys.get(key_event.key(), None)
+        if not key:
+            return None
+
+        options = QUICK_TRADER_SETTINGS.get(key, None)
+
+        if options:
+            direction = options.get('direction')
+            price = options.get('price')
+            over_price_value = float(options.get('over_price_value'))
+            over_price_option = options.get('over_price_option')
+            volume_option = options.get('volume_option')
+            volume = options.get('volume')
+            add_minus = options.get('add_minus')
+
+            contract: ContractData = self.main_engine.get_contract(vt_symbol)
+
+            if not contract:
+                return
+
+            if direction == "buy":
+                direction = Direction.LONG
+            else:
+                direction = Direction.SHORT
+
+            order_type = OrderType.LIMIT
+            offset = Offset.OPEN
+
+            tick: TickData = self.main_engine.get_tick(vt_symbol)
+            tick_price = getattr(tick, price)
+            if tick_price <= 0 or not tick_price:
+                self.main_engine.write_log("Tick price is incorrect.")
+                return None
+
+            if over_price_option == "min_price":
+                if add_minus == '+':
+                    order_price = tick_price + float(over_price_value) * float(contract.pricetick)
+                else:
+                    order_price = tick_price - float(over_price_value) * float(contract.pricetick)
+
+            else:  # percent
+                if add_minus == '+':
+                    order_price = tick_price * (1 + float(over_price_value)/100)
+                else:
+                    order_price = tick_price * (1 - float(over_price_value)/100)
+
+            order_price = round_to(Decimal(str(order_price)), contract.pricetick)
+
+            if volume_option == "fixed_volume":
+                volume = Decimal(volume)
+            else: # % of the position
+                if contract.product == Product.SPOT:
+                    self.main_engine.write_log(f"Position is not available for Spot market.")
+                    return None
+
+                if not contract.net_position:
+                    self.main_engine.write_log(f"Not support Position.")
+                    return None
+
+                position_id: str = f"{vt_symbol}.{Direction.NET.value}"
+                position: PositionData = self.main_engine.get_position(position_id)
+
+                if position:
+                    volume = abs(position.volume) * float(volume) / 100
+                    volume = floor_to(volume, contract.min_volume)
+                else:
+                    self.main_engine.write_log(f"Position is None")
+                    return None
+
+            symbol, exchange = extract_vt_symbol(vt_symbol)
+
+            req = OrderRequest(
+                symbol=symbol,
+                exchange=exchange,
+                direction=direction,
+                type=order_type,
+                offset=offset,
+                volume=volume,
+                price=order_price,
+                reference="QuickTrader"
+            )
+
+            self.main_engine.send_order(req, contract.gateway_name)

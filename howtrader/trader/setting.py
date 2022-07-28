@@ -50,3 +50,6 @@ SETTINGS.update(load_json(SETTING_FILENAME))
 def get_settings(prefix: str = "") -> Dict[str, Any]:
     prefix_length: int = len(prefix)
     return {k[prefix_length:]: v for k, v in SETTINGS.items() if k.startswith(prefix)}
+
+
+QUICK_TRADER_SETTINGS: Dict = load_json("quick_trader_setting.json")

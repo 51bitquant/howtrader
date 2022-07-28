@@ -6,14 +6,14 @@ import csv
 from datetime import datetime
 import platform
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from copy import copy
 from tzlocal import get_localzone
 
 import importlib_metadata
 from decimal import Decimal
-from .qt import QtCore, QtGui, QtWidgets
-from ..constant import Direction, Exchange, Offset, OrderType
+from .qt import Qt, QtCore, QtGui, QtWidgets
+from ..constant import Direction, Exchange, Offset, OrderType, Product
 from ..engine import MainEngine, Event, EventEngine
 from ..event import (
     EVENT_QUOTE,
@@ -34,9 +34,8 @@ from ..object import (
     QuoteData,
     TickData
 )
-from ..utility import load_json, save_json, get_digits
-from ..setting import SETTING_FILENAME, SETTINGS
-
+from ..utility import load_json, save_json, get_digits, extract_vt_symbol, round_to
+from ..setting import SETTING_FILENAME, SETTINGS, QUICK_TRADER_SETTINGS
 
 COLOR_LONG = QtGui.QColor("red")
 COLOR_SHORT = QtGui.QColor("green")
@@ -484,6 +483,7 @@ class OrderMonitor(BaseMonitor):
         req: CancelRequest = order.create_cancel_request()
         self.main_engine.cancel_order(req, order.gateway_name)
 
+
 class PositionMonitor(BaseMonitor):
     """
     Monitor for position data.
@@ -654,6 +654,16 @@ class ConnectDialog(QtWidgets.QDialog):
         self.accept()
 
 
+class MyLabel(QtWidgets.QLabel):
+    clicked: QtCore.Signal = QtCore.Signal(str)
+
+    def __init__(self, parent=None):
+        super(MyLabel, self).__init__(parent)
+
+    def mousePressEvent(self, event):
+        self.clicked.emit(self.text())
+
+
 class TradingWidget(QtWidgets.QWidget):
     """
     General manual trading widget.
@@ -669,8 +679,8 @@ class TradingWidget(QtWidgets.QWidget):
         self.event_engine: EventEngine = event_engine
 
         self.vt_symbol: str = ""
-        self.price_digits: int = 0
-
+        self.contract: Optional[ContractData] = None
+        self.order_type = OrderType.LIMIT # the default order type.
         self.init_ui()
         self.register_event()
 
@@ -679,111 +689,156 @@ class TradingWidget(QtWidgets.QWidget):
         self.setFixedWidth(300)
 
         # Trading function area
-        exchanges: List[Exchange] = self.main_engine.get_all_exchanges()
-        self.exchange_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
-        self.exchange_combo.addItems([exchange.value for exchange in exchanges])
+        self.vt_symbol_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
+        self.vt_symbol_line.setFocusPolicy(Qt.FocusPolicy.ClickFocus)  # ClickFocus
+        self.vt_symbol_line.returnPressed.connect(self.set_vt_symbol)
 
         self.symbol_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
-        self.symbol_line.returnPressed.connect(self.set_vt_symbol)
+        self.symbol_line.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.symbol_line.setReadOnly(True)
 
-        self.name_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
-        self.name_line.setReadOnly(True)
+        order_type_limit = QtWidgets.QRadioButton("limit")
+        order_type_limit.setChecked(True)
+        order_type_maker = QtWidgets.QRadioButton("maker")
+        order_type_taker = QtWidgets.QRadioButton("taker")
+        order_type_limit.toggled.connect(self.change_order_type)
+        order_type_maker.toggled.connect(self.change_order_type)
+        order_type_taker.toggled.connect(self.change_order_type)
 
-        self.direction_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
-        self.direction_combo.addItems(
-            [Direction.LONG.value, Direction.SHORT.value])
-
-        self.offset_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
-        self.offset_combo.addItems([offset.value for offset in Offset])
-
-        self.order_type_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
-        self.order_type_combo.addItems(
-            [order_type.value for order_type in OrderType])
+        order_type_layout = QtWidgets.QHBoxLayout()
+        order_type_layout.addWidget(order_type_limit)
+        order_type_layout.addWidget(order_type_maker)
+        order_type_layout.addWidget(order_type_taker)
 
         double_validator: QtGui.QDoubleValidator = QtGui.QDoubleValidator()
         double_validator.setBottom(0)
 
+        # price
         self.price_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
+        self.price_line.setPlaceholderText("price")
+        self.price_line.setFocusPolicy(Qt.FocusPolicy.ClickFocus)  # ClickFocus
+        self.price_line.setAlignment(Qt.AlignCenter)
+        self.price_line.setClearButtonEnabled(True)
         self.price_line.setValidator(double_validator)
+        price_minus_button = QtWidgets.QPushButton("-")
+        price_plus_button = QtWidgets.QPushButton("+")
+        price_minus_button.clicked.connect(self.price_minus_clicked)
+        price_plus_button.clicked.connect(self.price_plus_clicked)
 
+        # price layout
+        price_layout: QtWidgets.QGridLayout = QtWidgets.QGridLayout()
+        price_layout.addWidget(price_minus_button, 0, 0, 1, 1)
+        price_layout.addWidget(self.price_line, 0, 1, 1, 2)
+        price_layout.addWidget(price_plus_button, 0, 3, 1, 1)
+
+        # volume
         self.volume_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
+        self.volume_line.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        self.volume_line.setPlaceholderText("volume")
+        self.volume_line.setAlignment(Qt.AlignCenter)
+        self.volume_line.setClearButtonEnabled(True)
         self.volume_line.setValidator(double_validator)
+        volume_minus_button = QtWidgets.QPushButton("-")
+        volume_plus_button = QtWidgets.QPushButton("+")
+        volume_minus_button.clicked.connect(self.volume_minus_clicked)
+        volume_plus_button.clicked.connect(self.volume_plus_clicked)
 
-        self.gateway_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
-        self.gateway_combo.addItems(self.main_engine.get_all_gateway_names())
+        self.reduce_only_checkbox: QtWidgets.QCheckBox = QtWidgets.QCheckBox("reduce only")
+        self.reduce_only_checkbox.setEnabled(False)
+        # volume layout
+        volume_layout: QtWidgets.QGridLayout = QtWidgets.QGridLayout()
+        volume_layout.addWidget(volume_minus_button, 0, 0, 1, 1)
+        volume_layout.addWidget(self.volume_line, 0, 1, 1, 2)
+        volume_layout.addWidget(volume_plus_button, 0, 3, 1, 1)
+        volume_layout.addWidget(self.reduce_only_checkbox, 1, 0, 1, 2)
 
-        self.price_check: QtWidgets.QCheckBox = QtWidgets.QCheckBox()
-        self.price_check.setToolTip("use the latest price")
+        # buy sell button
+        buy_button: QtWidgets.QPushButton = QtWidgets.QPushButton("buy")
+        sell_button: QtWidgets.QPushButton = QtWidgets.QPushButton("sell")
 
-        send_button: QtWidgets.QPushButton = QtWidgets.QPushButton("send order")
-        send_button.clicked.connect(self.send_order)
+        red_color: str = "rgb(228,95,97)"
+        green_color: str = "rgb(92,199,135)"
+        buy_button.setStyleSheet(f"background-color:{green_color}")
+        sell_button.setStyleSheet(f"background-color:{red_color}")
 
-        cancel_button: QtWidgets.QPushButton = QtWidgets.QPushButton("cancel all orders")
-        cancel_button.clicked.connect(self.cancel_all)
+        buy_button.clicked.connect(self.send_order)
+        sell_button.clicked.connect(self.send_order)
+
+        buy_sell_button_layout = QtWidgets.QHBoxLayout()
+        buy_sell_button_layout.addWidget(buy_button)
+        buy_sell_button_layout.addSpacing(10)
+        buy_sell_button_layout.addWidget(sell_button)
+
+        cancel_all_button_button: QtWidgets.QPushButton = QtWidgets.QPushButton("cancel all orders")
+        cancel_all_button_button.clicked.connect(self.cancel_all_orders_clicked)
+        cancel_order_layout = QtWidgets.QHBoxLayout()
+        cancel_order_layout.addWidget(cancel_all_button_button)
+
+        configs_layout = QtWidgets.QHBoxLayout()
+        all_config_button: QtWidgets.QPushButton = QtWidgets.QPushButton("all configs")
+        add_config_button: QtWidgets.QPushButton = QtWidgets.QPushButton("add config")
+        all_config_button.clicked.connect(self.all_configs_button_clicked)
+        add_config_button.clicked.connect(self.add_config_button_clicked)
+        configs_layout.addWidget(all_config_button)
+        configs_layout.addSpacing(10)
+        configs_layout.addWidget(add_config_button)
 
         grid: QtWidgets.QGridLayout = QtWidgets.QGridLayout()
-        grid.addWidget(QtWidgets.QLabel("exchange"), 0, 0)
-        grid.addWidget(QtWidgets.QLabel("symbol"), 1, 0)
-        grid.addWidget(QtWidgets.QLabel("name"), 2, 0)
-        grid.addWidget(QtWidgets.QLabel("direction"), 3, 0)
-        grid.addWidget(QtWidgets.QLabel("offset"), 4, 0)
-        grid.addWidget(QtWidgets.QLabel("type"), 5, 0)
-        grid.addWidget(QtWidgets.QLabel("price"), 6, 0)
-        grid.addWidget(QtWidgets.QLabel("volume"), 7, 0)
-        grid.addWidget(QtWidgets.QLabel("gateway"), 8, 0)
-        grid.addWidget(self.exchange_combo, 0, 1, 1, 2)
-        grid.addWidget(self.symbol_line, 1, 1, 1, 2)
-        grid.addWidget(self.name_line, 2, 1, 1, 2)
-        grid.addWidget(self.direction_combo, 3, 1, 1, 2)
-        grid.addWidget(self.offset_combo, 4, 1, 1, 2)
-        grid.addWidget(self.order_type_combo, 5, 1, 1, 2)
-        grid.addWidget(self.price_line, 6, 1, 1, 1)
-        grid.addWidget(self.price_check, 6, 2, 1, 1)
-        grid.addWidget(self.volume_line, 7, 1, 1, 2)
-        grid.addWidget(self.gateway_combo, 8, 1, 1, 2)
-        grid.addWidget(send_button, 9, 0, 1, 3)
-        grid.addWidget(cancel_button, 10, 0, 1, 3)
+        grid.addWidget(QtWidgets.QLabel("vt_symbol"), 0, 0, 1, 1)
+        grid.addWidget(QtWidgets.QLabel("symbol"), 1, 0, 1, 1)
+        grid.addWidget(QtWidgets.QLabel("order type"), 2, 0, 1, 1)
+        grid.addLayout(price_layout, 3, 0, 1, 3)
+        grid.addLayout(volume_layout, 4, 0, 1, 3)
 
-        # Market depth display area
-        bid_color: str = "rgb(255,174,201)"
-        ask_color: str = "rgb(160,255,160)"
+        grid.addWidget(self.vt_symbol_line, 0, 1, 1, 1)
+        grid.addWidget(self.symbol_line, 1, 1, 1, 1)
+        grid.addLayout(order_type_layout, 2, 1, 1, 1)
+        grid.addWidget(self.price_line, 3, 1, 1, 1)
+        grid.addWidget(self.volume_line, 4, 1, 1, 1)
+        grid.addLayout(buy_sell_button_layout, 5, 0, 1, 3)
 
-        self.bp1_label: QtWidgets.QLabel = self.create_label(bid_color)
-        self.bp2_label: QtWidgets.QLabel = self.create_label(bid_color)
-        self.bp3_label: QtWidgets.QLabel = self.create_label(bid_color)
-        self.bp4_label: QtWidgets.QLabel = self.create_label(bid_color)
-        self.bp5_label: QtWidgets.QLabel = self.create_label(bid_color)
+        grid.addLayout(QtWidgets.QHBoxLayout(), 6, 0, 1, 3)
+        grid.addLayout(cancel_order_layout, 7, 0, 1, 3)
+        grid.addLayout(configs_layout, 8, 0,1, 3)
 
-        self.bv1_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
-        self.bv2_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
-        self.bv3_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
-        self.bv4_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
-        self.bv5_label: QtWidgets.QLabel = self.create_label(
-            bid_color, alignment=QtCore.Qt.AlignRight)
+        self.bp1_label: MyLabel = self.create_label(green_color)
+        self.bp2_label: MyLabel = self.create_label(green_color)
+        self.bp3_label: MyLabel = self.create_label(green_color)
+        self.bp4_label: MyLabel = self.create_label(green_color)
+        self.bp5_label: MyLabel = self.create_label(green_color)
 
-        self.ap1_label: QtWidgets.QLabel = self.create_label(ask_color)
-        self.ap2_label: QtWidgets.QLabel = self.create_label(ask_color)
-        self.ap3_label: QtWidgets.QLabel = self.create_label(ask_color)
-        self.ap4_label: QtWidgets.QLabel = self.create_label(ask_color)
-        self.ap5_label: QtWidgets.QLabel = self.create_label(ask_color)
+        self.bv1_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
+        self.bv2_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
+        self.bv3_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
+        self.bv4_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
+        self.bv5_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
 
-        self.av1_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
-        self.av2_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
-        self.av3_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
-        self.av4_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
-        self.av5_label: QtWidgets.QLabel = self.create_label(
-            ask_color, alignment=QtCore.Qt.AlignRight)
+        self.ap1_label: MyLabel = self.create_label(red_color)
+        self.ap2_label: MyLabel = self.create_label(red_color)
+        self.ap3_label: MyLabel = self.create_label(red_color)
+        self.ap4_label: MyLabel = self.create_label(red_color)
+        self.ap5_label: MyLabel = self.create_label(red_color)
 
-        self.lp_label: QtWidgets.QLabel = self.create_label()
-        self.return_label: QtWidgets.QLabel = self.create_label(alignment=QtCore.Qt.AlignRight)
+        self.av1_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
+        self.av2_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
+        self.av3_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
+        self.av4_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
+        self.av5_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
+
+        self.bp1_label.clicked.connect(self.update_price)
+        self.bp2_label.clicked.connect(self.update_price)
+        self.bp3_label.clicked.connect(self.update_price)
+        self.bp4_label.clicked.connect(self.update_price)
+        self.bp5_label.clicked.connect(self.update_price)
+
+        self.ap1_label.clicked.connect(self.update_price)
+        self.ap2_label.clicked.connect(self.update_price)
+        self.ap3_label.clicked.connect(self.update_price)
+        self.ap4_label.clicked.connect(self.update_price)
+        self.ap5_label.clicked.connect(self.update_price)
+
+        self.lp_label: MyLabel = self.create_label()
+        self.return_label: MyLabel = self.create_label(alignment=QtCore.Qt.AlignRight)
 
         form: QtWidgets.QFormLayout = QtWidgets.QFormLayout()
         form.addRow(self.ap5_label, self.av5_label)
@@ -805,14 +860,14 @@ class TradingWidget(QtWidgets.QWidget):
         self.setLayout(vbox)
 
     def create_label(
-        self,
-        color: str = "",
-        alignment: int = QtCore.Qt.AlignLeft
-    ) -> QtWidgets.QLabel:
+            self,
+            color: str = "",
+            alignment: Qt.AlignmentFlag = QtCore.Qt.AlignLeft
+    ) -> MyLabel:
         """
         Create label with certain font color.
         """
-        label: QtWidgets.QLabel = QtWidgets.QLabel()
+        label: MyLabel = MyLabel()
         if color:
             label.setStyleSheet(f"color:{color}")
         label.setAlignment(alignment)
@@ -829,12 +884,11 @@ class TradingWidget(QtWidgets.QWidget):
         if tick.vt_symbol != self.vt_symbol:
             return
 
-        price_digits: int = self.price_digits
-
-        self.lp_label.setText(f"{tick.last_price:.{price_digits}f}")
-        self.bp1_label.setText(f"{tick.bid_price_1:.{price_digits}f}")
+        self.lp_label.setText(str(round_to(Decimal(str(tick.last_price)), self.contract.pricetick)))
+        self.bp1_label.setText(str(round_to(Decimal(str(tick.bid_price_1)), self.contract.pricetick)))
         self.bv1_label.setText(str(tick.bid_volume_1))
-        self.ap1_label.setText(f"{tick.ask_price_1:.{price_digits}f}")
+
+        self.ap1_label.setText(str(round_to(Decimal(str(tick.ask_price_1)), self.contract.pricetick)))
         self.av1_label.setText(str(tick.ask_volume_1))
 
         if tick.pre_close:
@@ -842,60 +896,55 @@ class TradingWidget(QtWidgets.QWidget):
             self.return_label.setText(f"{r:.2f}%")
 
         if tick.bid_price_2:
-            self.bp2_label.setText(f"{tick.bid_price_2:.{price_digits}f}")
+            self.bp2_label.setText(str(round_to(Decimal(str(tick.bid_price_2)), self.contract.pricetick)))
             self.bv2_label.setText(str(tick.bid_volume_2))
-            self.ap2_label.setText(f"{tick.ask_price_2:.{price_digits}f}")
+            self.ap2_label.setText(str(round_to(Decimal(str(tick.ask_price_2)), self.contract.pricetick)))
             self.av2_label.setText(str(tick.ask_volume_2))
 
-            self.bp3_label.setText(f"{tick.bid_price_3:.{price_digits}f}")
+            self.bp3_label.setText(str(round_to(Decimal(str(tick.bid_price_3)), self.contract.pricetick)))
             self.bv3_label.setText(str(tick.bid_volume_3))
-            self.ap3_label.setText(f"{tick.ask_price_3:.{price_digits}f}")
+            self.ap3_label.setText(str(round_to(Decimal(str(tick.ask_price_3)), self.contract.pricetick)))
             self.av3_label.setText(str(tick.ask_volume_3))
 
-            self.bp4_label.setText(f"{tick.bid_price_4:.{price_digits}f}")
+            self.bp4_label.setText(str(round_to(Decimal(str(tick.bid_price_4)), self.contract.pricetick)))
             self.bv4_label.setText(str(tick.bid_volume_4))
-            self.ap4_label.setText(f"{tick.ask_price_4:.{price_digits}f}")
+            self.ap4_label.setText(str(round_to(Decimal(str(tick.ask_price_4)), self.contract.pricetick)))
             self.av4_label.setText(str(tick.ask_volume_4))
 
-            self.bp5_label.setText(f"{tick.bid_price_5:.{price_digits}f}")
+            self.bp5_label.setText(str(round_to(Decimal(str(tick.bid_price_5)), self.contract.pricetick)))
             self.bv5_label.setText(str(tick.bid_volume_5))
-            self.ap5_label.setText(f"{tick.ask_price_5:.{price_digits}f}")
+            self.ap5_label.setText(str(round_to(Decimal(str(tick.ask_price_5)), self.contract.pricetick)))
             self.av5_label.setText(str(tick.ask_volume_5))
-
-        if self.price_check.isChecked():
-            self.price_line.setText(f"{tick.last_price:.{price_digits}f}")
 
     def set_vt_symbol(self) -> None:
         """
         Set the tick depth data to monitor by vt_symbol.
         """
-        symbol: str = str(self.symbol_line.text())
-        if not symbol:
-            return
+        vt_symbol: str = str(self.vt_symbol_line.text())
+        self.vt_symbol_line.clearFocus()
 
-        # Generate vt_symbol from symbol and exchange
-        exchange_value: str = str(self.exchange_combo.currentText())
-        vt_symbol: str = f"{symbol}.{exchange_value}"
+        if not vt_symbol:
+            return None
 
         if vt_symbol == self.vt_symbol:
-            return
-        self.vt_symbol = vt_symbol
+            return None
 
-        # Update name line widget and clear all labels
         contract: ContractData = self.main_engine.get_contract(vt_symbol)
         if not contract:
-            self.name_line.setText("")
-            gateway_name: str = self.gateway_combo.currentText()
+            return None
+
+        symbol, exchange_value = extract_vt_symbol(vt_symbol)
+        self.vt_symbol = vt_symbol
+        self.reduce_only_checkbox.setChecked(False)
+        if contract.product == Product.SPOT:
+            self.reduce_only_checkbox.setEnabled(False)
         else:
-            self.name_line.setText(contract.name)
-            gateway_name: str = contract.gateway_name
+            self.reduce_only_checkbox.setEnabled(True)
 
-            # Update gateway combo box.
-            ix: int = self.gateway_combo.findText(gateway_name)
-            self.gateway_combo.setCurrentIndex(ix)
-
-            # Update price digits
-            self.price_digits = get_digits(contract.pricetick)
+        # Update name line widget and clear all labels
+        self.contract = contract
+        self.symbol_line.setText(contract.name)
+        gateway_name: str = contract.gateway_name
 
         self.clear_label_text()
         self.volume_line.setText("")
@@ -943,39 +992,138 @@ class TradingWidget(QtWidgets.QWidget):
         """
         Send new order manually.
         """
-        symbol: str = str(self.symbol_line.text())
-        if not symbol:
-            QtWidgets.QMessageBox.critical(self, "send order failed", "pls input symbol")
-            return
+        button: QtWidgets.QPushButton = self.sender()
+        if button.text() == 'buy':
+            direction = Direction.LONG
+        else:
+            direction = Direction.SHORT
+
+        vt_symbol: str = str(self.vt_symbol_line.text())
+        if not vt_symbol:
+            QtWidgets.QMessageBox.critical(self, "send order failed", "pls input vt_symbol")
+            return None
 
         volume_text: str = str(self.volume_line.text())
         if not volume_text:
             QtWidgets.QMessageBox.critical(self, "send order failed", "pls input volume")
-            return
-        volume: Decimal = Decimal(volume_text)
+            return None
 
+        volume: Decimal = Decimal(volume_text)
         price_text: str = str(self.price_line.text())
-        if not price_text:
+
+        if self.order_type == OrderType.TAKER:
             price = Decimal("0")
+        elif not price_text:
+            QtWidgets.QMessageBox.critical(self, "send order failed", "pls input price")
+            return None
         else:
             price = Decimal(price_text)
 
+        symbol, exchange = extract_vt_symbol(vt_symbol)
+        check =self.reduce_only_checkbox.isChecked()
+        if check:
+            offset = Offset.CLOSE
+        else:
+            offset = Offset.OPEN
+
         req: OrderRequest = OrderRequest(
             symbol=symbol,
-            exchange=Exchange(str(self.exchange_combo.currentText())),
-            direction=Direction(str(self.direction_combo.currentText())),
-            type=OrderType(str(self.order_type_combo.currentText())),
+            exchange=exchange,
+            direction=direction,
+            type=self.order_type,
             volume=volume,
             price=price,
-            offset=Offset(str(self.offset_combo.currentText())),
-            reference="ManualTrading"
+            offset=offset,
+            reference="trader"
         )
 
-        gateway_name: str = str(self.gateway_combo.currentText())
-
+        gateway_name: str = self.contract.gateway_name
         self.main_engine.send_order(req, gateway_name)
 
-    def cancel_all(self) -> None:
+    def change_order_type(self):
+        radio_button: QtWidgets.QRadioButton = self.sender()
+        text = radio_button.text()
+        if text == 'limit':
+            self.order_type = OrderType.LIMIT
+            self.price_line.setEnabled(True)
+        elif text == 'maker':
+            self.order_type = OrderType.MAKER
+            self.price_line.setEnabled(True)
+        elif text == 'taker':
+            self.order_type = OrderType.TAKER
+            self.price_line.setEnabled(False)
+
+    def price_minus_clicked(self) -> None:
+        try:
+            value = self.price_line.text()
+            if not value:
+                value = "0"
+
+            price = Decimal(value)
+            if self.contract:
+                price = price - self.contract.pricetick
+            if price >= 0:
+                price = round_to(price, self.contract.pricetick)
+                self.price_line.setText(str(price))
+            else:
+                self.price_line.setText("0")
+
+        except Exception as error:
+            self.price_line.setText("0")
+
+    def price_plus_clicked(self) -> None:
+        try:
+            value = self.price_line.text()
+            if not value:
+                value = "0"
+
+            price = Decimal(value)
+            if self.contract:
+                price = price + self.contract.pricetick
+            if price >= 0:
+                price = round_to(price, self.contract.pricetick)
+                self.price_line.setText(str(price))
+            else:
+                self.price_line.setText("0")
+
+        except Exception as error:
+            self.price_line.setText("0")
+
+    def volume_minus_clicked(self) -> None:
+        try:
+            value = self.volume_line.text()
+            if not value:
+                value = "0"
+
+            vol = Decimal(value)
+            if self.contract:
+                vol = vol - self.contract.min_volume
+            if vol >= 0:
+                vol = round_to(vol, self.contract.min_volume)
+                self.volume_line.setText(str(vol))
+            else:
+                self.volume_line.setText("0")
+
+        except Exception as error:
+            self.volume_line.setText("0")
+
+    def volume_plus_clicked(self) -> None:
+        try:
+            value = self.volume_line.text()
+            if not value:
+                value = "0"
+
+            vol = Decimal(value)
+            if self.contract:
+                vol = vol + self.contract.min_volume
+                vol = round_to(vol, self.contract.min_volume)
+                self.volume_line.setText(str(vol))
+            else:
+                self.volume_line.setText("0")
+        except Exception as error:
+            self.volume_line.setText("0")
+
+    def cancel_all_orders_clicked(self) -> None:
         """
         Cancel all active orders.
         """
@@ -984,35 +1132,29 @@ class TradingWidget(QtWidgets.QWidget):
             req: CancelRequest = order.create_cancel_request()
             self.main_engine.cancel_order(req, order.gateway_name)
 
+    def all_configs_button_clicked(self) -> None:
+        dialog = QuickTraderDialog()
+        dialog.exec_()
+
+    def add_config_button_clicked(self) -> None:
+        dialog = QuickTraderConfigDialog()
+        dialog.exec()
+
     def update_with_cell(self, cell: BaseCell) -> None:
         """"""
         data = cell.get_data()
+        if isinstance(data, TickData) or isinstance(data, PositionData):
+            self.symbol_line.setText(data.symbol)
+            self.vt_symbol_line.setText(data.vt_symbol)
+            self.set_vt_symbol()
 
-        self.symbol_line.setText(data.symbol)
-        self.exchange_combo.setCurrentIndex(
-            self.exchange_combo.findText(data.exchange.value)
-        )
+            if isinstance(data, PositionData):
+                d: PositionData = data
+                self.volume_line.setText(str(abs(data.volume)))
 
-        self.set_vt_symbol()
-
-        if isinstance(data, PositionData):
-            if data.direction == Direction.SHORT:
-                direction: Direction = Direction.LONG
-            elif data.direction == Direction.LONG:
-                direction: Direction = Direction.SHORT
-            else:       # Net position mode
-                if data.volume > 0:
-                    direction: Direction = Direction.SHORT
-                else:
-                    direction: Direction = Direction.LONG
-
-            self.direction_combo.setCurrentIndex(
-                self.direction_combo.findText(direction.value)
-            )
-            self.offset_combo.setCurrentIndex(
-                self.offset_combo.findText(Offset.CLOSE.value)
-            )
-            self.volume_line.setText(str(abs(data.volume)))
+    def update_price(self, price_str) -> None:
+        if price_str:
+            self.price_line.setText(price_str)
 
 
 class ActiveOrderMonitor(OrderMonitor):
@@ -1074,7 +1216,7 @@ class ContractManager(QtWidgets.QWidget):
 
         labels: list = []
         for name, display in self.headers.items():
-            label: str = f"{display}" # f"{display}\n{name}"
+            label: str = f"{display}"  # f"{display}\n{name}"
             labels.append(label)
 
         self.contract_table: QtWidgets.QTableWidget = QtWidgets.QTableWidget()
@@ -1162,6 +1304,217 @@ class AboutDialog(QtWidgets.QDialog):
         vbox.addWidget(label)
         self.setLayout(vbox)
 
+
+class QuickTraderDialog(QtWidgets.QDialog):
+    """
+    display configs
+    """
+    def __init__(self):
+        """"""
+        super(QuickTraderDialog, self).__init__()
+
+        self.init_ui()
+
+    def init_ui(self) -> None:
+        """"""
+        self.setWindowTitle("QuickTrader")
+        self.setMinimumWidth(880)
+
+        table = QtWidgets.QTableWidget()
+
+        table.horizontalHeader().setFixedHeight(50)
+        table.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
+        table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        table.verticalHeader().setVisible(False)
+
+        del_btn = QtWidgets.QPushButton('delete')
+        del_btn.clicked.connect(self.del_action)
+        cancel_btn = QtWidgets.QPushButton('cancel')
+        cancel_btn.clicked.connect(self.close)
+
+        hbox = QtWidgets.QHBoxLayout()
+
+        hbox.addWidget(del_btn)
+        hbox.addWidget(cancel_btn)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(table)
+        vbox.addLayout(hbox)
+
+        headers = ['hotkey', 'buy/sell', 'volume_option', 'volume', 'base_price', '+/-', 'over_price_value', 'over_price_option']
+        table.setColumnCount(len(headers))
+        table.setHorizontalHeaderLabels(headers)
+
+        table.setRowCount(len(QUICK_TRADER_SETTINGS.keys()))
+
+        index = 0
+        for key in QUICK_TRADER_SETTINGS.keys():
+
+            data = QUICK_TRADER_SETTINGS.get(key, {})
+            if not isinstance(data, dict):
+                continue
+
+            buy_sell = data.get('direction')
+            volume_option = data.get('volume_option')
+            volume = data.get('volume')
+            price = data.get('price')
+            add_minus = data.get('add_minus')
+            over_price_value =  data.get('over_price_value')
+            over_price_option = data.get('over_price_option')
+
+            table.setItem(index, 0, QtWidgets.QTableWidgetItem(key))
+            table.setItem(index, 1, QtWidgets.QTableWidgetItem(buy_sell))
+            table.setItem(index, 2, QtWidgets.QTableWidgetItem(volume_option))
+            table.setItem(index, 3, QtWidgets.QTableWidgetItem(volume))
+            table.setItem(index, 4, QtWidgets.QTableWidgetItem(price))
+            table.setItem(index, 5, QtWidgets.QTableWidgetItem(add_minus))
+            table.setItem(index, 6, QtWidgets.QTableWidgetItem(over_price_value))
+            table.setItem(index, 7, QtWidgets.QTableWidgetItem(over_price_option))
+            index += 1
+
+        if len(QUICK_TRADER_SETTINGS.keys()) > 0:
+            # default selected is 0 row
+            table.selectRow(0)
+
+        self.table = table
+        self.setLayout(vbox)
+
+    def del_action(self) -> None:
+        row = self.table.currentIndex().row()
+        if row >= 0:
+            key = self.table.item(row, 0).text()
+
+            if QUICK_TRADER_SETTINGS.get(key, None):
+                del QUICK_TRADER_SETTINGS[key]
+                save_json('quick_trader_setting.json', QUICK_TRADER_SETTINGS)
+                self.table.removeRow(row)
+
+    def cancel_action(self) -> None:
+        """
+        Get setting value from line edits and update global setting file.
+        """
+        self.accept()
+
+
+class QuickTraderConfigDialog(QtWidgets.QDialog):
+    """
+    Quick Trader Dialog
+    """
+
+    def __init__(self):
+        """"""
+        super(QuickTraderConfigDialog, self).__init__()
+        self.init_ui()
+
+    def init_ui(self) -> None:
+        """"""
+        self.setWindowTitle("QuickTrader")
+        self.setMinimumWidth(800)
+
+        grid_layout = QtWidgets.QGridLayout()
+
+        # create the elements.
+        hotkey_label: QtWidgets.QLabel = QtWidgets.QLabel("Hotkey")
+
+        buy_sell_label: QtWidgets.QLabel = QtWidgets.QLabel("Buy/Sell")
+        self.buy_sell_combo: QtWidgets.QComboBox  = QtWidgets.QComboBox()
+        self.buy_sell_combo.addItems(['buy', 'sell'])
+        price_label = QtWidgets.QLabel('Price')
+        volume_label = QtWidgets.QLabel('Volume')
+
+        confirm_btn = QtWidgets.QPushButton("Confirm")
+        cancel_btn = QtWidgets.QPushButton("Cancel")
+        confirm_btn.clicked.connect(self.confirm_action)
+        cancel_btn.clicked.connect(self.cancel_action)
+
+        self.hotkey_combo:QtWidgets.QComboBox  = QtWidgets.QComboBox()
+
+        keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        for item in QUICK_TRADER_SETTINGS.keys():
+            if keys.__contains__(item):
+                keys.remove(item)
+
+        self.hotkey_combo.addItems(keys)
+
+        self.base_price_combo = QtWidgets.QComboBox()
+        self.base_price_combo.addItems(['bid_price_1', 'bid_price_2', 'bid_price_3', 'bid_price_4', 'bid_price_5',
+                              'ask_price_1', 'ask_price_2', 'ask_price_3', 'ask_price_4', 'ask_price_5'])
+
+        double_validator: QtGui.QDoubleValidator = QtGui.QDoubleValidator()
+        double_validator.setBottom(0)
+
+        self.price_add_minus_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
+        self.price_add_minus_combo.addItems(["+", "-"])
+        self.over_price_line_edit = QtWidgets.QLineEdit()
+        self.over_price_line_edit.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        self.over_price_line_edit.setValidator(double_validator)
+        self.over_price_combo = QtWidgets.QComboBox()
+        self.over_price_combo.addItems(['min_price', '% of price'])
+
+        self.volume_combox = QtWidgets.QComboBox()
+        self.volume_combox.addItems(['fixed_volume', '% of position'])
+        self.volume_line_edit = QtWidgets.QLineEdit()
+        self.volume_line_edit.setValidator(double_validator)
+        self.volume_line_edit.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+
+        grid_layout.addWidget(hotkey_label, 0, 0)
+        grid_layout.addWidget(self.hotkey_combo, 0, 1)
+
+        grid_layout.addWidget(buy_sell_label, 1, 0)
+        grid_layout.addWidget(self.buy_sell_combo, 1, 1)
+
+        grid_layout.addWidget(price_label, 2, 0)
+        grid_layout.addWidget(self.base_price_combo, 2, 1)
+        grid_layout.addWidget(self.price_add_minus_combo, 2, 2)
+        grid_layout.addWidget(self.over_price_line_edit,2, 3)
+        grid_layout.addWidget(self.over_price_combo, 2, 4)
+
+        grid_layout.addWidget(volume_label, 3, 0)
+        grid_layout.addWidget(self.volume_combox, 3, 1)
+        grid_layout.addWidget(self.volume_line_edit, 3, 2)
+
+        ## confirm and cancel
+        horizontal_layout = QtWidgets.QHBoxLayout()
+        horizontal_layout.addStretch(1)
+        horizontal_layout.addWidget(confirm_btn)
+        horizontal_layout.addSpacing(20)
+        horizontal_layout.addWidget(cancel_btn)
+        horizontal_layout.addStretch(1)
+
+        grid_layout.addLayout(horizontal_layout, 4, 2)
+        self.setLayout(grid_layout)
+
+    def confirm_action(self):
+
+        hotkey_value = self.hotkey_combo.currentText()
+        direction = self.buy_sell_combo.currentText()
+        price = self.base_price_combo.currentText()
+        add_minus = self.price_add_minus_combo.currentText()
+        over_price_value = self.over_price_line_edit.text()
+        over_price_option = self.over_price_combo.currentText()
+        if not over_price_value:
+            over_price_value = "0"
+
+        volume_option = self.volume_combox.currentText()
+        volume = self.volume_line_edit.text()
+        if not volume:
+            volume = "0"
+
+        QUICK_TRADER_SETTINGS[hotkey_value] = {
+            "direction": direction,
+            "price": price,
+            "add_minus": add_minus,
+            "over_price_value": over_price_value,
+            "over_price_option": over_price_option,
+            "volume_option": volume_option,
+            "volume": volume
+        }
+
+        save_json('quick_trader_setting.json', QUICK_TRADER_SETTINGS)
+        self.accept()
+
+    def cancel_action(self):
+        self.accept()
 
 class GlobalDialog(QtWidgets.QDialog):
     """
