@@ -223,7 +223,7 @@ class BinanceInverseGateway(BaseGateway):
         order.update_time = generate_datetime(time.time() * 1000)
         last_order: OrderData = self.get_order(order.orderid)
         if not last_order:
-            self.orders[order.orderid] = copy(order)
+            self.orders[order.orderid] = order
             super().on_order(copy(order))
 
         else:
@@ -237,7 +237,7 @@ class BinanceInverseGateway(BaseGateway):
                     exchange=order.exchange,
                     orderid=order.orderid,
                     direction=order.direction,
-                    price=order.price,
+                    price=order.traded_price,
                     volume=traded,
                     datetime=order.update_time,
                     gateway_name=self.gateway_name,
@@ -248,7 +248,7 @@ class BinanceInverseGateway(BaseGateway):
             if traded == 0 and order.status == last_order.status:
                 return None
 
-            self.orders[order.orderid] = copy(order)
+            self.orders[order.orderid] = order
             super().on_order(copy(order))
 
     def get_order(self, orderid: str) -> OrderData:
@@ -358,12 +358,12 @@ class BinanceInverseRestApi(RestClient):
 
         self.gateway.write_log("start connecting rest api")
 
+        self.query_contract()
         self.query_time()
         self.query_position_side()
         self.query_account()
         self.query_position()
         self.query_orders()
-        self.query_contract()
         self.start_user_stream()
 
     def query_time(self) -> None:
@@ -689,13 +689,21 @@ class BinanceInverseRestApi(RestClient):
         order_type = ORDERTYPE_BINANCES2VT.get(key, OrderType.LIMIT)
         # if not order_type:
         #     return
+        traded = Decimal(data.get('executedQty', '0'))
+        traded_price = Decimal(data.get('avgPrice', '0'))
+
+        price = Decimal(data["price"])
+        if price <= 0 < traded_price:
+            price = traded_price
+
         order = OrderData(
             orderid=data["clientOrderId"],
             symbol=data["symbol"],
             exchange=Exchange.BINANCE,
-            price=Decimal(str(data["price"])),
-            volume=Decimal(str(data["origQty"])),
-            traded=Decimal(str(data.get("executedQty", "0"))),
+            price=price,
+            volume=Decimal(data["origQty"]),
+            traded=traded,
+            traded_price=traded_price,
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
             status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
@@ -704,27 +712,35 @@ class BinanceInverseRestApi(RestClient):
         )
         self.gateway.on_order(order)
 
-    def on_query_orders(self, data: list, request: Request) -> None:
+    def on_query_orders(self, datas: list, request: Request) -> None:
         """query open orders callback"""
-        for d in data:
-            key: Tuple[str, str] = (d["type"], d["timeInForce"])
+        for data in datas:
+            key: Tuple[str, str] = (data["type"], data["timeInForce"])
             # order_type: OrderType = ORDERTYPE_BINANCES2VT.get(key, None)
             # if not order_type:
             #     continue
 
             order_type: OrderType = ORDERTYPE_BINANCES2VT.get(key, OrderType.LIMIT)
 
+            traded = Decimal(data.get('executedQty', '0'))
+            traded_price = Decimal(data.get('avgPrice', '0'))
+
+            price = Decimal(data["price"])
+            if price <= 0 < traded_price:
+                price = traded_price
+
             order: OrderData = OrderData(
-                orderid=d["clientOrderId"],
-                symbol=d["symbol"],
+                orderid=data["clientOrderId"],
+                symbol=data["symbol"],
                 exchange=Exchange.BINANCE,
-                price=Decimal(str(d["price"])),
-                volume=Decimal(str(d["origQty"])),
-                traded=Decimal(str(d.get("executedQty", "0"))),
+                price=price,
+                volume=Decimal(data["origQty"]),
+                traded=traded,
+                traded_price=traded_price,
                 type=order_type,
-                direction=DIRECTION_BINANCES2VT[d["side"]],
-                status=STATUS_BINANCES2VT.get(d["status"], Status.NOTTRADED),
-                datetime=generate_datetime(d["time"]),
+                direction=DIRECTION_BINANCES2VT[data["side"]],
+                status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
+                datetime=generate_datetime(data["time"]),
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_order(order)
@@ -796,7 +812,14 @@ class BinanceInverseRestApi(RestClient):
         """send order callback"""
         if request.extra:
             order: OrderData = copy(request.extra)
-            order.traded = Decimal(str(data.get('executedQty', "0")))
+            order.traded = Decimal(data.get('executedQty', '0'))
+            traded_price = Decimal(data.get('avgPrice', '0'))
+            price = Decimal(data["price"])
+            if price <= 0 < traded_price:
+                price = traded_price
+
+            order.traded_price = traded_price
+            order.price = price
             order.status = STATUS_BINANCES2VT.get(data.get('status'), Status.NOTTRADED)
             self.gateway.on_order(order)
 
@@ -829,13 +852,21 @@ class BinanceInverseRestApi(RestClient):
         """cancel order callback"""
         key = (data["type"], data["timeInForce"])
         order_type = ORDERTYPE_BINANCES2VT.get(key, OrderType.LIMIT)
+
+        traded = Decimal(data.get("executedQty", "0"))
+        traded_price = Decimal(data.get('avgPrice', '0'))
+        price = Decimal(data["price"])
+        if price <= 0 < traded_price:
+            price = traded_price
+
         order = OrderData(
             orderid=data["clientOrderId"],
             symbol=data["symbol"],
             exchange=Exchange.BINANCE,
-            price=Decimal(str(data["price"])),
-            volume=Decimal(str(data["origQty"])),
-            traded=Decimal(str(data.get("executedQty", "0"))),
+            price=price,
+            volume=Decimal(data["origQty"]),
+            traded=traded,
+            traded_price=traded_price,
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
             status=STATUS_BINANCES2VT.get(data["status"], Status.CANCELLED),
@@ -1047,7 +1078,7 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
 
     def on_connected(self) -> None:
         """trade ws connected"""
-        # self.gateway.write_log("trade ws connected")
+        self.gateway.write_log("trade ws connected")
 
     def on_packet(self, packet: dict) -> None:
         """receive data from ws server"""
@@ -1107,44 +1138,26 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
         # if not order_type:
         #     return
         order_type: OrderType = ORDERTYPE_BINANCES2VT.get(key, OrderType.LIMIT)
+        price = Decimal(ord_data["p"])
+        if price <= 0:
+            price = Decimal(ord_data['ap'])
+
         order: OrderData = OrderData(
             symbol=ord_data["s"],
             exchange=Exchange.BINANCE,
             orderid=str(ord_data["c"]),
             type=order_type,
             direction=DIRECTION_BINANCES2VT[ord_data["S"]],
-            price=Decimal(str(ord_data["p"])),
-            volume=Decimal(str(ord_data["q"])),
-            traded=Decimal(str(ord_data["z"])),
+            price=price,
+            volume=Decimal(ord_data["q"]),
+            traded=Decimal(ord_data["z"]),
+            traded_price=Decimal(ord_data.get("L", "0")),
             status=STATUS_BINANCES2VT.get(ord_data["X"], Status.NOTTRADED),
             datetime=generate_datetime(packet["E"]),
             gateway_name=self.gateway_name
         )
 
         self.gateway.on_order(order)
-
-        # 将成交数量四舍五入到正确精度
-        # trade_volume: float = float(ord_data["l"])
-        # contract: ContractData = symbol_contract_map.get(order.symbol, None)
-        # if contract:
-        #     trade_volume = round_to(trade_volume, contract.min_volume)
-        #
-        # if not trade_volume:
-        #     return
-        #
-        # trade: TradeData = TradeData(
-        #     symbol=order.symbol,
-        #     exchange=order.exchange,
-        #     orderid=order.orderid,
-        #     tradeid=ord_data["t"],
-        #     direction=order.direction,
-        #     price=float(ord_data["L"]),
-        #     volume=trade_volume,
-        #     datetime=generate_datetime(ord_data["T"]),
-        #     gateway_name=self.gateway_name,
-        # )
-        # self.gateway.on_trade(trade)
-
 
 class BinanceInverseDataWebsocketApi(WebsocketClient):
     """binance inverse data ws"""

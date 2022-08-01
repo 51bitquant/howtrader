@@ -458,7 +458,7 @@ class OrderMonitor(BaseMonitor):
         "type": {"display": "type", "cell": EnumCell, "update": False},
         "direction": {"display": "direction", "cell": DirectionCell, "update": False},
         "offset": {"display": "offset", "cell": EnumCell, "update": False},
-        "price": {"display": "price", "cell": BaseCell, "update": False},
+        "price": {"display": "price", "cell": BaseCell, "update": True},
         "volume": {"display": "volume", "cell": BaseCell, "update": True},
         "traded": {"display": "traded", "cell": BaseCell, "update": True},
         "status": {"display": "status", "cell": EnumCell, "update": True},

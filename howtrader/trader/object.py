@@ -121,6 +121,7 @@ class OrderData(BaseData):
     price: Decimal = Decimal("0")
     volume: Decimal = Decimal("0")
     traded: Decimal = Decimal("0")
+    traded_price: Decimal = Decimal("0")
     status: Status = Status.SUBMITTING
     datetime: datetime = datetime.now()
     update_time: datetime = datetime.now()
