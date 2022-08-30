@@ -377,6 +377,8 @@ class BinanceInverseRestApi(RestClient):
             "GET",
             path,
             callback=self.on_query_time,
+            on_failed=self.on_query_time_failed,
+            on_error=self.on_query_time_error,
             data=data
         )
 
@@ -582,7 +584,7 @@ class BinanceInverseRestApi(RestClient):
             data=data
         )
 
-    def on_start_user_stream_failed(self, status_code: str, request: Request):
+    def on_start_user_stream_failed(self, status_code: int, request: Request):
         self.failed_with_timestamp(request)
         self.start_user_stream()
 
@@ -621,6 +623,12 @@ class BinanceInverseRestApi(RestClient):
         local_time: int = int(time.time() * 1000)
         server_time: int = int(data["serverTime"])
         self.time_offset: int = local_time - server_time
+
+    def on_query_time_failed(self, status_code: int, request: Request):
+        self.query_time()
+
+    def on_query_time_error(self, exception_type: type, exception_value: Exception, tb, request: Request) -> None:
+        self.query_time()
 
     def on_query_account(self, datas: list, request: Request) -> None:
         """query account callback"""
@@ -823,7 +831,7 @@ class BinanceInverseRestApi(RestClient):
             order.status = STATUS_BINANCES2VT.get(data.get('status'), Status.NOTTRADED)
             self.gateway.on_order(order)
 
-    def on_send_order_failed(self, status_code: str, request: Request) -> None:
+    def on_send_order_failed(self, status_code: int, request: Request) -> None:
         """send order failed callback"""
         self.failed_with_timestamp(request)
         if request.extra:

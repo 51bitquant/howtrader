@@ -353,6 +353,8 @@ class BinanceSpotRestAPi(RestClient):
             "GET",
             path,
             callback=self.on_query_time,
+            on_failed=self.on_query_time_failed,
+            on_error=self.on_query_time_error,
             data=data
         )
 
@@ -536,6 +538,12 @@ class BinanceSpotRestAPi(RestClient):
         server_time = int(data["serverTime"])
         self.time_offset = local_time - server_time
 
+    def on_query_time_failed(self, status_code: int, request: Request):
+        self.query_time()
+
+    def on_query_time_error(self, exception_type: type, exception_value: Exception, tb, request: Request) -> None:
+        self.query_time()
+
     def on_query_account(self, data: dict, request: Request) -> None:
         """query account callback"""
         for account_data in data["balances"]:
@@ -673,7 +681,7 @@ class BinanceSpotRestAPi(RestClient):
             order.status = STATUS_BINANCE2VT.get(data.get('status'), Status.NOTTRADED)
             self.gateway.on_order(order)
 
-    def on_send_order_failed(self, status_code: str, request: Request) -> None:
+    def on_send_order_failed(self, status_code: int, request: Request) -> None:
         """send order failed callback"""
         self.failed_with_timestamp(request)
         if request.extra:
@@ -746,7 +754,7 @@ class BinanceSpotRestAPi(RestClient):
             self.gateway.on_order(order)
 
 
-    def on_cancel_order_failed(self, status_code: str, request: Request) -> None:
+    def on_cancel_order_failed(self, status_code: int, request: Request) -> None:
         """cancel order failed callback"""
         self.failed_with_timestamp(request)
         orderid = ""
