@@ -12,9 +12,9 @@ short是代表做空，如果有多单，会先平多单，然后下空单，如
 ```pine
 
 if longCondition
-    strategy.entry('L', strategy.long)
+    strategy.entry('L', strategy.long, comment='long')
 if shortCongdition
-    strategy.entry('S', strategy.short)
+    strategy.entry('S', strategy.short, comment='short')
 
 per(pcnt) =>
     strategy.position_size != 0 ? math.round(pcnt / 100 * strategy.position_avg_price / syminfo.mintick) : float(na)
