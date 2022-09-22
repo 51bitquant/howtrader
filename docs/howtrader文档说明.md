@@ -19,3 +19,5 @@
 8. [howtrader项目下面的配置文件讲解](./howtrader项目下面的配置文件讲解.md)
 
 9. [howtrader框架使用过程中遇到的常见问题](./howtrader框架使用过程中遇到的常见问题.md)
+
+10. [如何定制tradingview下单信号](./如何定制tradingview下单信号.md)
