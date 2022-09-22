@@ -72,7 +72,7 @@ if ATR_S_STOP
 
 直接市价单成交的代码：
 
-```
+```python
 from howtrader.app.tradingview.template import TVTemplate
 from howtrader.app.tradingview.engine import TVEngine
 from howtrader.trader.object import TickData, TradeData, OrderData, ContractData, Product
@@ -314,7 +314,7 @@ class MyTVSimpleStrategy(TVTemplate):
 最优限价单策略代码：
 
 
-```
+```python
 from howtrader.app.tradingview.template import TVTemplate
 from howtrader.app.tradingview.engine import TVEngine
 from howtrader.trader.object import TickData, TradeData, OrderData, ContractData, Product
