@@ -469,7 +469,7 @@ class OmsEngine(BaseEngine):
         """
         self.order_update_interval += 1
 
-        update_interval = SETTINGS.get('order_update_interval', 600)
+        update_interval = SETTINGS.get('order_update_interval', 300)
 
         if self.order_update_interval >= update_interval:
             self.order_update_interval = 0
