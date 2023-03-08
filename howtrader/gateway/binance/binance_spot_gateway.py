@@ -41,6 +41,7 @@ from howtrader.event import Event, EventEngine
 from howtrader.api.rest import RestClient, Request, Response
 from howtrader.api.websocket import WebsocketClient
 from howtrader.trader.constant import LOCAL_TZ
+from howtrader.trader.setting import SETTINGS
 
 # REST API HOST
 REST_HOST: str = "https://api.binance.com"
@@ -200,7 +201,8 @@ class BinanceSpotGateway(BaseGateway):
         """process timer event, for updating the listen key"""
         self.rest_api.keep_user_stream()
         self.get_server_time_interval += 1
-        if self.get_server_time_interval >= 300:  # get the server time for every five miute
+
+        if self.get_server_time_interval >= SETTINGS.get('position_update_interval', 600):  # get the server time for every five miute
             self.rest_api.query_time()
             self.get_server_time_interval = 0
 
