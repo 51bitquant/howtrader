@@ -278,7 +278,7 @@ if __name__ == "__main__":
 
 ```dict
 {
-    "font.family": "",
+    "font.family": "",  # 设置字体，如果显示不正确的话，设置为系统的一个字体
     "font.size": 12,
 
     "log.active": True,
@@ -294,7 +294,7 @@ if __name__ == "__main__":
     "email.receiver": "",
 
     "order_update_interval": 600, # securing correct orders' status by synchronizing/updating orders through rest api
-    "position_update_interval": 1200,  #securing correct positions through rest api
+    "update_server_time_interval": 300,  # sync with server time
     "passphrase": "howtrader",  # tv passphrase
     "port": 9999, # tv server port
 

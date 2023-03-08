@@ -215,9 +215,9 @@ class BinanceInverseGateway(BaseGateway):
         self.rest_api.keep_user_stream()
         self.get_server_time_interval += 1
 
-        if self.get_server_time_interval >= SETTINGS.get('position_update_interval', 600):  # get the server time for every five miute
+        if self.get_server_time_interval >= SETTINGS.get('update_server_time_interval', 300):
             self.rest_api.query_time()
-            self.rest_api.query_position()
+            # self.rest_api.query_position()
             self.get_server_time_interval = 0
 
     def on_order(self, order: OrderData) -> None:

@@ -250,7 +250,7 @@ configuration key, you can just config the corresponding values.
 
 ```dict
 {
-    "font.family": "",
+    "font.family": "", # set font family if display error
     "font.size": 12,
 
     "log.active": True,
@@ -266,7 +266,7 @@ configuration key, you can just config the corresponding values.
     "email.receiver": "",
 
     "order_update_interval": 600, # securing correct orders' status by synchronizing/updating orders through rest api
-    "position_update_interval": 1200,  #securing correct positions through rest api
+    "update_server_time_interval": 300,  # sync with server time
     "passphrase": "howtrader",  # tv passphrase
     "port": 9999, # tv server port
 
