@@ -246,7 +246,7 @@ if __name__ == "__main__":
 howdtrader use sliqte database as default, and also support mongodb and
 mysql if you want to use it. If you want to use other database, you can
 change the configuration in howtrader/vt_setting.json, here is the full
-configuration key, you can just config the corresponding value.
+configuration key, you can just config the corresponding values.
 
 ```dict
 {
@@ -265,7 +265,8 @@ configuration key, you can just config the corresponding value.
     "email.sender": "",
     "email.receiver": "",
 
-    "update_interval": 600,
+    "order_update_interval": 600, # securing correct orders' status by synchronizing/updating orders through rest api
+    "position_update_interval": 1200,  #securing correct positions through rest api
     "passphrase": "howtrader",  # tv passphrase
     "port": 9999, # tv server port
 
@@ -281,6 +282,7 @@ configuration key, you can just config the corresponding value.
     "database.user": "",
     "database.password": ""
 }
+
 
 ```
 
