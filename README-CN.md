@@ -583,7 +583,40 @@ print(result) # 打印回测的结果，结果中会有比较好的结果值。
 
 ```
 
-更多部分可以参考https://github.com/51bitquant/howtrader/tree/main/examples中的examples代码。
+更多部分可以参考仓库中的示例代码:
+[https://github.com/51bitquant/howtrader/tree/main/examples](https://github.com/51bitquant/howtrader/tree/main/examples)
+
+## 如何使用Howtrader进行手动快捷下单方式
+
+Howtrader 里面内置了快捷下单的配置，你可以通过配置快捷键的方式进行下单。
+
+要配置快捷下单按键，点击add config(添加配置)按钮
+
+<img src="./docs/imgs/howtrader_trader.png" alt= "add config"
+width="622" height="1510" />
+
+
+这时会进入到配置的弹窗
+
+<img src="./docs/imgs/quick_trader_settings.png" alt= "add config"
+width="964" height="273" />
+
+
+1. HotKey: 选择你的快捷键，目前只支持0-9这个几个数字。 
+2. Buy/Sell:
+   做多或者做空，对于平仓而言，原来持有多头仓位，那么做空相应数量的仓位就是平仓。
+3. price: 下单的价格，可以选择一个参考价格,
+   可以是买1(bid_price_1)到买五(bid_price_5)
+   或者卖1(ask_price_1)到卖5(ask_price_5),
+   然后参考价格加上或者减去最小下单精度或者百分比
+4. volume:
+   下单数量，可以是固定数量，或者仓位的百分比。如果是仓位的百分比，那么写相应的数量，比如50，
+   那么计算的时候就是50%， 不用带上%符号。下单的价格百分比也是一样的。
+
+配资完成后，点击confirm(确认)，那么点击all configs 就可以看到相应的配置信息了。
+
+<img src="./docs/imgs/quick_trader_configs.png" alt= "add config"
+width="1004" height="343" />
 
 ## 文档
 

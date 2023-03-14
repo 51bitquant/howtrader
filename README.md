@@ -562,8 +562,8 @@ print(result) # you can print the result.
 
 ```
 
-for more example codes, checkout this repo
-: https://github.com/51bitquant/howtrader/tree/main/examples中的examples代码。
+for more example codes, checkout the examples:
+[https://github.com/51bitquant/howtrader/tree/main/examples](https://github.com/51bitquant/howtrader/tree/main/examples)
 
 ## material codes:
 

@@ -315,7 +315,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def open_forum(self) -> None:
         """
         """
-        webbrowser.open("https://www.vnpy.com/forum/")
+        webbrowser.open("https://github.com/51bitquant/howtrader")
 
     def edit_global_setting(self) -> None:
         """
@@ -387,7 +387,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.main_engine.write_log("Tick price is incorrect.")
                 return None
 
-            if over_price_option == "min_price":
+            if over_price_option == "min_tick":
                 if add_minus == '+':
                     order_price = tick_price + float(over_price_value) * float(contract.pricetick)
                 else:
@@ -403,7 +403,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if volume_option == "fixed_volume":
                 volume = Decimal(volume)
-            else: # % of the position
+            else: # position percent
                 if contract.product == Product.SPOT:
                     self.main_engine.write_log(f"Position is not available for Spot market.")
                     return None

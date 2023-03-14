@@ -1318,18 +1318,23 @@ class QuickTraderDialog(QtWidgets.QDialog):
     def init_ui(self) -> None:
         """"""
         self.setWindowTitle("QuickTrader")
-        self.setMinimumWidth(880)
+        self.setMinimumWidth(1000)
 
         table = QtWidgets.QTableWidget()
 
         table.horizontalHeader().setFixedHeight(50)
+        table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         table.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         table.verticalHeader().setVisible(False)
 
         del_btn = QtWidgets.QPushButton('delete')
+        del_btn.setFixedHeight(30)
+        del_btn.setFixedWidth(150)
         del_btn.clicked.connect(self.del_action)
         cancel_btn = QtWidgets.QPushButton('cancel')
+        cancel_btn.setFixedHeight(30)
+        cancel_btn.setFixedWidth(150)
         cancel_btn.clicked.connect(self.close)
 
         hbox = QtWidgets.QHBoxLayout()
@@ -1339,13 +1344,16 @@ class QuickTraderDialog(QtWidgets.QDialog):
 
         vbox = QtWidgets.QVBoxLayout()
         vbox.addWidget(table)
+        vbox.addSpacing(20)
         vbox.addLayout(hbox)
+        vbox.addSpacing(10)
 
-        headers = ['hotkey', 'buy/sell', 'volume_option', 'volume', 'base_price', '+/-', 'over_price_value', 'over_price_option']
+        headers = ['hotkey', 'buy/sell', 'volumeOption', 'volume', 'basePrice', '+/-', 'overPriceValue', 'overPriceOption']
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
 
         table.setRowCount(len(QUICK_TRADER_SETTINGS.keys()))
+
 
         index = 0
         for key in QUICK_TRADER_SETTINGS.keys():
@@ -1362,14 +1370,37 @@ class QuickTraderDialog(QtWidgets.QDialog):
             over_price_value =  data.get('over_price_value')
             over_price_option = data.get('over_price_option')
 
-            table.setItem(index, 0, QtWidgets.QTableWidgetItem(key))
-            table.setItem(index, 1, QtWidgets.QTableWidgetItem(buy_sell))
-            table.setItem(index, 2, QtWidgets.QTableWidgetItem(volume_option))
-            table.setItem(index, 3, QtWidgets.QTableWidgetItem(volume))
-            table.setItem(index, 4, QtWidgets.QTableWidgetItem(price))
-            table.setItem(index, 5, QtWidgets.QTableWidgetItem(add_minus))
-            table.setItem(index, 6, QtWidgets.QTableWidgetItem(over_price_value))
-            table.setItem(index, 7, QtWidgets.QTableWidgetItem(over_price_option))
+            item0 = QtWidgets.QTableWidgetItem(key)
+            item0.setTextAlignment(Qt.AlignCenter)
+            table.setItem(index, 0, item0)
+
+            item1 = QtWidgets.QTableWidgetItem(buy_sell)
+            item1.setTextAlignment(Qt.AlignCenter)
+            table.setItem(index, 1, item1)
+
+            item2 =  QtWidgets.QTableWidgetItem(volume_option)
+            item2.setTextAlignment(Qt.AlignCenter)
+            table.setItem(index, 2, item2)
+
+            item3 = QtWidgets.QTableWidgetItem(volume)
+            item3.setTextAlignment(Qt.AlignCenter)
+            table.setItem(index, 3, item3)
+
+            item4 = QtWidgets.QTableWidgetItem(price)
+            item4.setTextAlignment(Qt.AlignCenter)
+            table.setItem(index, 4, item4)
+
+            item5 = QtWidgets.QTableWidgetItem(add_minus)
+            item5.setTextAlignment(Qt.AlignCenter)
+            table.setItem(index, 5, item5)
+
+            item6 = QtWidgets.QTableWidgetItem(over_price_value)
+            item6.setTextAlignment(Qt.AlignCenter)
+            table.setItem(index, 6, item6)
+
+            item7 = QtWidgets.QTableWidgetItem(over_price_option)
+            item7.setTextAlignment(Qt.AlignCenter)
+            table.setItem(index, 7, item7)
             index += 1
 
         if len(QUICK_TRADER_SETTINGS.keys()) > 0:
@@ -1408,7 +1439,7 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
 
     def init_ui(self) -> None:
         """"""
-        self.setWindowTitle("QuickTrader")
+        self.setWindowTitle("QuickTrader Settings")
         self.setMinimumWidth(800)
 
         grid_layout = QtWidgets.QGridLayout()
@@ -1419,11 +1450,19 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
         buy_sell_label: QtWidgets.QLabel = QtWidgets.QLabel("Buy/Sell")
         self.buy_sell_combo: QtWidgets.QComboBox  = QtWidgets.QComboBox()
         self.buy_sell_combo.addItems(['buy', 'sell'])
+        self.buy_sell_combo.setMinimumWidth(150)
         price_label = QtWidgets.QLabel('Price')
         volume_label = QtWidgets.QLabel('Volume')
 
+        # confirm button
         confirm_btn = QtWidgets.QPushButton("Confirm")
+        confirm_btn.setFixedWidth(150)
+        confirm_btn.setFixedHeight(30)
+
+        # concel button
         cancel_btn = QtWidgets.QPushButton("Cancel")
+        cancel_btn.setFixedWidth(150)
+        cancel_btn.setFixedHeight(30)
         confirm_btn.clicked.connect(self.confirm_action)
         cancel_btn.clicked.connect(self.cancel_action)
 
@@ -1449,10 +1488,12 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
         self.over_price_line_edit.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.over_price_line_edit.setValidator(double_validator)
         self.over_price_combo = QtWidgets.QComboBox()
-        self.over_price_combo.addItems(['min_price', '% of price'])
+        self.over_price_combo.addItems(['min_tick', 'price_percent'])
+        self.over_price_combo.setMinimumWidth(150)
 
         self.volume_combox = QtWidgets.QComboBox()
-        self.volume_combox.addItems(['fixed_volume', '% of position'])
+
+        self.volume_combox.addItems(['fixed_volume', 'position_percent'])
         self.volume_line_edit = QtWidgets.QLineEdit()
         self.volume_line_edit.setValidator(double_validator)
         self.volume_line_edit.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
@@ -1466,20 +1507,22 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
         grid_layout.addWidget(price_label, 2, 0)
         grid_layout.addWidget(self.base_price_combo, 2, 1)
         grid_layout.addWidget(self.price_add_minus_combo, 2, 2)
-        grid_layout.addWidget(self.over_price_line_edit,2, 3)
+        grid_layout.addWidget(self.over_price_line_edit, 2, 3)
         grid_layout.addWidget(self.over_price_combo, 2, 4)
 
         grid_layout.addWidget(volume_label, 3, 0)
         grid_layout.addWidget(self.volume_combox, 3, 1)
         grid_layout.addWidget(self.volume_line_edit, 3, 2)
 
+        grid_layout.setContentsMargins(20, 20, 20, 20)
+        grid_layout.setVerticalSpacing(15)
+        grid_layout.setHorizontalSpacing(15)
+
         ## confirm and cancel
         horizontal_layout = QtWidgets.QHBoxLayout()
-        horizontal_layout.addStretch(1)
         horizontal_layout.addWidget(confirm_btn)
-        horizontal_layout.addSpacing(20)
+        horizontal_layout.addSpacing(100)
         horizontal_layout.addWidget(cancel_btn)
-        horizontal_layout.addStretch(1)
 
         grid_layout.addLayout(horizontal_layout, 4, 2)
         self.setLayout(grid_layout)
