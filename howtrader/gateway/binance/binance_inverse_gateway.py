@@ -328,8 +328,7 @@ class BinanceInverseRestApi(RestClient):
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json",
-            "X-MBX-APIKEY": self.key,
-            "Connection": "close"
+            "X-MBX-APIKEY": self.key
         }
 
         if security in [Security.SIGNED, Security.API_KEY]:
