@@ -618,6 +618,95 @@ width="964" height="273" />
 <img src="./docs/imgs/quick_trader_configs.png" alt= "add config"
 width="1004" height="343" />
 
+
+# 使用对接tradingview
+
+## 1. 购买服务器、域名和安装nginx软件
+如果你还没有服务器，可以购买一个服务器和域名，并把你的域名解析到当前服务器ip地址.
+
+**服务器推荐**：[https://www.ucloud.cn/site/active/kuaijie.html?invitation_code=C1x2EA81CD79B8C#dongjing](https://www.ucloud.cn/site/active/kuaijie.html?invitation_code=C1x2EA81CD79B8C#dongjing)
+
+完成上一步之后，你还需要安装nginx软件。window用户可以从这个网站下载[https://nginx.org/en/download.html](https://nginx.org/en/download.html)，
+
+通过上述地址下载完成后，解压到指定目录. 然后进入该目录，通过终端启动它:
+
+> start nginx.exe
+
+其他有用的命令如下:
+
+> nginx.exe -s stop
+
+> nginx.exe -s quit
+
+> nginx.exe -s stop
+
+> nginx.exe -s reload (reload)
+
+
+对于macOS系统, 你可以在终端(cmd 或者 terminal)输入一下命令安装:
+
+> brew install nginx
+
+MacOS 中的其他有用的命令如下:
+
+> brew services start nginx 
+
+> brew services restart nginx
+
+> brew services reload nginx
+
+如果提示你没有brew, 那么你需要安装下homebrew, 具体百度或者谷歌一下。
+
+对于 linux 的 ubuntu 系统可以通过apt来安装：
+
+> sudo apt update
+ 
+> sudo apt upgrade
+ 
+> sudo apt install build-essential
+
+> sudo apt install nginx
+
+
+安装完成后，我们需要对 nginx 的 nginx.conf 进行配置，该文件主要是配置 nginx
+端口转发。由于tradingview只能用80端口，所以你需要为你的web服务器进行端口转发。在ubuntu系统中，
+nginx 配置文件都在/etc/nginx/目录下。 主要的 nginx
+配置文件是/etc/nginx/nginx.conf。 我们要再在http里面添加如下配置信息：
+
+```
+server {
+        listen 80;
+        server_name your.dormain.com;
+        charset utf-8;
+
+        location / {
+          proxy_pass http://localhost:8888;
+        }
+
+    }
+
+```
+
+server_name 可以填写字符串或者你的ip地址都可以的， 比如： server_name
+xxx.xxx.xxx.xxx;
+
+修改nginx.conf后需要重启nginx 或者重新加载，你的配置才会生效， 最后运行main.py。
+
+> sudo service nginx start # 启动
+
+> sudo service nginx reload # 重新加载
+ 
+> sudo service nginx stop # 停止
+
+有用的命令：
+
+> ps -ef | grep nginx # 查看nginx 的进程
+
+
+进入nginx安装目录bin下，输入命令./nginx -t 可以查看配置文件是否正确
+
+> ./nginx -t 
+
 ## 文档
 
 其他教程可以参考[文档](./docs/howtrader文档说明.md)
