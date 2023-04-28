@@ -81,11 +81,13 @@ Numpy等科学计算的库，为了方便安装，这里建议使用Anaconda进�
    
    > conda update anaconda
    
-   对于linux 系统可以通过下面方式来安装：
+   对于linux
+   系统可以安装miniconda，具体的下载链接可以通过[https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html)找到。
+   这里我们选择下载安装3.9版本的.
    
-   > wget https://repo.anaconda.com/archive/Anaconda3-2023.03-1-Linux-x86_64.sh
+   > wget https://repo.anaconda.com/miniconda/Miniconda3-py39_23.3.1-0-Linux-x86_64.sh
   
-   > bash Anaconda3-2023.03-1-Linux-x86_64.sh # 执行安装
+   > bash Miniconda3-py39_23.3.1-0-Linux-x86_64.sh # 执行安装
    
    其他使用参考网[易云课堂的视频](https://study.163.com/course/courseMain.htm?courseId=1209509824&share=2&shareId=480000001919830)
 
