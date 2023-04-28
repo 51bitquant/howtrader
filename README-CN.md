@@ -80,6 +80,14 @@ Numpy等科学计算的库，为了方便安装，这里建议使用Anaconda进�
    > conda update conda
    
    > conda update anaconda
+   
+   对于linux 系统可以通过下面方式来安装：
+   
+   > wget https://repo.anaconda.com/archive/Anaconda3-2023.03-1-Linux-x86_64.sh
+  
+   > bash Anaconda3-2023.03-1-Linux-x86_64.sh # 执行安装
+   
+   其他使用参考网[易云课堂的视频](https://study.163.com/course/courseMain.htm?courseId=1209509824&share=2&shareId=480000001919830)
 
 2. 安装git工具
 
