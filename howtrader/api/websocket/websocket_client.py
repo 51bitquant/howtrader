@@ -5,10 +5,12 @@ from datetime import datetime
 from types import coroutine
 from threading import Thread
 from asyncio import (
-    get_event_loop,
+    get_running_loop,
+    new_event_loop,
     set_event_loop,
     run_coroutine_threadsafe,
-    AbstractEventLoop
+    AbstractEventLoop,
+    TimeoutError
 )
 
 from aiohttp import ClientSession, ClientWebSocketResponse
@@ -31,11 +33,12 @@ class WebsocketClient:
         self._active: bool = False
         self._host: str = ""
 
-        self._session: ClientSession = ClientSession()
+        self._session: ClientSession = None
+        self.receive_timeout = 5 * 60  # 5 minutes for receiving timeout
         self._ws: ClientWebSocketResponse = None
         self._loop: AbstractEventLoop = None
 
-        self._proxy: str = ""
+        self._proxy: str = None
         self._ping_interval: int = 60  # ping interval for 60 seconds
         self._header: dict = {}
 
@@ -69,20 +72,16 @@ class WebsocketClient:
         will call the on_connected callback when connected
         subscribe the data when call the on_connected callback
         """
-        try:
-            if self._ws:
-                coro = self._ws.close()
-                run_coroutine_threadsafe(coro, self._loop)
-        except Exception as error:
-            pass
-
         if self._active:
             return None
 
         self._active = True
 
-        if not self._loop:
-            self._loop = get_event_loop()
+        try:
+            self._loop = get_running_loop()
+        except RuntimeError:
+            self._loop = new_event_loop()
+
         start_event_loop(self._loop)
 
         run_coroutine_threadsafe(self._run(), self._loop)
@@ -96,6 +95,10 @@ class WebsocketClient:
         if self._ws:
             coro = self._ws.close()
             run_coroutine_threadsafe(coro, self._loop)
+
+        if self._session:  # need to close the session.
+            coro1 = self._session.close()
+            run_coroutine_threadsafe(coro1, self._loop)
 
         if self._loop and self._loop.is_running():
             self._loop.stop()
@@ -151,9 +154,6 @@ class WebsocketClient:
         except Exception:
             traceback.print_exc()
 
-    def on_exit_loop(self):
-        self.start()
-
     def exception_detail(
         self,
         exception_type: type,
@@ -174,16 +174,24 @@ class WebsocketClient:
 
     async def _run(self):
         """
-
+        run on the asyncio
         """
         while self._active:
             # try catch error/exception
             try:
                 # connect ws server
+                if not self._session:
+                    self._session = ClientSession()
+
+                if self._session.closed:
+                    self._session = ClientSession()
+
                 self._ws = await self._session.ws_connect(
                     self._host,
                     proxy=self._proxy,
-                    verify_ssl=False
+                    verify_ssl=False,
+                    heartbeat=self._ping_interval,  # send ping interval
+                    receive_timeout=self.receive_timeout,
                 )
 
                 # call the on_connected function
@@ -203,13 +211,11 @@ class WebsocketClient:
                 # call the on_disconnected
                 self.on_disconnected()
             # on exception
+            except TimeoutError:
+                pass
             except Exception:
                 et, ev, tb = sys.exc_info()
                 self.on_error(et, ev, tb)
-                break
-
-        self._active = False
-        self.on_exit_loop()
 
     def _record_last_sent_text(self, text: str):
         """record the last send text for debugging"""
@@ -220,7 +226,7 @@ class WebsocketClient:
         self._last_received_text = text[:1000]
 
 
-def start_event_loop(loop: AbstractEventLoop) -> AbstractEventLoop:
+def start_event_loop(loop: AbstractEventLoop) -> None:
     """start event loop"""
     # if the event loop is not running, then create the thread to run
     if not loop.is_running():

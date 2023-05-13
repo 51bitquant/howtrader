@@ -1096,9 +1096,6 @@ class BinanceInverseTradeWebsocketApi(WebsocketClient):
         elif packet["e"] == "ORDER_TRADE_UPDATE":
             self.on_order(packet)
 
-    def on_exit_loop(self):
-        self.gateway.rest_api.start_user_stream()
-
     def on_account(self, packet: dict) -> None:
         """account data update"""
         for acc_data in packet["a"]["B"]:
@@ -1180,6 +1177,7 @@ class BinanceInverseDataWebsocketApi(WebsocketClient):
 
         self.ticks: Dict[str, TickData] = {}
         self.reqid: int = 0
+        self.receive_timeout = 60
 
     def connect(
             self,

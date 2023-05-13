@@ -972,9 +972,6 @@ class BinanceSpotTradeWebsocketApi(WebsocketClient):
         elif packet["e"] == "executionReport":
             self.on_order(packet)
 
-    def on_exit_loop(self):
-        self.gateway.rest_api.start_user_stream()
-
     def on_account(self, packet: dict) -> None:
         """account data update"""
         for d in packet["B"]:
@@ -1032,6 +1029,7 @@ class BinanceSpotDataWebsocketApi(WebsocketClient):
 
         self.ticks: Dict[str, TickData] = {}
         self.reqid: int = 0
+        self.receive_timeout = 60
 
     def connect(self, proxy_host: str, proxy_port: int):
         """connect market data ws"""

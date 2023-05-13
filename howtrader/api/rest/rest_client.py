@@ -5,16 +5,23 @@ from typing import Any, Callable, Optional, Union, Type
 from types import TracebackType, coroutine
 from threading import Thread
 from asyncio import (
-    get_event_loop,
+    get_running_loop,
+    new_event_loop,
     set_event_loop,
     run_coroutine_threadsafe,
     AbstractEventLoop,
-    Future
+    Future,
+    set_event_loop_policy
 )
+
 from json import loads
 
 from aiohttp import ClientSession, ClientResponse
 
+# 在Windows系统上必须使用Selector事件循环，否则可能导致程序崩溃
+if sys.platform == 'win32':  # if platform.system() == 'Windows':
+    from asyncio import WindowsSelectorEventLoopPolicy
+    set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 
 CALLBACK_TYPE = Callable[[Union[dict, list], "Request"], None]
 ON_FAILED_TYPE = Callable[[int, "Request"], None]
@@ -113,10 +120,11 @@ class RestClient(object):
     def __init__(self):
         """"""
         self.url_base: str = ""
-        self.proxy: str = ""
+        self.proxy: str = None
 
-        self.session: ClientSession = ClientSession(trust_env=True)
+        self.session: ClientSession = None
         self.loop: AbstractEventLoop = None
+        self._active = False
 
     def init(
         self,
@@ -132,13 +140,21 @@ class RestClient(object):
 
     def start(self) -> None:
         """start event loop"""
-        if not self.loop:
-            self.loop = get_event_loop()
+        if self._active:
+            return None
+
+        self._active = True
+
+        try:
+            self.loop = get_running_loop()
+        except RuntimeError:
+            self.loop = new_event_loop()
 
         start_event_loop(self.loop)
 
     def stop(self) -> None:
         """stop event loop"""
+        self._active = False
         if self.loop and self.loop.is_running():
             self.loop.stop()
 
@@ -235,6 +251,12 @@ class RestClient(object):
         """send the request to server then resolve the response data"""
         request = self.sign(request)
         url = self._make_full_url(request.path)
+
+        if not self.session:
+            self.session = ClientSession(trust_env=True)
+
+        if self.session.closed:
+            self.session = ClientSession(trust_env=True)
 
         cr: ClientResponse = await self.session.request(
             request.method,
