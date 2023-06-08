@@ -12,8 +12,9 @@ from asyncio import (
     AbstractEventLoop,
     TimeoutError
 )
-
+from typing import Optional
 from aiohttp import ClientSession, ClientWebSocketResponse
+
 
 class WebsocketClient:
     """
@@ -31,14 +32,13 @@ class WebsocketClient:
     def __init__(self):
         """Constructor"""
         self._active: bool = False
-        self._host: str = ""
-
-        self._session: ClientSession = None
+        self._session: Optional[ClientSession] = None
         self.receive_timeout = 5 * 60  # 5 minutes for receiving timeout
-        self._ws: ClientWebSocketResponse = None
-        self._loop: AbstractEventLoop = None
+        self._ws: Optional[ClientWebSocketResponse] = None
+        self._loop: Optional[AbstractEventLoop] = None
 
-        self._proxy: str = None
+        self._host: str = ""
+        self._proxy: Optional[str] = None
         self._ping_interval: int = 60  # ping interval for 60 seconds
         self._header: dict = {}
 
@@ -124,7 +124,7 @@ class WebsocketClient:
     def unpack_data(self, data: str):
         """
         unpack the data from server
-        use json.loads method to convert the str in to dict
+        use json loads method to convert the str in to dict
         you may need to reload the unpack_data if server send the data not in str format
         """
         return json.loads(data)
