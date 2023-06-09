@@ -8,6 +8,7 @@ from tzlocal import get_localzone_name
 
 LOCAL_TZ = pytz.timezone(get_localzone_name()) #pytz.timezone("Asia/Shanghai")
 
+
 class Direction(Enum):
     """
     Direction of order/trade/position.
@@ -26,6 +27,7 @@ class Offset(Enum):
     CLOSE = "CLOSE"
     CLOSETODAY = "CLOSETODAY"
     CLOSEYESTERDAY = "CLOSETODAY"
+
 
 class Status(Enum):
     """

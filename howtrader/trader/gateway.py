@@ -46,7 +46,7 @@ class BaseGateway(ABC):
 
     ---
     ## Basics
-    A gateway should satisfies:
+    A gateway should satisfy:
     * this class should be thread-safe:
         * all methods should be thread-safe
         * no mutable shared properties between objects.
@@ -71,9 +71,6 @@ class BaseGateway(ABC):
         the object should not be modified after passing to on_xxxx.
     So if you use a cache to store reference of data, use copy.copy to create a new object
     before passing that data into on_xxxx
-
-
-
     """
 
     # Default name for the gateway.

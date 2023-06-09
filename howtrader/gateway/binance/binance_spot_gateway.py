@@ -292,8 +292,7 @@ class BinanceSpotRestAPi(RestClient):
             request.params["timestamp"] = timestamp
 
             query: str = urllib.parse.urlencode(sorted(request.params.items()))
-            signature: bytes = hmac.new(self.secret, query.encode(
-                "utf-8"), hashlib.sha256).hexdigest()
+            signature: str = hmac.new(self.secret, query.encode("utf-8"), hashlib.sha256).hexdigest()
 
             query += "&signature={}".format(signature)
             path: str = request.path + "?" + query

@@ -57,7 +57,6 @@ D_REST_HOST: str = "https://dapi.binance.com"
 D_WEBSOCKET_TRADE_HOST: str = "wss://dstream.binance.com/ws/"
 D_WEBSOCKET_DATA_HOST: str = "wss://dstream.binance.com/stream"
 
-
 # Order status map
 STATUS_BINANCES2VT: Dict[str, Status] = {
     "NEW": Status.NOTTRADED,
@@ -314,8 +313,7 @@ class BinanceInverseRestApi(RestClient):
             request.params["timestamp"] = timestamp
 
             query: str = urllib.parse.urlencode(sorted(request.params.items()))
-            signature: bytes = hmac.new(self.secret, query.encode(
-                "utf-8"), hashlib.sha256).hexdigest()
+            signature: str = hmac.new(self.secret, query.encode("utf-8"), hashlib.sha256).hexdigest()
 
             query += "&signature={}".format(signature)
             path: str = request.path + "?" + query
