@@ -148,7 +148,7 @@ class MainEngine:
 
     def get_all_gateway_names(self) -> List[str]:
         """
-        Get all names of gatewasy added in main engine.
+        Get all names of gateways added in main engine.
         """
         return list(self.gateways.keys())
 
@@ -585,7 +585,7 @@ class OmsEngine(BaseEngine):
     def get_all_active_quotes(self, vt_symbol: str = "") -> List[QuoteData]:
         """
         Get all active quotes by vt_symbol.
-        If vt_symbol is empty, return all active qutoes.
+        If vt_symbol is empty, return all active quotes.
         """
         if not vt_symbol:
             return list(self.active_quotes.values())

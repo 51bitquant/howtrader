@@ -54,6 +54,7 @@ def _get_trader_dir(temp_name: str) -> Tuple[Path, Path]:
 
     return cwd, temp_path
 
+
 TRADER_DIR, TEMP_DIR = _get_trader_dir("howtrader")
 sys.path.append(str(TRADER_DIR))
 
@@ -122,6 +123,7 @@ def round_to(value: Union[Decimal, float, int], target: Union[Decimal, float, in
     target = Decimal(str(target).rstrip("0"))
     rounded = value.quantize(target)
     return rounded
+
 
 def floor_to(value: Union[Decimal, float, int], target: Union[Decimal, float, int]) -> Decimal:
     """

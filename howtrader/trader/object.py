@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from logging import INFO
 from decimal import Decimal
-
+import pandas as pd
 from .constant import Direction, Exchange, Interval, Offset, Status, Product, OptionType, OrderType
 
-ACTIVE_STATUSES = set([Status.SUBMITTING, Status.NOTTRADED, Status.PARTTRADED])
-import pandas as pd
+ACTIVE_STATUSES = {Status.SUBMITTING, Status.NOTTRADED, Status.PARTTRADED}  # define the active status set.
+
 
 @dataclass
 class BaseData:
@@ -266,6 +266,7 @@ class ContractData(BaseData):
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
 
+
 @dataclass
 class PremiumRateData(BaseData):
     """
@@ -296,6 +297,7 @@ class OriginalKlineData(BaseData):
     def __post_init__(self) -> None:
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
+
 
 @dataclass
 class QuoteData(BaseData):
@@ -405,6 +407,7 @@ class CancelRequest:
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
 
+
 @dataclass
 class OrderQueryRequest:
     """
@@ -417,6 +420,7 @@ class OrderQueryRequest:
     def __post_init__(self):
         """"""
         self.vt_symbol = f"{self.symbol}.{self.exchange.value}"
+
 
 @dataclass
 class HistoryRequest:
@@ -434,6 +438,7 @@ class HistoryRequest:
     def __post_init__(self) -> None:
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
+
 
 @dataclass
 class QuoteRequest:
@@ -473,6 +478,7 @@ class QuoteRequest:
             gateway_name=gateway_name,
         )
         return quote
+
 
 class GridPositionCalculator(object):
     """
