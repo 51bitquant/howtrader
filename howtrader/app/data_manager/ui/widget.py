@@ -113,7 +113,7 @@ class ManagerWidget(QtWidgets.QWidget):
         self.table.setHorizontalHeaderLabels(labels)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeToContents
+            QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
 
     def clear_tree(self) -> None:
@@ -205,7 +205,7 @@ class ManagerWidget(QtWidgets.QWidget):
         """"""
         dialog = ImportDialog()
         n = dialog.exec_()
-        if n != dialog.Accepted:
+        if n != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
         file_path = dialog.file_edit.text()
@@ -263,7 +263,7 @@ class ManagerWidget(QtWidgets.QWidget):
         # Get output date range
         dialog = DateRangeDialog(start, end)
         n = dialog.exec_()
-        if n != dialog.Accepted:
+        if n != QtWidgets.QDialog.DialogCode.Accepted:
             return
         start, end = dialog.get_date_range()
 
@@ -305,7 +305,7 @@ class ManagerWidget(QtWidgets.QWidget):
         # Get output date range
         dialog = DateRangeDialog(start, end)
         n = dialog.exec_()
-        if n != dialog.Accepted:
+        if n != QtWidgets.QDialog.DialogCode.Accepted:
             return
         start, end = dialog.get_date_range()
 
@@ -341,11 +341,11 @@ class ManagerWidget(QtWidgets.QWidget):
             self,
             "confirm",
             f"Are you sure to delete all the data? {symbol} {exchange.value} {interval.value}",
-            QtWidgets.QMessageBox.Ok,
-            QtWidgets.QMessageBox.Cancel
+            QtWidgets.QMessageBox.StandardButton.Ok,
+            QtWidgets.QMessageBox.StandardButton.Cancel
         )
 
-        if n == QtWidgets.QMessageBox.Cancel:
+        if n == QtWidgets.QMessageBox.StandardButton.Cancel:
             return
 
         count = self.engine.delete_bar_data(
@@ -358,7 +358,7 @@ class ManagerWidget(QtWidgets.QWidget):
             self,
             "delete success",
             f"already delete the data: {symbol} {exchange.value} {interval.value}, total count:{count}",
-            QtWidgets.QMessageBox.Ok
+            QtWidgets.QMessageBox.StandardButton.Ok
         )
 
     def update_data(self) -> None:
@@ -374,7 +374,7 @@ class ManagerWidget(QtWidgets.QWidget):
             100
         )
         dialog.setWindowTitle("update progress")
-        dialog.setWindowModality(QtCore.Qt.WindowModal)
+        dialog.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
         dialog.setValue(0)
 
         for overview in overviews:
@@ -409,7 +409,7 @@ class DataCell(QtWidgets.QTableWidgetItem):
     def __init__(self, text: str = ""):
         super().__init__(text)
 
-        self.setTextAlignment(QtCore.Qt.AlignCenter)
+        self.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
 
 class DateRangeDialog(QtWidgets.QDialog):
@@ -464,8 +464,8 @@ class ImportDialog(QtWidgets.QDialog):
         self.setFixedWidth(300)
 
         self.setWindowFlags(
-            (self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
-            & ~QtCore.Qt.WindowMaximizeButtonHint)
+            (self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint)
+            & ~QtCore.Qt.WindowType.WindowMaximizeButtonHint)
 
         file_button = QtWidgets.QPushButton("select file")
         file_button.clicked.connect(self.select_file)
@@ -501,13 +501,13 @@ class ImportDialog(QtWidgets.QDialog):
         self.format_edit = QtWidgets.QLineEdit("%Y-%m-%d %H:%M:%S")
 
         info_label = QtWidgets.QLabel("contract info")
-        info_label.setAlignment(QtCore.Qt.AlignCenter)
+        info_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         head_label = QtWidgets.QLabel("columns info")
-        head_label.setAlignment(QtCore.Qt.AlignCenter)
+        head_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         format_label = QtWidgets.QLabel("format info")
-        format_label.setAlignment(QtCore.Qt.AlignCenter)
+        format_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         form = QtWidgets.QFormLayout()
         form.addRow(file_button, self.file_edit)
@@ -537,8 +537,8 @@ class ImportDialog(QtWidgets.QDialog):
 
     def select_file(self):
         """"""
-        result: str = QtWidgets.QFileDialog.getOpenFileName(
-            self, filter="CSV (*.csv)")
+
+        result = QtWidgets.QFileDialog.getOpenFileName(self, filter="CSV (*.csv)")
         filename = result[0]
         if filename:
             self.file_edit.setText(filename)
@@ -557,8 +557,8 @@ class DownloadDialog(QtWidgets.QDialog):
         self.setFixedWidth(300)
 
         self.setWindowFlags(
-            (self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
-            & ~QtCore.Qt.WindowMaximizeButtonHint)
+            (self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint)
+            & ~QtCore.Qt.WindowType.WindowMaximizeButtonHint)
 
         self.symbol_edit = QtWidgets.QLineEdit()
 
