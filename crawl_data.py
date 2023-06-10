@@ -9,16 +9,17 @@ from datetime import datetime
 import requests
 import pytz
 from howtrader.trader.database import get_database, BaseDatabase
-
-pd.set_option('expand_frame_repr', False)  #
 from howtrader.trader.object import BarData, Interval, Exchange
+from tzlocal import get_localzone_name
+from threading import Thread
 
+
+pd.set_option('expand_frame_repr', False)
 BINANCE_SPOT_LIMIT = 1000
 BINANCE_FUTURE_LIMIT = 1500
-from tzlocal import get_localzone_name
 LOCAL_TZ = pytz.timezone(get_localzone_name())
-from threading import Thread
 database: BaseDatabase = get_database()
+
 
 def generate_datetime(timestamp: float) -> datetime:
     """
@@ -191,18 +192,30 @@ def download_future(symbol):
     t5.join()
 
 
-
 if __name__ == '__main__':
 
     """
-    read the code before run it. the software crawl the binance data then save into the sqlite database.
+    @important Note:
+    read the code before running it. the software crawl the binance data then save into the sqlite database.
     you may need to change the start date and end date.
+    
+    set the proxy_host and proxy_port: if you can directly connect to the binance exchange, 
+    then set the proxy_host to None and proxy_port to empty string ""
+    you can use the command ping api.binance.com to check whether your network works
+    
+    @重要提示：
+    如果你的网络不能直连binance.com交易所，你需要设置proxy_host 和 proxy_port, 具体的设置看你代理的主机和端口。如果能直连的话，
+    就设置proxy_host = None, proxy_port = ""
+    你可以在终端运行输入命令看看自己的网络能否连接交易所： ping api.binance.com
     """
 
-    # proxy_host , if you can directly connect to the binance exchange, then set it to None or empty string ""，如果没有你就设置为 None 或者空的字符串 "",
-    # you can use the command  ping api.binance.com to check whether your network work well: 你可以在终端运行 ping api.binance.com 查看你的网络是否正常。
-    proxy_host = "127.0.0.1"  # set it to your proxy_host 如果没有就设置为"", 如果有就设置为你的代理主机如：127.0.0.1
-    proxy_port = 1087  # set it to your proxy_port  设置你的代理端口号如: 1087, 没有你修改为0,但是要保证你能访问api.binance.com这个主机。
+    # set your proxy_host
+    # 如果没有就设置为 None, 如果有就设置为你的代理主机如：127.0.0.1
+    proxy_host = "127.0.0.1"
+
+    # set it to your proxy_port
+    # 设置你的代理端口号如: 1087, 没有你修改为0,但是要保证你能访问api.binance.com这个主机。
+    proxy_port = 1087
 
     proxies = None
     if proxy_host and proxy_port:
@@ -211,6 +224,7 @@ if __name__ == '__main__':
 
     download_future(symbol="BTCUSDT")  # crawl usdt_future data. 下载合约的数据
 
-    download_spot(symbol="BTCUSDT") # crawl binance spot data.
+    download_spot(symbol="BTCUSDT")  # crawl binance spot data.
+
 
 
