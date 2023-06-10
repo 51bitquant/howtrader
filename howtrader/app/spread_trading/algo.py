@@ -132,7 +132,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         """
         Send orders to hedge all passive legs.
         """
-        # Calcualte spread volume to hedge
+        # Calculate spread volume to hedge
         active_leg = self.spread.active_leg
         active_traded = self.leg_traded[active_leg.vt_symbol]
         active_traded = round_to(active_traded, self.spread.min_volume)

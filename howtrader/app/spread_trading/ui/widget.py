@@ -196,7 +196,7 @@ class SpreadAlgoMonitor(BaseMonitor):
 
     def stop_algo(self, cell):
         """
-        Stop algo if cell double clicked.
+        Stop algo if cell double-clicked.
         """
         algo = cell.get_data()
         self.spread_engine.stop_algo(algo.algoid)
@@ -217,7 +217,7 @@ class SpreadAlgoWidget(QtWidgets.QFrame):
     def init_ui(self):
         """"""
         self.setWindowTitle("启动算法")
-        self.setFrameShape(self.Box)
+        self.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.setLineWidth(1)
 
         self.name_line = QtWidgets.QLineEdit()
@@ -347,7 +347,7 @@ class SpreadAlgoWidget(QtWidgets.QFrame):
         editor = SettingEditor(parameters, class_name=class_name)
         n = editor.exec_()
 
-        if n == editor.Accepted:
+        if n == QtWidgets.QDialog.DialogCode.Accepted:
             setting = editor.get_setting()
             spread_name = setting.pop("spread_name")
             strategy_name = setting.pop("strategy_name")
@@ -481,7 +481,7 @@ class SpreadStrategyWidget(QtWidgets.QFrame):
     def init_ui(self):
         """"""
         self.setFixedHeight(300)
-        self.setFrameShape(self.Box)
+        self.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.setLineWidth(1)
 
         init_button = QtWidgets.QPushButton("初始化")
@@ -508,7 +508,7 @@ class SpreadStrategyWidget(QtWidgets.QFrame):
             f"{strategy_name}  -  {spread_name}  ({class_name} by {author})"
         )
         label = QtWidgets.QLabel(label_text)
-        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         self.parameters_monitor = StrategyDataMonitor(self._data["parameters"])
         self.variables_monitor = StrategyDataMonitor(self._data["variables"])
@@ -555,7 +555,7 @@ class SpreadStrategyWidget(QtWidgets.QFrame):
         editor = SettingEditor(parameters, strategy_name=strategy_name)
         n = editor.exec_()
 
-        if n == editor.Accepted:
+        if n == QtWidgets.QDialog.DialogCode.Accepted:
             setting = editor.get_setting()
             self.strategy_engine.edit_strategy(strategy_name, setting)
 
@@ -590,16 +590,16 @@ class StrategyDataMonitor(QtWidgets.QTableWidget):
 
         self.setRowCount(1)
         self.verticalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.Stretch
+            QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         for column, name in enumerate(self._data.keys()):
             value = self._data[name]
 
             cell = QtWidgets.QTableWidgetItem(str(value))
-            cell.setTextAlignment(QtCore.Qt.AlignCenter)
+            cell.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
             self.setItem(0, column, cell)
             self.cells[name] = cell
@@ -784,7 +784,7 @@ class SpreadDataDialog(QtWidgets.QDialog):
                 self,
                 "创建失败",
                 "请输入价差名称",
-                QtWidgets.QMessageBox.Ok
+                QtWidgets.QMessageBox.StandardButton.Ok
             )
             return
 
@@ -794,7 +794,7 @@ class SpreadDataDialog(QtWidgets.QDialog):
                 self,
                 "创建失败",
                 "请输入正确的计算公式",
-                QtWidgets.QMessageBox.Ok
+                QtWidgets.QMessageBox.StandardButton.Ok
             )
             return
 
@@ -827,7 +827,7 @@ class SpreadDataDialog(QtWidgets.QDialog):
                 self,
                 "创建失败",
                 "价差最少需要2条腿",
-                QtWidgets.QMessageBox.Ok
+                QtWidgets.QMessageBox.StandardButton.Ok
             )
             return
 
@@ -836,7 +836,7 @@ class SpreadDataDialog(QtWidgets.QDialog):
                 self,
                 "创建失败",
                 "各条腿中找不到主动腿代码",
-                QtWidgets.QMessageBox.Ok
+                QtWidgets.QMessageBox.StandardButton.Ok
             )
             return
 
