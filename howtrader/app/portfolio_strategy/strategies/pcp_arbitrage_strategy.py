@@ -118,7 +118,7 @@ class PcpArbitrageStrategy(StrategyTemplate):
         """"""
         self.cancel_all()
 
-        # Calcualate spread data
+        # Calculate spread data
         call_bar = bars[self.call_symbol]
         put_bar = bars[self.put_symbol]
         futures_bar = bars[self.futures_symbol]

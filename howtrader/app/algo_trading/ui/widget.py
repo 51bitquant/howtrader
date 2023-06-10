@@ -70,7 +70,7 @@ class AlgoWidget(QtWidgets.QWidget):
         form.addRow(QtWidgets.QLabel(""))
         form.addRow(QtWidgets.QLabel(""))
 
-        self.setting_name_line: str = QtWidgets.QLineEdit()
+        self.setting_name_line = QtWidgets.QLineEdit()
         form.addRow("配置名称", self.setting_name_line)
 
         save_setting_button: QtWidgets.QPushButton = QtWidgets.QPushButton("保存配置")
@@ -167,7 +167,7 @@ class AlgoWidget(QtWidgets.QWidget):
                         "参数错误",
                         f"{display_name}参数类型应为{field_type}，请检查！"
                     )
-                    return None
+                    return {}
 
             setting[field_name] = field_value
 
@@ -238,16 +238,16 @@ class AlgoMonitor(QtWidgets.QTableWidget):
         self.setColumnCount(len(labels))
         self.setHorizontalHeaderLabels(labels)
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.verticalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeToContents
+            QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
 
         for column in range(2, 4):
             self.horizontalHeader().setSectionResizeMode(
                 column,
-                QtWidgets.QHeaderView.Stretch
+                QtWidgets.QHeaderView.ResizeMode.Stretch
             )
         self.setWordWrap(True)
 
@@ -377,15 +377,15 @@ class SettingMonitor(QtWidgets.QTableWidget):
         self.setColumnCount(len(labels))
         self.setHorizontalHeaderLabels(labels)
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.verticalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeToContents
+            QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
 
         self.horizontalHeader().setSectionResizeMode(
             3,
-            QtWidgets.QHeaderView.Stretch
+            QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.setWordWrap(True)
 
@@ -480,15 +480,15 @@ class LogMonitor(QtWidgets.QTableWidget):
         self.setColumnCount(len(labels))
         self.setHorizontalHeaderLabels(labels)
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.verticalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeToContents
+            QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
 
         self.horizontalHeader().setSectionResizeMode(
             1,
-            QtWidgets.QHeaderView.Stretch
+            QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.setWordWrap(True)
 
