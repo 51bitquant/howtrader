@@ -2,8 +2,6 @@ import sys
 
 from howtrader.event import EventEngine, Event
 from howtrader.trader.engine import MainEngine
-from howtrader.trader.ui import QtWidgets, QtCore
-from howtrader.trader.utility import load_json, save_json
 from ..engine import APP_NAME, TVEngine, EVENT_TV_LOG, EVENT_TV_STRATEGY
 from howtrader.trader.ui import QtCore, QtGui, QtWidgets
 from howtrader.trader.ui.widget import (
@@ -25,7 +23,7 @@ class TVManager(QtWidgets.QWidget):
         self.main_engine: MainEngine = main_engine
         self.event_engine: EventEngine = event_engine
         self.tv_engine: TVEngine = main_engine.get_engine(APP_NAME)
-        self.managers: StrategyManager = {}
+        self.managers = {}
 
         self.init_ui()
         self.register_event()
@@ -131,7 +129,7 @@ class TVManager(QtWidgets.QWidget):
         editor: SettingEditor = SettingEditor(parameters, class_name=class_name)
         n: int = editor.exec_()
 
-        if n == editor.Accepted:
+        if n == QtWidgets.QDialog.DialogCode.Accepted:
             setting: dict = editor.get_setting()
             vt_symbol: str = setting.pop("vt_symbol")
             strategy_name: str = setting.pop("strategy_name")
@@ -148,7 +146,6 @@ class TVManager(QtWidgets.QWidget):
     def show(self) -> None:
         """"""
         self.showMaximized()
-
 
 
 class StrategyManager(QtWidgets.QFrame):
@@ -172,7 +169,7 @@ class StrategyManager(QtWidgets.QFrame):
     def init_ui(self) -> None:
         """"""
         self.setFixedHeight(300)
-        self.setFrameShape(self.Box)
+        self.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.setLineWidth(1)
 
         self.init_button: QtWidgets.QPushButton = QtWidgets.QPushButton("Init Strategy")
@@ -202,7 +199,7 @@ class StrategyManager(QtWidgets.QFrame):
             f"{strategy_name} - {vt_symbol} - {tv_id} ({class_name} by {author})"
         )
         label: QtWidgets.QLabel = QtWidgets.QLabel(label_text)
-        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         self.parameters_monitor: DataMonitor = DataMonitor(self._data["parameters"])
         self.variables_monitor: DataMonitor = DataMonitor(self._data["variables"])
@@ -222,7 +219,6 @@ class StrategyManager(QtWidgets.QFrame):
         self.setLayout(vbox)
 
     def update_data(self, data: dict) -> None:
-        """"""
         self._data = data
 
         self.parameters_monitor.update_data(data["parameters"])
@@ -257,18 +253,16 @@ class StrategyManager(QtWidgets.QFrame):
         self.tv_engine.start_strategy(self.strategy_name)
 
     def stop_strategy(self) -> None:
-        """"""
         self.tv_engine.stop_strategy(self.strategy_name)
 
     def edit_strategy(self) -> None:
-        """"""
         strategy_name: str = self._data["strategy_name"]
 
         parameters: dict = self.tv_engine.get_strategy_parameters(strategy_name)
         editor: SettingEditor = SettingEditor(parameters, strategy_name=strategy_name)
         n: int = editor.exec_()
 
-        if n == editor.Accepted:
+        if n == QtWidgets.QDialog.DialogCode.Accepted:
             setting: dict = editor.get_setting()
             self.tv_engine.edit_strategy(strategy_name, setting)
 
@@ -303,16 +297,16 @@ class DataMonitor(QtWidgets.QTableWidget):
 
         self.setRowCount(1)
         self.verticalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.Stretch
+            QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         for column, name in enumerate(self._data.keys()):
             value = self._data[name]
 
             cell: QtWidgets.QTableWidgetItem = QtWidgets.QTableWidgetItem(str(value))
-            cell.setTextAlignment(QtCore.Qt.AlignCenter)
+            cell.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
             self.setItem(0, column, cell)
             self.cells[name] = cell
@@ -345,7 +339,7 @@ class LogMonitor(BaseMonitor):
         super(LogMonitor, self).init_ui()
 
         self.horizontalHeader().setSectionResizeMode(
-            1, QtWidgets.QHeaderView.Stretch
+            1, QtWidgets.QHeaderView.ResizeMode.Stretch
         )
 
     def insert_new_row(self, data) -> None:
