@@ -1,3 +1,4 @@
+
 from time import sleep
 from logging import INFO
 
@@ -46,10 +47,10 @@ def webhook():
 def start_tv_server():
     app.run(host="127.0.0.1", port=port)
 
+
 SETTINGS["log.active"] = True
 SETTINGS["log.level"] = INFO
 SETTINGS["log.console"] = True
-
 
 usdt_gateway_setting = {
         "key": "",
@@ -57,6 +58,7 @@ usdt_gateway_setting = {
         "proxy_host": "",
         "proxy_port": 0,
     }
+
 
 def run():
     """
@@ -108,6 +110,7 @@ def run():
 
     while True:
         sleep(10)
+
 
 if __name__ == "__main__":
     run()

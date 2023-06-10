@@ -1,6 +1,5 @@
-import sys
+
 from time import sleep
-from datetime import datetime, time
 from logging import INFO
 
 from howtrader.event import EventEngine
@@ -24,6 +23,7 @@ usdt_gateway_setting = {
         "proxy_port": 0,
     }
 
+
 def run():
     """
     Running in the child process.
@@ -36,7 +36,7 @@ def run():
     cta_engine: CtaEngine = main_engine.add_app(CtaStrategyApp)
     main_engine.write_log("setup main engine")
 
-    log_engine: LogEngine  = main_engine.get_engine("log")
+    log_engine: LogEngine = main_engine.get_engine("log")
     event_engine.register(EVENT_CTA_LOG, log_engine.process_log_event)
     main_engine.write_log("register event listener")
 
@@ -57,6 +57,7 @@ def run():
 
     while True:
         sleep(10)
+
 
 if __name__ == "__main__":
     run()

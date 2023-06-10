@@ -60,8 +60,8 @@ def main():
 
     # if you don't use
     # main_engine.add_app(DataManagerApp)
-    # main_engine.add_app(AlgoTradingApp)
     # main_engine.add_app(DataRecorderApp)
+    # main_engine.add_app(AlgoTradingApp)
     # main_engine.add_app(RiskManagerApp)
     # main_engine.add_app(SpreadTradingApp)
 

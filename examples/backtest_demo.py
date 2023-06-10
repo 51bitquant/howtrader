@@ -32,4 +32,4 @@ setting.add_parameter("atr_length", 3, 39, 1)
 setting.add_parameter("atr_ma_length", 10, 30, 1)
 
 result = engine.run_ga_optimization(setting)  # 优化策略参数
-print(result) # 打印回测的结果，结果中会有比较好的结果值。
+print(result)  # 打印回测的结果，结果中会有比较好的结果值。
