@@ -34,7 +34,7 @@ from ..object import (
     QuoteData,
     TickData
 )
-from ..utility import load_json, save_json, get_digits, extract_vt_symbol, round_to
+from ..utility import load_json, save_json, extract_vt_symbol, round_to
 from ..setting import SETTING_FILENAME, SETTINGS, QUICK_TRADER_SETTINGS
 
 COLOR_LONG = QtGui.QColor("red")
@@ -46,13 +46,13 @@ COLOR_BLACK = QtGui.QColor("black")
 
 class BaseCell(QtWidgets.QTableWidgetItem):
     """
-    General cell used in tablewidgets.
+    General cell used in table widgets.
     """
 
     def __init__(self, content: Any, data: Any) -> None:
         """"""
         super(BaseCell, self).__init__()
-        self.setTextAlignment(QtCore.Qt.AlignCenter)
+        self.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.set_content(content, data)
 
     def set_content(self, content: Any, data: Any) -> None:
@@ -190,7 +190,7 @@ class MsgCell(BaseCell):
     def __init__(self, content: str, data: Any) -> None:
         """"""
         super(MsgCell, self).__init__(content, data)
-        self.setTextAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
 
 
 class BaseMonitor(QtWidgets.QTableWidget):
@@ -236,7 +236,7 @@ class BaseMonitor(QtWidgets.QTableWidget):
         self.setHorizontalHeaderLabels(labels)
 
         self.verticalHeader().setVisible(False)
-        self.setEditTriggers(self.NoEditTriggers)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.setAlternatingRowColors(True)
         self.setSortingEnabled(self.sorting)
 
@@ -245,12 +245,11 @@ class BaseMonitor(QtWidgets.QTableWidget):
         Create right click menu.
         """
         self.menu: QtWidgets.QMenu = QtWidgets.QMenu(self)
-
-        resize_action: QtGui.QAction = QtWidgets.QAction("resize column", self)
+        resize_action: QtGui.QAction = QtGui.QAction("resize column", self)
         resize_action.triggered.connect(self.resize_columns)
         self.menu.addAction(resize_action)
 
-        save_action: QtGui.QAction = QtWidgets.QAction("save data", self)
+        save_action: QtGui.QAction = QtGui.QAction("save data", self)
         save_action.triggered.connect(self.save_csv)
         self.menu.addAction(save_action)
 
@@ -323,7 +322,7 @@ class BaseMonitor(QtWidgets.QTableWidget):
         """
         Resize all columns according to contents.
         """
-        self.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
+        self.horizontalHeader().resizeSections(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
 
     def save_csv(self) -> None:
         """
@@ -477,7 +476,7 @@ class OrderMonitor(BaseMonitor):
 
     def cancel_order(self, cell: BaseCell) -> None:
         """
-        Cancel order if cell double clicked.
+        Cancel order if cell double-clicked.
         """
         order: OrderData = cell.get_data()
         req: CancelRequest = order.create_cancel_request()
@@ -580,7 +579,7 @@ class ConnectDialog(QtWidgets.QDialog):
         self.gateway_name: str = gateway_name
         self.filename: str = f"connect_{gateway_name.lower()}.json"
 
-        self.widgets: Dict[str, QtWidgets.QWidget] = {}
+        self.widgets: Dict[str, Any] = {}
 
         self.init_ui()
 
@@ -617,7 +616,7 @@ class ConnectDialog(QtWidgets.QDialog):
                     widget.setText(str(saved_value))
 
                 if "password" in field_name:
-                    widget.setEchoMode(QtWidgets.QLineEdit.Password)
+                    widget.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
 
                 if field_type == int:
                     validator: QtGui.QIntValidator = QtGui.QIntValidator()
@@ -680,7 +679,7 @@ class TradingWidget(QtWidgets.QWidget):
 
         self.vt_symbol: str = ""
         self.contract: Optional[ContractData] = None
-        self.order_type = OrderType.LIMIT # the default order type.
+        self.order_type = OrderType.LIMIT  # the default order type.
         self.init_ui()
         self.register_event()
 
@@ -717,7 +716,7 @@ class TradingWidget(QtWidgets.QWidget):
         self.price_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
         self.price_line.setPlaceholderText("price")
         self.price_line.setFocusPolicy(Qt.FocusPolicy.ClickFocus)  # ClickFocus
-        self.price_line.setAlignment(Qt.AlignCenter)
+        self.price_line.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.price_line.setClearButtonEnabled(True)
         self.price_line.setValidator(double_validator)
         price_minus_button = QtWidgets.QPushButton("-")
@@ -735,7 +734,7 @@ class TradingWidget(QtWidgets.QWidget):
         self.volume_line: QtWidgets.QLineEdit = QtWidgets.QLineEdit()
         self.volume_line.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.volume_line.setPlaceholderText("volume")
-        self.volume_line.setAlignment(Qt.AlignCenter)
+        self.volume_line.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.volume_line.setClearButtonEnabled(True)
         self.volume_line.setValidator(double_validator)
         volume_minus_button = QtWidgets.QPushButton("-")
@@ -799,7 +798,7 @@ class TradingWidget(QtWidgets.QWidget):
 
         grid.addLayout(QtWidgets.QHBoxLayout(), 6, 0, 1, 3)
         grid.addLayout(cancel_order_layout, 7, 0, 1, 3)
-        grid.addLayout(configs_layout, 8, 0,1, 3)
+        grid.addLayout(configs_layout, 8, 0, 1, 3)
 
         self.bp1_label: MyLabel = self.create_label(green_color)
         self.bp2_label: MyLabel = self.create_label(green_color)
@@ -807,11 +806,11 @@ class TradingWidget(QtWidgets.QWidget):
         self.bp4_label: MyLabel = self.create_label(green_color)
         self.bp5_label: MyLabel = self.create_label(green_color)
 
-        self.bv1_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
-        self.bv2_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
-        self.bv3_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
-        self.bv4_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
-        self.bv5_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignRight)
+        self.bv1_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        self.bv2_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        self.bv3_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        self.bv4_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        self.bv5_label: MyLabel = self.create_label(green_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
         self.ap1_label: MyLabel = self.create_label(red_color)
         self.ap2_label: MyLabel = self.create_label(red_color)
@@ -819,11 +818,11 @@ class TradingWidget(QtWidgets.QWidget):
         self.ap4_label: MyLabel = self.create_label(red_color)
         self.ap5_label: MyLabel = self.create_label(red_color)
 
-        self.av1_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
-        self.av2_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
-        self.av3_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
-        self.av4_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
-        self.av5_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignRight)
+        self.av1_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        self.av2_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        self.av3_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        self.av4_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        self.av5_label: MyLabel = self.create_label(red_color, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
         self.bp1_label.clicked.connect(self.update_price)
         self.bp2_label.clicked.connect(self.update_price)
@@ -838,7 +837,7 @@ class TradingWidget(QtWidgets.QWidget):
         self.ap5_label.clicked.connect(self.update_price)
 
         self.lp_label: MyLabel = self.create_label()
-        self.return_label: MyLabel = self.create_label(alignment=QtCore.Qt.AlignRight)
+        self.return_label: MyLabel = self.create_label(alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
         form: QtWidgets.QFormLayout = QtWidgets.QFormLayout()
         form.addRow(self.ap5_label, self.av5_label)
@@ -862,7 +861,7 @@ class TradingWidget(QtWidgets.QWidget):
     def create_label(
             self,
             color: str = "",
-            alignment: Qt.AlignmentFlag = QtCore.Qt.AlignLeft
+            alignment: Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignLeft
     ) -> MyLabel:
         """
         Create label with certain font color.
@@ -1020,7 +1019,7 @@ class TradingWidget(QtWidgets.QWidget):
             price = Decimal(price_text)
 
         symbol, exchange = extract_vt_symbol(vt_symbol)
-        check =self.reduce_only_checkbox.isChecked()
+        check = self.reduce_only_checkbox.isChecked()
         if check:
             offset = Offset.CLOSE
         else:
@@ -1068,7 +1067,7 @@ class TradingWidget(QtWidgets.QWidget):
             else:
                 self.price_line.setText("0")
 
-        except Exception as error:
+        except Exception:
             self.price_line.setText("0")
 
     def price_plus_clicked(self) -> None:
@@ -1086,7 +1085,7 @@ class TradingWidget(QtWidgets.QWidget):
             else:
                 self.price_line.setText("0")
 
-        except Exception as error:
+        except Exception:
             self.price_line.setText("0")
 
     def volume_minus_clicked(self) -> None:
@@ -1104,7 +1103,7 @@ class TradingWidget(QtWidgets.QWidget):
             else:
                 self.volume_line.setText("0")
 
-        except Exception as error:
+        except Exception:
             self.volume_line.setText("0")
 
     def volume_plus_clicked(self) -> None:
@@ -1120,7 +1119,7 @@ class TradingWidget(QtWidgets.QWidget):
                 self.volume_line.setText(str(vol))
             else:
                 self.volume_line.setText("0")
-        except Exception as error:
+        except Exception:
             self.volume_line.setText("0")
 
     def cancel_all_orders_clicked(self) -> None:
@@ -1149,7 +1148,6 @@ class TradingWidget(QtWidgets.QWidget):
             self.set_vt_symbol()
 
             if isinstance(data, PositionData):
-                d: PositionData = data
                 self.volume_line.setText(str(abs(data.volume)))
 
     def update_price(self, price_str) -> None:
@@ -1223,7 +1221,7 @@ class ContractManager(QtWidgets.QWidget):
         self.contract_table.setColumnCount(len(self.headers))
         self.contract_table.setHorizontalHeaderLabels(labels)
         self.contract_table.verticalHeader().setVisible(False)
-        self.contract_table.setEditTriggers(self.contract_table.NoEditTriggers)
+        self.contract_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.contract_table.setAlternatingRowColors(True)
 
         hbox: QtWidgets.QHBoxLayout = QtWidgets.QHBoxLayout()
@@ -1283,13 +1281,13 @@ class AboutDialog(QtWidgets.QDialog):
         """"""
         self.setWindowTitle("About Howtrader")
 
-        from ... import __version__ as vnpy_version
+        from howtrader import __version__
 
         text: str = f"""
             Fork from vnpy
             License：MIT
             Github：www.github.com/51bitquant/howtrader
-
+            Version - {__version__}
             Python - {platform.python_version()}
             PySide6 - {importlib_metadata.version("pyside6")}
             NumPy - {importlib_metadata.version("numpy")}
@@ -1323,17 +1321,17 @@ class QuickTraderDialog(QtWidgets.QDialog):
         table = QtWidgets.QTableWidget()
 
         table.horizontalHeader().setFixedHeight(50)
-        table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        table.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
-        table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+        table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         table.verticalHeader().setVisible(False)
 
         del_btn = QtWidgets.QPushButton('delete')
-        del_btn.setFixedHeight(30)
+        del_btn.setFixedHeight(33)
         del_btn.setFixedWidth(150)
         del_btn.clicked.connect(self.del_action)
         cancel_btn = QtWidgets.QPushButton('cancel')
-        cancel_btn.setFixedHeight(30)
+        cancel_btn.setFixedHeight(33)
         cancel_btn.setFixedWidth(150)
         cancel_btn.clicked.connect(self.close)
 
@@ -1348,12 +1346,12 @@ class QuickTraderDialog(QtWidgets.QDialog):
         vbox.addLayout(hbox)
         vbox.addSpacing(10)
 
-        headers = ['hotkey', 'buy/sell', 'volumeOption', 'volume', 'basePrice', '+/-', 'overPriceValue', 'overPriceOption']
+        headers = ['hotkey', 'buy/sell', 'volumeOption', 'volume', 'basePrice', '+/-', 'overPriceValue',
+                   'overPriceOption']
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
 
         table.setRowCount(len(QUICK_TRADER_SETTINGS.keys()))
-
 
         index = 0
         for key in QUICK_TRADER_SETTINGS.keys():
@@ -1367,39 +1365,39 @@ class QuickTraderDialog(QtWidgets.QDialog):
             volume = data.get('volume')
             price = data.get('price')
             add_minus = data.get('add_minus')
-            over_price_value =  data.get('over_price_value')
+            over_price_value = data.get('over_price_value')
             over_price_option = data.get('over_price_option')
 
             item0 = QtWidgets.QTableWidgetItem(key)
-            item0.setTextAlignment(Qt.AlignCenter)
+            item0.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             table.setItem(index, 0, item0)
 
             item1 = QtWidgets.QTableWidgetItem(buy_sell)
-            item1.setTextAlignment(Qt.AlignCenter)
+            item1.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             table.setItem(index, 1, item1)
 
-            item2 =  QtWidgets.QTableWidgetItem(volume_option)
-            item2.setTextAlignment(Qt.AlignCenter)
+            item2 = QtWidgets.QTableWidgetItem(volume_option)
+            item2.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             table.setItem(index, 2, item2)
 
             item3 = QtWidgets.QTableWidgetItem(volume)
-            item3.setTextAlignment(Qt.AlignCenter)
+            item3.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             table.setItem(index, 3, item3)
 
             item4 = QtWidgets.QTableWidgetItem(price)
-            item4.setTextAlignment(Qt.AlignCenter)
+            item4.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             table.setItem(index, 4, item4)
 
             item5 = QtWidgets.QTableWidgetItem(add_minus)
-            item5.setTextAlignment(Qt.AlignCenter)
+            item5.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             table.setItem(index, 5, item5)
 
             item6 = QtWidgets.QTableWidgetItem(over_price_value)
-            item6.setTextAlignment(Qt.AlignCenter)
+            item6.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             table.setItem(index, 6, item6)
 
             item7 = QtWidgets.QTableWidgetItem(over_price_option)
-            item7.setTextAlignment(Qt.AlignCenter)
+            item7.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             table.setItem(index, 7, item7)
             index += 1
 
@@ -1448,7 +1446,7 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
         hotkey_label: QtWidgets.QLabel = QtWidgets.QLabel("Hotkey")
 
         buy_sell_label: QtWidgets.QLabel = QtWidgets.QLabel("Buy/Sell")
-        self.buy_sell_combo: QtWidgets.QComboBox  = QtWidgets.QComboBox()
+        self.buy_sell_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
         self.buy_sell_combo.addItems(['buy', 'sell'])
         self.buy_sell_combo.setMinimumWidth(150)
         price_label = QtWidgets.QLabel('Price')
@@ -1457,16 +1455,16 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
         # confirm button
         confirm_btn = QtWidgets.QPushButton("Confirm")
         confirm_btn.setFixedWidth(150)
-        confirm_btn.setFixedHeight(30)
+        confirm_btn.setFixedHeight(33)
 
-        # concel button
+        # cancel button
         cancel_btn = QtWidgets.QPushButton("Cancel")
         cancel_btn.setFixedWidth(150)
-        cancel_btn.setFixedHeight(30)
+        cancel_btn.setFixedHeight(33)
         confirm_btn.clicked.connect(self.confirm_action)
         cancel_btn.clicked.connect(self.cancel_action)
 
-        self.hotkey_combo:QtWidgets.QComboBox  = QtWidgets.QComboBox()
+        self.hotkey_combo: QtWidgets.QComboBox = QtWidgets.QComboBox()
 
         keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
         for item in QUICK_TRADER_SETTINGS.keys():
@@ -1477,7 +1475,7 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
 
         self.base_price_combo = QtWidgets.QComboBox()
         self.base_price_combo.addItems(['bid_price_1', 'bid_price_2', 'bid_price_3', 'bid_price_4', 'bid_price_5',
-                              'ask_price_1', 'ask_price_2', 'ask_price_3', 'ask_price_4', 'ask_price_5'])
+                                        'ask_price_1', 'ask_price_2', 'ask_price_3', 'ask_price_4', 'ask_price_5'])
 
         double_validator: QtGui.QDoubleValidator = QtGui.QDoubleValidator()
         double_validator.setBottom(0)
@@ -1559,6 +1557,7 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
     def cancel_action(self):
         self.accept()
 
+
 class GlobalDialog(QtWidgets.QDialog):
     """
     Start connection of a certain gateway.
@@ -1627,8 +1626,8 @@ class GlobalDialog(QtWidgets.QDialog):
         QtWidgets.QMessageBox.information(
             self,
             "Note",
-            "Editting the global configs requires to restart the software！",
-            QtWidgets.QMessageBox.Ok
+            "Editing the global configs requires to restart the software！",
+            QtWidgets.QMessageBox.StandardButton.Ok
         )
 
         save_json(SETTING_FILENAME, settings)

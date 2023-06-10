@@ -87,7 +87,7 @@ class MongodbDatabase(BaseDatabase):
 
         for bar in bars:
             # insert into database.
-            filter: dict = {
+            filter_: dict = {
                 "symbol": bar.symbol,
                 "exchange": bar.exchange.value,
                 "datetime": bar.datetime,
@@ -108,18 +108,21 @@ class MongodbDatabase(BaseDatabase):
                 "close_price": bar.close_price,
             }
 
-            requests.append(ReplaceOne(filter, d, upsert=True))
+            requests.append(ReplaceOne(filter_, d, upsert=True))
 
         self.bar_collection.bulk_write(requests, ordered=False)
 
         # update overview
-        filter: dict = {
+        if len(bars) == 0:
+            return False
+
+        filter_: dict = {
             "symbol": bar.symbol,
             "exchange": bar.exchange.value,
             "interval": bar.interval.value
         }
 
-        overview: dict = self.overview_collection.find_one(filter)
+        overview: dict = self.overview_collection.find_one(filter_)
 
         if not overview:
             overview = {
@@ -133,18 +136,18 @@ class MongodbDatabase(BaseDatabase):
         else:
             overview["start"] = min(bars[0].datetime, overview["start"])
             overview["end"] = max(bars[-1].datetime, overview["end"])
-            overview["count"] = self.bar_collection.count_documents(filter)
+            overview["count"] = self.bar_collection.count_documents(filter_)
 
-        self.overview_collection.update_one(filter, {"$set": overview}, upsert=True)
+        self.overview_collection.update_one(filter_, {"$set": overview}, upsert=True)
 
         return True
 
     def save_tick_data(self, ticks: List[TickData]) -> bool:
-        """Save tikc data"""
+        """Save tick data"""
         requests: List[ReplaceOne] = []
 
         for tick in ticks:
-            filter: dict = {
+            filter_: dict = {
                 "symbol": tick.symbol,
                 "exchange": tick.exchange.value,
                 "datetime": tick.datetime,
@@ -189,7 +192,7 @@ class MongodbDatabase(BaseDatabase):
                 "localtime": tick.localtime,
             }
 
-            requests.append(ReplaceOne(filter, d, upsert=True))
+            requests.append(ReplaceOne(filter_, d, upsert=True))
 
         self.tick_collection.bulk_write(requests, ordered=False)
 
@@ -204,7 +207,7 @@ class MongodbDatabase(BaseDatabase):
         end: datetime
     ) -> List[BarData]:
         """Load Kline/Bar data"""
-        filter: dict = {
+        filter_: dict = {
             "symbol": symbol,
             "exchange": exchange.value,
             "interval": interval.value,
@@ -214,7 +217,7 @@ class MongodbDatabase(BaseDatabase):
             }
         }
 
-        c: Cursor = self.bar_collection.find(filter)
+        c: Cursor = self.bar_collection.find(filter_)
 
         bars: List[BarData] = []
         for d in c:
@@ -236,7 +239,7 @@ class MongodbDatabase(BaseDatabase):
         end: datetime
     ) -> List[TickData]:
         """load tick data"""
-        filter: dict = {
+        filter_: dict = {
             "symbol": symbol,
             "exchange": exchange.value,
             "datetime": {
@@ -245,7 +248,7 @@ class MongodbDatabase(BaseDatabase):
             }
         }
 
-        c: Cursor = self.tick_collection.find(filter)
+        c: Cursor = self.tick_collection.find(filter_)
 
         ticks: List[TickData] = []
         for d in c:
@@ -265,14 +268,14 @@ class MongodbDatabase(BaseDatabase):
         interval: Interval
     ) -> int:
         """delete bar data"""
-        filter: dict = {
+        filter_: dict = {
             "symbol": symbol,
             "exchange": exchange.value,
             "interval": interval.value,
         }
 
-        result: DeleteResult = self.bar_collection.delete_many(filter)
-        self.overview_collection.delete_one(filter)
+        result: DeleteResult = self.bar_collection.delete_many(filter_)
+        self.overview_collection.delete_one(filter_)
 
         return result.deleted_count
 
@@ -282,12 +285,12 @@ class MongodbDatabase(BaseDatabase):
         exchange: Exchange
     ) -> int:
         """Delete tick data"""
-        filter: dict = {
+        filter_: dict = {
             "symbol": symbol,
             "exchange": exchange.value
         }
 
-        result: DeleteResult = self.tick_collection.delete_many(filter)
+        result: DeleteResult = self.tick_collection.delete_many(filter_)
         return result.deleted_count
 
     def get_bar_overview(self) -> List[BarOverview]:

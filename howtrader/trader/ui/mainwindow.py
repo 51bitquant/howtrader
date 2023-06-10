@@ -29,7 +29,8 @@ from .widget import (
 from ..engine import MainEngine, BaseApp
 from ..utility import get_icon_path, TRADER_DIR, round_to, floor_to, extract_vt_symbol
 from ..setting import QUICK_TRADER_SETTINGS
-from howtrader.trader.object import ContractData, OrderRequest, Direction, OrderType, Offset, TickData, PositionData, Product
+from howtrader.trader.object import ContractData, OrderRequest, Direction, OrderType, Offset, TickData, PositionData, \
+    Product
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -61,32 +62,32 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_dock(self) -> None:
         """"""
         self.trading_widget, trading_dock = self.create_dock(
-            TradingWidget, "Trading", QtCore.Qt.LeftDockWidgetArea
+            TradingWidget, "Trading", QtCore.Qt.DockWidgetArea.LeftDockWidgetArea
         )
         tick_widget, tick_dock = self.create_dock(
-            TickMonitor, "Ticks", QtCore.Qt.RightDockWidgetArea
+            TickMonitor, "Ticks", QtCore.Qt.DockWidgetArea.RightDockWidgetArea
         )
         order_widget, order_dock = self.create_dock(
-            OrderMonitor, "All Orders", QtCore.Qt.RightDockWidgetArea
+            OrderMonitor, "All Orders", QtCore.Qt.DockWidgetArea.RightDockWidgetArea
         )
         active_widget, active_dock = self.create_dock(
-            ActiveOrderMonitor, "Active Orders", QtCore.Qt.RightDockWidgetArea
+            ActiveOrderMonitor, "Active Orders", QtCore.Qt.DockWidgetArea.RightDockWidgetArea
         )
         trade_widget, trade_dock = self.create_dock(
-            TradeMonitor, "Trades", QtCore.Qt.RightDockWidgetArea
+            TradeMonitor, "Trades", QtCore.Qt.DockWidgetArea.RightDockWidgetArea
         )
         log_widget, log_dock = self.create_dock(
-            LogMonitor, "Logs", QtCore.Qt.RightDockWidgetArea
+            LogMonitor, "Logs", QtCore.Qt.DockWidgetArea.RightDockWidgetArea
         )
         account_widget, account_dock = self.create_dock(
-            AccountMonitor, "Accounts", QtCore.Qt.RightDockWidgetArea
+            AccountMonitor, "Accounts", QtCore.Qt.DockWidgetArea.RightDockWidgetArea
         )
         position_widget, position_dock = self.create_dock(
-            PositionMonitor, "Positions", QtCore.Qt.RightDockWidgetArea
+            PositionMonitor, "Positions", QtCore.Qt.DockWidgetArea.RightDockWidgetArea
         )
 
         self.tabifyDockWidget(order_dock, active_dock)
-        self.tabifyDockWidget(active_dock,trade_dock)
+        self.tabifyDockWidget(active_dock, trade_dock)
 
         self.tabifyDockWidget(account_dock, position_dock)
         self.tabifyDockWidget(position_dock, log_dock)
@@ -97,9 +98,8 @@ class MainWindow(QtWidgets.QMainWindow):
         position_widget.itemDoubleClicked.connect(self.trading_widget.update_with_cell)
 
     def init_menu(self) -> None:
-        """"""
         bar: QtWidgets.QMenuBar = self.menuBar()
-        bar.setNativeMenuBar(False)     # for mac and linux
+        bar.setNativeMenuBar(False)  # for mac and linux
 
         # System menu
         sys_menu: QtWidgets.QMenu = bar.addMenu("exchanges")
@@ -136,7 +136,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.add_action(app_menu, app.display_name, app.icon_name, func, True)
 
         # Global setting editor
-        action: QtGui.QAction = QtWidgets.QAction("configs", self)
+        action: QtGui.QAction = QtGui.QAction("configs", self)
         action.triggered.connect(self.edit_global_setting)
         bar.addAction(action)
 
@@ -195,20 +195,20 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set button spacing
         self.toolbar.layout().setSpacing(10)
 
-        self.addToolBar(QtCore.Qt.LeftToolBarArea, self.toolbar)
+        self.addToolBar(QtCore.Qt.ToolBarArea.LeftToolBarArea, self.toolbar)
 
     def add_action(
-        self,
-        menu: QtWidgets.QMenu,
-        action_name: str,
-        icon_name: str,
-        func: Callable,
-        toolbar: bool = False
+            self,
+            menu: QtWidgets.QMenu,
+            action_name: str,
+            icon_name: str,
+            func: Callable,
+            toolbar: bool = False
     ) -> None:
         """"""
         icon: QtGui.QIcon = QtGui.QIcon(icon_name)
 
-        action: QtGui.QAction = QtWidgets.QAction(action_name, self)
+        action: QtGui.QAction = QtGui.QAction(action_name, self)
         action.triggered.connect(func)
         action.setIcon(icon)
 
@@ -218,10 +218,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.toolbar.addAction(action)
 
     def create_dock(
-        self,
-        widget_class: QtWidgets.QWidget,
-        name: str,
-        area: int
+            self,
+            widget_class: QtWidgets.QWidget.__class__,
+            name: str,
+            area: QtCore.Qt.DockWidgetArea
     ) -> Tuple[QtWidgets.QWidget, QtWidgets.QDockWidget]:
         """
         Initialize a dock widget.
@@ -231,7 +231,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dock: QtWidgets.QDockWidget = QtWidgets.QDockWidget(name)
         dock.setWidget(widget)
         dock.setObjectName(name)
-        dock.setFeatures(dock.DockWidgetFloatable | dock.DockWidgetMovable)
+        dock.setFeatures(dock.DockWidgetFeature.DockWidgetFloatable | dock.DockWidgetFeature.DockWidgetMovable)
         self.addDockWidget(area, dock)
         return widget, dock
 
@@ -250,11 +250,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self,
             "exit",
             "confirm exit？",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No,
         )
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             for widget in self.widgets.values():
                 widget.close()
             # self.save_window_setting("custom")
@@ -265,7 +265,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             event.ignore()
 
-    def open_widget(self, widget_class: QtWidgets.QWidget, name: str) -> None:
+    def open_widget(self, widget_class: QtWidgets.QWidget.__class__, name: str) -> None:
         """
         Open contract manager.
         """
@@ -331,7 +331,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             return None
 
-        if key_event.key() == QtCore.Qt.Key_Z:
+        if key_event.key() == int(QtCore.Qt.Key.Key_Z):
             # Z key.
             order_list = self.main_engine.get_all_active_orders()
             for order in order_list:
@@ -341,17 +341,16 @@ class MainWindow(QtWidgets.QMainWindow):
             self.main_engine.write_log("Press Z key: cancel all orders")
             return None
 
-        keys = {QtCore.Qt.Key_0: "0",
-                QtCore.Qt.Key_1: "1",
-                QtCore.Qt.Key_2: "2",
-                QtCore.Qt.Key_3: "3",
-                QtCore.Qt.Key_4: "4",
-                QtCore.Qt.Key_5: "5",
-                QtCore.Qt.Key_6: "6",
-                QtCore.Qt.Key_7: "7",
-                QtCore.Qt.Key_8: "8",
-                QtCore.Qt.Key_9: "9"
-                }
+        keys = {int(QtCore.Qt.Key.Key_0): "0",
+                int(QtCore.Qt.Key.Key_1): "1",
+                int(QtCore.Qt.Key.Key_2): "2",
+                int(QtCore.Qt.Key.Key_3): "3",
+                int(QtCore.Qt.Key.Key_4): "4",
+                int(QtCore.Qt.Key.Key_5): "5",
+                int(QtCore.Qt.Key.Key_6): "6",
+                int(QtCore.Qt.Key.Key_7): "7",
+                int(QtCore.Qt.Key.Key_8): "8",
+                int(QtCore.Qt.Key.Key_9): "9"}
 
         key = keys.get(key_event.key(), None)
         if not key:
@@ -395,15 +394,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
             else:  # percent
                 if add_minus == '+':
-                    order_price = tick_price * (1 + float(over_price_value)/100)
+                    order_price = tick_price * (1 + float(over_price_value) / 100)
                 else:
-                    order_price = tick_price * (1 - float(over_price_value)/100)
+                    order_price = tick_price * (1 - float(over_price_value) / 100)
 
             order_price = round_to(Decimal(str(order_price)), contract.pricetick)
 
             if volume_option == "fixed_volume":
                 volume = Decimal(volume)
-            else: # position percent
+            else:  # position percent
                 if contract.product == Product.SPOT:
                     self.main_engine.write_log(f"Position is not available for Spot market.")
                     return None

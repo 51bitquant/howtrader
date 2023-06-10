@@ -36,7 +36,7 @@ class DbBarData(Model):
 
     symbol: str = CharField()
     exchange: str = CharField()
-    datetime: datetime = DateTimeField()
+    datetime: DateTimeField = DateTimeField()
     interval: str = CharField()
 
     volume: float = FloatField()
