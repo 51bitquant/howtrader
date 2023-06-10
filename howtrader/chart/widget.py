@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Dict, Type
+from typing import List, Dict, Type, Optional
 
 import pyqtgraph as pg
 
@@ -32,8 +32,8 @@ class ChartWidget(pg.PlotWidget):
         self._items: Dict[str, ChartItem] = {}
         self._item_plot_map: Dict[ChartItem, pg.PlotItem] = {}
 
-        self._first_plot: pg.PlotItem = None
-        self._cursor: ChartCursor = None
+        self._first_plot: Optional[pg.PlotItem] = None
+        self._cursor: Optional[ChartCursor] = None
 
         self._right_ix: int = 0                     # Index of most right data
         self._bar_count: int = self.MIN_BAR_COUNT   # Total bar visible in chart
@@ -233,13 +233,13 @@ class ChartWidget(pg.PlotWidget):
         """
         Reimplement this method of parent to move chart horizontally and zoom in/out.
         """
-        if event.key() == QtCore.Qt.Key_Left:
+        if event.key() == QtCore.Qt.Key.Key_Left:
             self._on_key_left()
-        elif event.key() == QtCore.Qt.Key_Right:
+        elif event.key() == QtCore.Qt.Key.Key_Right:
             self._on_key_right()
-        elif event.key() == QtCore.Qt.Key_Up:
+        elif event.key() == QtCore.Qt.Key.Key_Up:
             self._on_key_up()
-        elif event.key() == QtCore.Qt.Key_Down:
+        elif event.key() == QtCore.Qt.Key.Key_Down:
             self._on_key_down()
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
