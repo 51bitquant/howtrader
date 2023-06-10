@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from types import ModuleType
 from typing import List
 from pytz import timezone
 from dataclasses import dataclass
-from importlib import import_module
+from typing import Optional
 
 from .constant import Interval, Exchange
 from .object import BarData, TickData
@@ -108,12 +107,12 @@ class BaseDatabase(ABC):
     @abstractmethod
     def get_bar_overview(self) -> List[BarOverview]:
         """
-        Return data avaible in database.
+        Return data available in database.
         """
         pass
 
 
-database: BaseDatabase = None
+database: Optional[BaseDatabase] = None
 
 
 def get_database() -> BaseDatabase:

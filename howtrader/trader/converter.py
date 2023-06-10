@@ -12,6 +12,7 @@ from .object import (
 from .constant import Direction, Offset, Exchange
 from decimal import Decimal
 
+
 class OffsetConverter:
     """"""
 
