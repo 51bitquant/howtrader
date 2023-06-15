@@ -248,8 +248,8 @@ class ContractData(BaseData):
     size: Decimal
     pricetick: Decimal
     min_notional: Decimal = Decimal("1")  # order's value, price * amount >= min_notional
-
-    min_volume: Decimal = Decimal("1")           # minimum trading volume of the contract
+    min_size: Decimal = Decimal("1")  # place minimum order size, 最小的下单数量，okx使用.
+    min_volume: Decimal = Decimal("1")  # minimum trading volume of the contract, 下单精度要求.
     stop_supported: bool = False    # whether server supports stop order
     net_position: bool = False      # whether gateway uses net position volume
     history_data: bool = False      # whether gateway provides bar history data

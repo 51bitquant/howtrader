@@ -552,7 +552,7 @@ class CtaEngine(BaseEngine):
         end: datetime = datetime.now(LOCAL_TZ)
         start: datetime = end - timedelta(days)
 
-        # Pass gateway and datafeed if use_database set to True
+        # Pass gateway and datafeed if the use_database set to True
         if not use_database:
             # Query bars from gateway if available
             contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
