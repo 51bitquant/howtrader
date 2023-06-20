@@ -67,7 +67,7 @@ class Request(object):
         self.on_error: ON_ERROR_TYPE = on_error
         self.extra: Any = extra
 
-        self.response: "Response" = None
+        self.response: Optional["Response"] = None
 
     def __str__(self):
         """display in str"""
@@ -120,10 +120,10 @@ class RestClient(object):
     def __init__(self):
         """"""
         self.url_base: str = ""
-        self.proxy: str = None
+        self.proxy: Optional[str] = None
 
-        self.session: ClientSession = None
-        self.loop: AbstractEventLoop = None
+        self.session: Optional[ClientSession] = None
+        self.loop: Optional[AbstractEventLoop] = None
         self._active = False
 
     def init(
