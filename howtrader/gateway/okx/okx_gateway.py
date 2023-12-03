@@ -369,8 +369,8 @@ class OkxRestApi(RestClient):
         )
 
     def on_query_order(self, packet: dict, request: Request) -> None:
-        print("query order by restapi: ")
-        print(packet)
+        # print("query order by restapi: ")
+        # print(packet)
 
         order_datas = packet.get('data', [])
         for order_info in order_datas:
@@ -851,8 +851,8 @@ class OkxWebsocketPrivateApi(WebsocketClient):
 
     def on_cancel_order(self, packet: dict) -> None:
         """on cancel order."""
-        print("on cancel the order")
-        print(packet)
+        # print("on cancel the order")
+        # print(packet)
         if packet["code"] != "0":
             code: str = packet.get("code", "")
             msg: str = packet.get("msg", "")
