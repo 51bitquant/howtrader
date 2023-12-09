@@ -27,7 +27,8 @@ from howtrader.trader.object import (
     OrderData,
     TradeData,
     ContractData,
-    PositionData
+    PositionData,
+    AccountData
 )
 from howtrader.trader.event import (
     EVENT_TICK,
@@ -539,6 +540,14 @@ class CtaEngine(BaseEngine):
             req: OrderQueryRequest = order.create_query_request()
             self.main_engine.query_order(req, order.gateway_name)
 
+    def query_account(self, vt_accountid: str) -> Optional[AccountData]:
+        """
+        get account data
+        :param vt_accountid: gatewayname.currency_name
+         eg. BINANCE_SPOT.USDT(spot usdt) BINANCE_USDT.USDT (usdt futures usdt) BINANCE_INVERSE.USDT
+        :return: AccountData data or None
+        """
+        return self.main_engine.get_account(vt_accountid)
     def load_bar(
         self,
         vt_symbol: str,
