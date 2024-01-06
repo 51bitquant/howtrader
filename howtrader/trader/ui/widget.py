@@ -1327,11 +1327,11 @@ class QuickTraderDialog(QtWidgets.QDialog):
         table.verticalHeader().setVisible(False)
 
         del_btn = QtWidgets.QPushButton('delete')
-        del_btn.setFixedHeight(33)
+        del_btn.setFixedHeight(30)
         del_btn.setFixedWidth(150)
         del_btn.clicked.connect(self.del_action)
         cancel_btn = QtWidgets.QPushButton('cancel')
-        cancel_btn.setFixedHeight(33)
+        cancel_btn.setFixedHeight(30)
         cancel_btn.setFixedWidth(150)
         cancel_btn.clicked.connect(self.close)
 
@@ -1455,12 +1455,12 @@ class QuickTraderConfigDialog(QtWidgets.QDialog):
         # confirm button
         confirm_btn = QtWidgets.QPushButton("Confirm")
         confirm_btn.setFixedWidth(150)
-        confirm_btn.setFixedHeight(33)
+        confirm_btn.setFixedHeight(30)
 
         # cancel button
         cancel_btn = QtWidgets.QPushButton("Cancel")
         cancel_btn.setFixedWidth(150)
-        cancel_btn.setFixedHeight(33)
+        cancel_btn.setFixedHeight(30)
         confirm_btn.clicked.connect(self.confirm_action)
         cancel_btn.clicked.connect(self.cancel_action)
 

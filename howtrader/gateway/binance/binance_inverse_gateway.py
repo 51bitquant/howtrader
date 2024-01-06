@@ -41,7 +41,7 @@ from howtrader.trader.object import (
     SubscribeRequest,
     HistoryRequest,
     OriginalKlineData,
-    PremiumRateData
+    FundingRateData
 )
 from howtrader.trader.event import EVENT_TIMER
 from howtrader.event import Event, EventEngine
@@ -195,9 +195,9 @@ class BinanceInverseGateway(BaseGateway):
         """query position"""
         self.rest_api.query_position()
 
-    def query_premium_rate(self) -> None:
+    def query_funding_rate(self) -> None:
         """query premium rate/index"""
-        self.rest_api.query_premium_rate()
+        self.rest_api.query_funding_rate()
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
         """query historical kline data"""
@@ -470,8 +470,8 @@ class BinanceInverseRestApi(RestClient):
             data=data
         )
 
-    def query_premium_rate(self) -> None:
-        """query premium rate/index"""
+    def query_funding_rate(self) -> None:
+        """query funding rate/index"""
         data = {
             "security": Security.NONE
         }
@@ -481,7 +481,7 @@ class BinanceInverseRestApi(RestClient):
         self.add_request(
             method="GET",
             path=path,
-            callback=self.on_query_premium_rate,
+            callback=self.on_query_funding_rate,
             data=data
         )
 
@@ -763,7 +763,7 @@ class BinanceInverseRestApi(RestClient):
 
             pricetick: Decimal = Decimal("1")
             min_volume: Decimal = Decimal("1")
-            size = str(d.get("contractSize", '10'))
+            size = Decimal(str(d.get("contractSize", '10')))
             min_notional: Decimal = Decimal(size)  # 10 usd
 
             for f in d["filters"]:
@@ -794,25 +794,27 @@ class BinanceInverseRestApi(RestClient):
 
         self.gateway.write_log("query contract successfully")
 
-    def on_query_premium_rate(self, data: list, request: Request) -> None:
-        for d in data:
-            if int(d['nextFundingTime']) == 0:
+    def on_query_funding_rate(self, data: list, request: Request) -> None:
+        for fund_data in data:
+            if int(fund_data.get('nextFundingTime', 0)) == 0:
                 continue
+            next_datetime = generate_datetime(fund_data['nextFundingTime'])
+            current_datetime = generate_datetime(time.time() * 1000)
+            delta = next_datetime - current_datetime
+            hour = delta.seconds // 3600
+            min = (delta.seconds // 60) % 60
 
-            next_funding_datetime = generate_datetime(d['nextFundingTime'])
-            updated_datetime = generate_datetime(d['time'])
-
-            premium_rate = PremiumRateData(
-                symbol=d['symbol'],
+            funding_rate = FundingRateData(
+                symbol=fund_data['symbol'],
                 exchange=Exchange.BINANCE,
-                last_funding_rate=Decimal(d['lastFundingRate']),
-                interest_rate=Decimal(d['interestRate']),
-                next_funding_datetime=next_funding_datetime,
-                updated_datetime=updated_datetime,
+                last_funding_rate_str=f"{float(fund_data['lastFundingRate']) * 100:.{4}f}",
+                next_funding_time_str=f"{hour}小时:{min}分钟",
+                next_funding_time=next_datetime,
+                last_funding_rate=float(fund_data['lastFundingRate']) * 100,
                 gateway_name=self.gateway_name
             )
 
-            self.gateway.on_premium_rate(premium_rate)
+            self.gateway.on_funding_rate(funding_rate)
 
 
     def on_send_order(self, data: dict, request: Request) -> None:

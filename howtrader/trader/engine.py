@@ -213,6 +213,11 @@ class MainEngine:
         else:
             return ""
 
+    def query_funding_rate(self, gateway_name: str) -> None:
+        gateway_name = self.get_gateway(gateway_name)
+        if gateway_name and hasattr(gateway_name, 'query_funding_rate'):
+            gateway_name.query_funding_rate()
+
     def cancel_quote(self, req: CancelRequest, gateway_name: str) -> None:
         """
         Send cancel quote request to a specific gateway.
@@ -233,12 +238,12 @@ class MainEngine:
 
     def query_position(self, gateway_name: str):
         gateway: BaseGateway = self.get_gateway(gateway_name)
-        if gateway:
+        if gateway and hasattr(gateway, "query_position"):
             gateway.query_position()
 
     def query_account(self, gateway_name: str):
         gateway: BaseGateway = self.get_gateway(gateway_name)
-        if gateway:
+        if gateway and hasattr(gateway, "query_account"):
             gateway.query_account()
 
     def query_latest_kline(self, req: HistoryRequest, gateway_name: str):
@@ -367,6 +372,8 @@ class OmsEngine(BaseEngine):
         super(OmsEngine, self).__init__(main_engine, event_engine, "oms")
 
         self.order_update_interval = 0
+        self.position_update_interval = 0
+        self.account_update_interval = 0
 
         self.ticks: Dict[str, TickData] = {}
         self.orders: Dict[str, OrderData] = {}
@@ -468,6 +475,8 @@ class OmsEngine(BaseEngine):
         update the orders, positions by timer, for we maybe disconnected from server.
         """
         self.order_update_interval += 1
+        self.position_update_interval += 1
+        self.account_update_interval += 1
 
         update_interval = SETTINGS.get('order_update_interval', 300)
 
@@ -478,6 +487,16 @@ class OmsEngine(BaseEngine):
                 if order.update_time and (datetime.now(order.update_time.tzinfo) - order.update_time).seconds > update_interval:
                     req = order.create_query_request()
                     self.main_engine.query_order(req, order.gateway_name)
+
+        if self.position_update_interval >= SETTINGS.get('position_update_interval', 120):
+            self.position_update_interval = 0
+            for gateway_name in self.main_engine.gateways:
+                self.main_engine.query_position(gateway_name)
+
+        if self.account_update_interval >= SETTINGS.get('account_update_interval', 120):
+            self.account_update_interval = 0
+            for gateway_name in self.main_engine.gateways:
+                self.main_engine.query_account(gateway_name)
 
     def get_tick(self, vt_symbol: str) -> Optional[TickData]:
         """

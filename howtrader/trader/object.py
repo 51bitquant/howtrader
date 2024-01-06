@@ -268,16 +268,18 @@ class ContractData(BaseData):
 
 
 @dataclass
-class PremiumRateData(BaseData):
+class FundingRateData(BaseData):
     """
-    PremiumRate
+    FundingRate/PremiumIndex
     """
-    symbol:str
+    symbol: str
     exchange: Exchange
+    last_funding_rate_str: str
+    next_funding_time_str: str
     next_funding_time: datetime
-    updated_datetime: datetime
-    last_funding_rate: Decimal = Decimal("0")
-    interest_rate: Decimal = Decimal("0")
+    last_funding_rate: float
+    bid_spread_pct: float = 0
+    ask_spread_pct: float = 0
 
     def __post_init__(self):
         """"""

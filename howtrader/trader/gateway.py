@@ -13,7 +13,7 @@ from .event import (
     EVENT_LOG,
     EVENT_QUOTE,
     EVENT_ORIGINAL_KLINE,
-    EVENT_PREMIUM_RATE
+    EVENT_FUNDING_RATE_DATA
 )
 from .object import (
     TickData,
@@ -33,7 +33,7 @@ from .object import (
     Exchange,
     BarData,
     OriginalKlineData,
-    PremiumRateData
+    FundingRateData
 )
 
 
@@ -158,9 +158,9 @@ class BaseGateway(ABC):
         """
         self.on_event(EVENT_CONTRACT, contract)
 
-    def on_premium_rate(self, premium_rate: PremiumRateData):
-        self.on_event(EVENT_PREMIUM_RATE, premium_rate)
-        self.on_event(EVENT_PREMIUM_RATE+premium_rate.vt_symbol, premium_rate)
+    def on_funding_rate(self, funding_rate: FundingRateData):
+        self.on_event(EVENT_FUNDING_RATE_DATA, funding_rate)
+        self.on_event(EVENT_FUNDING_RATE_DATA + funding_rate.vt_symbol, funding_rate)
 
     def write_log(self, msg: str) -> None:
         """
@@ -284,8 +284,8 @@ class BaseGateway(ABC):
         """
         pass
 
-    def query_premium_rate(self) -> None:
-        """query premium rate/index of the perpetual product"""
+    def query_funding_rate(self) -> None:
+        """query funding/premium rate of the perpetual product"""
         pass
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:

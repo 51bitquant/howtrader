@@ -26,9 +26,11 @@ SETTINGS: Dict[str, Any] = {
     "email.receiver": "",
 
     "order_update_interval": 300, # securing correct orders' status by synchronizing/updating orders through rest api
+    "position_update_interval": 60,
+    "account_update_interval": 60,
     "update_server_time_interval": 300,  # sync with server time
     "passphrase": "howtrader",  # tv passphrase
-    "port": 9999, # tv server port
+    "port": 9999,  # tv server port
 
     "datafeed.name": "",
     "datafeed.username": "",
