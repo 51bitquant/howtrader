@@ -819,7 +819,7 @@ class BinanceSpotRestAPi(RestClient):
 
         interval = INTERVAL_VT2BINANCE.get(req.interval, None)
         if not interval:
-            print(f"unsupport interval: {req.interval}")
+            print(f"unsupported interval: {req.interval}")
             return None
 
         # end_time: int = int(datetime.timestamp(req.end))
