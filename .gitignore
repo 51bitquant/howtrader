@@ -39,3 +39,4 @@ main_window.spec
 *.json
 *.db
 examples/howtrader/*
+*.zip
