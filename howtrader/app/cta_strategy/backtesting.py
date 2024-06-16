@@ -568,7 +568,6 @@ class BacktestingEngine:
         bar_df = DataFrame(bar_dict, index=datetime_list)
         # print(bar_df)
 
-        print(dir(go))
         candle_bar = go.Candlestick(
             x=bar_df.index,
             open=bar_df["open_price"],
@@ -578,9 +577,106 @@ class BacktestingEngine:
             name="Candle"
         )
 
+        # Generate trades dataframe
+        buy_to_open_list = []
+        buy_to_open_datetime_list = []
+        sell_to_close_list = []
+        sell_to_close_datetime_list = []
+
+        sell_to_open_list = []
+        sell_to_open_datetime_list = []
+        buy_to_close_list = []
+        buy_to_close_datetime_list = []
+
+        for trade in self.trades.values():
+            d: date = trade.datetime.date()
+            daily_result: DailyResult = self.daily_results[d]
+
+            trades_result = daily_result.__dict__["trades"]
+            for trade in trades_result:
+                # print(f"trade: {trade}")
+                # print(dir(trade))
+                # 'datetime', 'direction', 'exchange', 'gateway_name',
+                # 'offset', 'orderid', 'price', 'symbol', 'tradeid',
+                # 'volume', 'vt_orderid', 'vt_symbol', 'vt_tradeid'
+
+                direction = trade.direction
+                if (trade.offset == Offset.OPEN):
+                    if (direction == Direction.SHORT):
+                        sell_to_open_list.append(trade.price)
+                        sell_to_open_datetime_list.append(trade.datetime)
+                    elif (direction == Direction.LONG):
+                        buy_to_open_list.append(trade.price)
+                        buy_to_open_datetime_list.append(trade.datetime)
+
+                elif (trade.offset == Offset.CLOSE):
+                    if (direction == Direction.SHORT):
+                        sell_to_close_list.append(trade.price)
+                        sell_to_close_datetime_list.append(trade.datetime)
+                    elif (direction == Direction.LONG):
+                        buy_to_close_list.append(trade.price)
+                        buy_to_close_datetime_list.append(trade.datetime)
+
+                # elif (direction == Direction.NET)
+
+        print(f"len(buy_to_open): {len(buy_to_open_list)}")
+        print(f"len(sell_to_open): {len(sell_to_open_list)}")
+        print(f"len(sell_to_close): {len(sell_to_close_list)}")
+        print(f"len(buy_to_close): {len(buy_to_close_list)}")
+
+        buy_to_open = go.Scatter(
+            x=buy_to_open_datetime_list, y=buy_to_open_list,
+            mode="markers",
+            marker=dict(
+                size=15,
+                symbol='triangle-up',
+                color='darkblue'
+            ),
+            name="Buy to Open"
+        )
+        sell_to_close = go.Scatter(
+            x=sell_to_close_datetime_list, y=sell_to_close_list,
+            mode="markers",
+            marker=dict(
+                size=15,
+                symbol='triangle-down',
+                color='lightblue'
+            ),
+            name="Sell to Close"
+        )
+
+        sell_to_open = go.Scatter(
+            x=sell_to_open_datetime_list, y=sell_to_open_list,
+            mode="markers",
+            marker=dict(
+                size=15,
+                symbol='triangle-down',
+                color='rgb(128, 0, 128)'
+            ),
+            name="Sell to Open"
+        )
+        buy_to_close = go.Scatter(
+            x=buy_to_close_datetime_list, y=buy_to_close_list,
+            mode="markers",
+            marker=dict(
+                size=15,
+                symbol='triangle-up',
+                color='rgb(218, 112, 214)'
+            ),
+            name="Buy to Close"
+        )
+
         fig.add_trace(candle_bar, row=1, col=1)
 
-        fig.update_layout(height=700, width=1300)
+        fig.add_trace(buy_to_open, row=1, col=1)
+        fig.add_trace(sell_to_close, row=1, col=1)
+
+        fig.add_trace(sell_to_open, row=1, col=1)
+        fig.add_trace(buy_to_close, row=1, col=1)
+
+        fig.update_yaxes(fixedrange=False)
+
+        fig.update_layout(height=900, width=1900)
         fig.show()
 
     def show_chart(self, df: DataFrame = None):
