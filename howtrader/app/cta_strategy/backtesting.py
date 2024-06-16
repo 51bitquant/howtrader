@@ -523,6 +523,65 @@ class BacktestingEngine:
 
         self.output("finish calculating strategy's performance")
         return statistics
+    
+    def show_candle_chart(self, df: DataFrame = None):
+        # Show Candle char
+
+        if df is None:
+            df = self.daily_df
+
+        # Check for init DataFrame
+        if df is None:
+            return
+        
+        fig = make_subplots(
+            rows=1,
+            cols=1,
+            subplot_titles=["Candle"],
+            horizontal_spacing=0.7,
+            vertical_spacing=0.3
+        )
+
+        print(df.columns.tolist())
+        print("-----")
+        
+        bar_dict: Dict = {}
+        datetime_list = []
+        close_price_list = []
+        open_price_list = []
+        high_price_list = []
+        low_price_list = []
+        for bardata in self.history_data:
+            # 'close_price', 'datetime', 'exchange', 'gateway_name', 'high_price', 'interval', 
+            # 'low_price', 'open_interest', 'open_price', 'symbol', 'turnover', 'volume', 'vt_symbol'
+
+            datetime_list.append(bardata.datetime)
+            close_price_list.append(bardata.close_price)
+            open_price_list.append(bardata.open_price)
+            high_price_list.append(bardata.high_price)
+            low_price_list.append(bardata.low_price)
+
+        bar_dict["close_price"] = close_price_list
+        bar_dict["open_price"] = open_price_list
+        bar_dict["high_price_list"] = high_price_list
+        bar_dict["low_price_list"] = low_price_list
+        bar_df = DataFrame(bar_dict, index=datetime_list)
+        # print(bar_df)
+
+        print(dir(go))
+        candle_bar = go.Candlestick(
+            x=bar_df.index,
+            open=bar_df["open_price"],
+            high=bar_df["high_price_list"],
+            low=bar_df["low_price_list"],
+            close=bar_df["close_price"],
+            name="Candle"
+        )
+
+        fig.add_trace(candle_bar, row=1, col=1)
+
+        fig.update_layout(height=700, width=1300)
+        fig.show()
 
     def show_chart(self, df: DataFrame = None):
         """"""
