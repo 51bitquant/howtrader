@@ -132,6 +132,7 @@ class OkxGateway(BaseGateway):
 
         self.orders: Dict[str, OrderData] = {}
         self.get_server_time_interval: int = 0
+        self.is_conntected = False
 
     def connect(self, setting: dict) -> None:
         """connect to OKX"""
@@ -171,6 +172,7 @@ class OkxGateway(BaseGateway):
             proxy_port,
             server
         )
+        self.is_conntected = True
 
         self.event_engine.unregister(EVENT_TIMER, self.process_timer_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)

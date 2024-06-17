@@ -14,7 +14,7 @@ SETTINGS: Dict[str, Any] = {
     "font.size": 12,
 
     "log.active": True,
-    "log.level": CRITICAL,
+    "log.level": INFO,
     "log.console": True,
     "log.file": True,
 

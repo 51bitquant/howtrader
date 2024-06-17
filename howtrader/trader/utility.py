@@ -3,6 +3,7 @@ General utility functions.
 """
 
 import simplejson
+import yaml
 import logging
 import sys
 from datetime import datetime
@@ -81,6 +82,19 @@ def get_icon_path(filepath: str, ico_name: str) -> str:
     return str(icon_path)
 
 
+def load_yaml(filename: str) -> dict:
+    """
+    Load data from yaml file in temp path.
+    """
+    filepath: Path = get_file_path(filename)
+
+    if not filepath.exists():
+        return None
+    else:
+        with open(filepath, "r") as file:
+            return yaml.load(file, Loader=yaml.FullLoader)
+        
+        
 def load_json(filename: str) -> dict:
     """
     Load data from json file in temp path.

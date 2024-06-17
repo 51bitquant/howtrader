@@ -217,6 +217,14 @@ class MainEngine:
         gateway_name = self.get_gateway(gateway_name)
         if gateway_name and hasattr(gateway_name, 'query_funding_rate'):
             gateway_name.query_funding_rate()
+    
+    def query_contract(self, gateway_name: str) -> None:
+        """
+        Query contract information from a specific gateway.
+        """
+        gateway: BaseGateway = self.get_gateway(gateway_name)
+        if gateway:
+            gateway.query_contract()
 
     def cancel_quote(self, req: CancelRequest, gateway_name: str) -> None:
         """
@@ -233,6 +241,16 @@ class MainEngine:
         gateway: BaseGateway = self.get_gateway(gateway_name)
         if gateway:
             return gateway.query_history(req)
+        else:
+            return None
+    
+    def query_priceticker(self, gateway: str):
+        """
+        Query priceticker data from a specific gateway.
+        """
+        gateway: BaseGateway = self.get_gateway(gateway)
+        if gateway and hasattr(gateway, "query_priceticker"):
+            return gateway.query_priceticker()
         else:
             return None
 

@@ -134,6 +134,7 @@ class BinanceInverseGateway(BaseGateway):
     }
 
     exchanges: Exchange = [Exchange.BINANCE]
+    
 
     def __init__(self, event_engine: EventEngine, gateway_name: str) -> None:
         """init"""
@@ -146,6 +147,7 @@ class BinanceInverseGateway(BaseGateway):
         self.orders: Dict[str, OrderData] = {}
         self.positions: Dict[str, PositionData] = {}
         self.get_server_time_interval: int = 0
+        self.is_connected: bool = False
 
     def connect(self, setting: dict) -> None:
         """connect exchange api rest & ws"""
@@ -164,6 +166,7 @@ class BinanceInverseGateway(BaseGateway):
 
         self.rest_api.connect(key, secret, proxy_host, proxy_port)
         self.market_ws_api.connect(proxy_host, proxy_port)
+        self.is_connected = True
 
         self.event_engine.unregister(EVENT_TIMER, self.process_timer_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)

@@ -139,6 +139,7 @@ class BinanceSpotGateway(BaseGateway):
 
         self.orders: Dict[str, OrderData] = {}
         self.get_server_time_interval: int = 0
+        self.is_connected = False
 
     def connect(self, setting: dict):
         """connect binance api"""
@@ -157,6 +158,7 @@ class BinanceSpotGateway(BaseGateway):
 
         self.rest_api.connect(key, secret, proxy_host, proxy_port)
         self.market_ws_api.connect(proxy_host, proxy_port)
+        self.is_connected = True
 
         self.event_engine.unregister(EVENT_TIMER, self.process_timer_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
@@ -181,6 +183,9 @@ class BinanceSpotGateway(BaseGateway):
         """query position, not available for spot gateway"""
         pass
 
+    def query_priceticker(self):
+        return self.rest_api.query_priceticker()
+    
     def query_order(self, req: OrderQueryRequest) -> None:
         self.rest_api.query_order(req)
 
@@ -404,6 +409,26 @@ class BinanceSpotRestAPi(RestClient):
             data=data
         )
 
+    def query_priceticker(self) ->None:
+        """query price ticker"""
+
+        data: dict = {
+            "security": Security.NONE
+        }
+        path = "/api/v3/ticker/price"
+        resp: Response = self.request(
+            "GET",
+            path=path,
+            data=data
+        )
+        
+        if resp.status_code // 100 != 2:
+            msg: str = f"query latest price ticker failed, status code：{resp.status_code}，msg：{resp.text}"
+            self.gateway.write_log(msg)
+        else:
+            data: dict = resp.json()
+            return data
+            
 
     def query_contract(self) -> None:
         """query contract detail or exchange info detail"""
@@ -556,7 +581,7 @@ class BinanceSpotRestAPi(RestClient):
 
             self.gateway.on_account(account)
 
-        self.gateway.write_log("query account successfully")
+        #self.gateway.write_log("query account successfully")
 
     def on_query_order(self, data: dict, request: Request) -> None:
 
@@ -1038,7 +1063,7 @@ class BinanceSpotDataWebsocketApi(WebsocketClient):
 
     def on_connected(self) -> None:
         """data ws connected"""
-        self.gateway.write_log("data ws connected")
+        #self.gateway.write_log("data ws connected")
 
         # re-subscribe data.
         if self.ticks:

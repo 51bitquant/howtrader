@@ -149,6 +149,7 @@ class CtaTemplate(ABC):
 
     def buy(
         self,
+        vt_symbol: str,
         price: Decimal,
         volume: Decimal,
         stop: bool = False,
@@ -160,6 +161,7 @@ class CtaTemplate(ABC):
         Send buy order to open a long position.
         """
         return self.send_order(
+            vt_symbol,
             Direction.LONG,
             Offset.OPEN,
             price,
@@ -172,6 +174,7 @@ class CtaTemplate(ABC):
 
     def sell(
         self,
+        vt_symbol: str,
         price: Decimal,
         volume: Decimal,
         stop: bool = False,
@@ -183,6 +186,7 @@ class CtaTemplate(ABC):
         Send sell order to close a long position.
         """
         return self.send_order(
+            vt_symbol,
             Direction.SHORT,
             Offset.CLOSE,
             price,
@@ -195,6 +199,7 @@ class CtaTemplate(ABC):
 
     def short(
         self,
+        vt_symbol: str,
         price: Decimal,
         volume: Decimal,
         stop: bool = False,
@@ -206,6 +211,7 @@ class CtaTemplate(ABC):
         Send short order to open as short position.
         """
         return self.send_order(
+            vt_symbol,
             Direction.SHORT,
             Offset.OPEN,
             price,
@@ -218,6 +224,7 @@ class CtaTemplate(ABC):
 
     def cover(
         self,
+        vt_symbol: str,
         price: Decimal,
         volume: Decimal,
         stop: bool = False,
@@ -229,6 +236,7 @@ class CtaTemplate(ABC):
         Send cover order to close a short position.
         """
         return self.send_order(
+            vt_symbol,
             Direction.LONG,
             Offset.CLOSE,
             price,
@@ -241,6 +249,7 @@ class CtaTemplate(ABC):
 
     def send_order(
         self,
+        vt_symbol: str,
         direction: Direction,
         offset: Offset,
         price: Decimal,
@@ -255,7 +264,7 @@ class CtaTemplate(ABC):
         """
         if self.trading:
             vt_orderids: list = self.cta_engine.send_order(
-                self, direction, offset, price, volume, stop, lock, net, maker
+                self, vt_symbol, direction, offset, price, volume, stop, lock, net, maker
             )
             return vt_orderids
         else:

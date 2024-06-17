@@ -150,6 +150,7 @@ class BinanceUsdtGateway(BaseGateway):
         self.orders: Dict[str, OrderData] = {}
         self.positions: Dict[str, PositionData] = {}
         self.get_server_time_interval: int = 0
+        self.is_connected = False
 
     def connect(self, setting: dict) -> None:
         """connect exchange api"""
@@ -168,6 +169,7 @@ class BinanceUsdtGateway(BaseGateway):
 
         self.rest_api.connect(key, secret, proxy_host, proxy_port)
         self.market_ws_api.connect(proxy_host, proxy_port)
+        self.is_connected = True
 
         self.event_engine.unregister(EVENT_TIMER, self.process_timer_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
@@ -202,10 +204,16 @@ class BinanceUsdtGateway(BaseGateway):
 
     def query_latest_kline(self, req: HistoryRequest) -> None:
         self.rest_api.query_latest_kline(req)
+    
+    def query_contract(self):
+        self.rest_api.query_contract()
 
     def query_history(self, req: HistoryRequest) -> List[BarData]:
         """query historical kline data"""
         return self.rest_api.query_history(req)
+
+    def query_priceticker(self):
+        return self.rest_api.query_priceticker()
 
     def close(self) -> None:
         """close api connection"""
@@ -264,9 +272,13 @@ class BinanceUsdtGateway(BaseGateway):
         self.positions[position.symbol] = position
         super().on_position(position)
 
+    def on_kline(self, kline: OriginalKlineData) -> None:
+        super().on_kline(kline)
+        
     def get_position(self, symbol: str):
         return self.positions.get(symbol, None)
 
+    
 
 class BinanceUsdtRestApi(RestClient):
     """Binance USDT/BUSD future rest api"""
@@ -424,7 +436,7 @@ class BinanceUsdtRestApi(RestClient):
             callback=self.on_query_position,
             data=data
         )
-
+    
     def query_order(self, req: OrderQueryRequest) -> None:
         """query specific order with orderid"""
         data = {
@@ -475,6 +487,26 @@ class BinanceUsdtRestApi(RestClient):
             data=data
         )
 
+    def query_priceticker(self) ->None:
+        """query price ticker"""
+
+        data: dict = {
+            "security": Security.NONE
+        }
+        path = "/fapi/v1/ticker/price"
+        resp: Response = self.request(
+            "GET",
+            path=path,
+            data=data
+        )
+        if resp.status_code // 100 != 2:
+            msg: str = f"query latest price ticker failed, status code：{resp.status_code}，msg：{resp.text}"
+            self.gateway.write_log(msg)
+        else:
+            data: dict = resp.json()
+            return data
+ 
+    
     def query_funding_rate(self) -> None:
         data = {
             "security": Security.NONE
@@ -643,7 +675,7 @@ class BinanceUsdtRestApi(RestClient):
             # if account.balance:
             self.gateway.on_account(account)
 
-        self.gateway.write_log("query account successfully")
+        #self.gateway.write_log("query account successfully")
 
     def on_query_position_side(self, data: dict, request: Request) -> None:
         if data.get("dualSidePosition", False):  # true will means dual position side
@@ -758,6 +790,11 @@ class BinanceUsdtRestApi(RestClient):
     def on_query_contract(self, data: dict, request: Request) -> None:
         """query contract callback"""
         for d in data["symbols"]:
+            
+            #filter trading contracts
+            if d['status'] != 'TRADING':
+                continue
+            
             base_currency: str = d["baseAsset"]
             quote_currency: str = d["quoteAsset"]
             name: str = f"{base_currency.upper()}/{quote_currency.upper()}"
@@ -1212,7 +1249,7 @@ class BinanceUsdtDataWebsocketApi(WebsocketClient):
 
     def on_connected(self) -> None:
         """data ws connected"""
-        self.gateway.write_log("data ws connected")
+        #self.gateway.write_log("data ws connected")
 
         # re-subscribe data
         if self.ticks:
@@ -1260,7 +1297,7 @@ class BinanceUsdtDataWebsocketApi(WebsocketClient):
             "id": self.reqid
         }
         self.send_packet(req)
-
+        
     def on_packet(self, packet: dict) -> None:
         """received the subscribe data"""
         stream: str = packet.get("stream", None)

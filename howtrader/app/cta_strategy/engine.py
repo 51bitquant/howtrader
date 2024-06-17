@@ -28,14 +28,19 @@ from howtrader.trader.object import (
     TradeData,
     ContractData,
     PositionData,
-    AccountData
+    AccountData,
+    OriginalKlineData
 )
 from howtrader.trader.event import (
     EVENT_TICK,
     EVENT_ORDER,
     EVENT_TRADE,
-    EVENT_POSITION
+    EVENT_POSITION,
+    EVENT_ORIGINAL_KLINE
 )
+EVENT_RPC_SIGNAL = "eRpcSignal"
+EVENT_RPC_PUBLISH = 'eRpcPublish'
+
 from howtrader.trader.constant import (
     Direction,
     OrderType,
@@ -131,7 +136,26 @@ class CtaEngine(BaseEngine):
         self.event_engine.register(EVENT_ORDER, self.process_order_event)
         self.event_engine.register(EVENT_TRADE, self.process_trade_event)
         self.event_engine.register(EVENT_POSITION, self.process_position_event)
+        self.event_engine.register(EVENT_RPC_SIGNAL, self.process_rpc_signal)
+        #self.event_engine.register(EVENT_ORIGINAL_KLINE, self.process_kline_event)
 
+    def process_contract_event(self, event: Event) -> None:
+        """"""
+        contract: ContractData = event.data
+        strategies: list = self.symbol_strategy_map[contract.vt_symbol]
+        
+    def process_rpc_signal(self, event: Event) -> None:
+        
+        rpc_signal = event.data
+
+        strategies: list = list(self.strategies.values())
+        if not strategies:
+            return
+        
+        for strategy in strategies:
+            if strategy.inited:
+                self.call_strategy_func(strategy, strategy.on_rpc_signal, rpc_signal)
+                
     def process_tick_event(self, event: Event) -> None:
         """"""
         tick: TickData = event.data
@@ -215,6 +239,17 @@ class CtaEngine(BaseEngine):
 
         self.offset_converter.update_position(position)
 
+    def process_kline_event(self, event: Event) -> None:
+        kline: OriginalKlineData = event.data
+        
+        strategies: list = self.symbol_strategy_map[kline.vt_symbol]
+        if not strategies:
+            return
+        
+        for strategy in strategies:
+            if strategy.inited:
+                self.call_strategy_func(strategy, strategy.on_kline, kline)
+                     
     def check_stop_order(self, tick: TickData) -> None:
         """"""
         for stop_order in list(self.stop_orders.values()):
@@ -459,6 +494,7 @@ class CtaEngine(BaseEngine):
     def send_order(
         self,
         strategy: CtaTemplate,
+        vt_symbol: str,
         direction: Direction,
         offset: Offset,
         price: Decimal,
@@ -470,9 +506,9 @@ class CtaEngine(BaseEngine):
     ) -> list:
         """
         """
-        contract: Optional[ContractData] = self.main_engine.get_contract(strategy.vt_symbol)
+        contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
         if not contract:
-            self.write_log(f"send order failed, didn't find symbol: {strategy.vt_symbol}", strategy)
+            self.write_log(f"send order failed, didn't find symbol: {vt_symbol}", strategy)
             return []
 
         # Round order price and volume to nearest incremental value
@@ -547,14 +583,22 @@ class CtaEngine(BaseEngine):
          eg. BINANCE_SPOT.USDT(spot usdt) BINANCE_USDT.USDT (usdt futures usdt) BINANCE_INVERSE.USDT
         :return: AccountData data or None
         """
-        return self.main_engine.get_account(vt_accountid)
+        return self.main_engine.get_account(vt_accountid)    
+    
+    def get_all_contract(self, exchange: Exchange) -> List[ContractData]:
+        contracts =  self.main_engine.get_all_contracts()
+        return [contract for contract in contracts if contract.exchange == exchange]
+    
+    def get_priceticker(self, gateway_name: str):
+        return self.main_engine.query_priceticker(gateway_name)
+        
     def load_bar(
         self,
         vt_symbol: str,
         days: int,
         interval: Interval,
-        callback: Callable[[BarData], None],
-        use_database: bool
+        use_database: bool,
+        callback: Callable[[BarData], None] = None
     ) -> List[BarData]:
         """"""
         symbol, exchange = extract_vt_symbol(vt_symbol)
@@ -616,7 +660,7 @@ class CtaEngine(BaseEngine):
         self,
         vt_symbol: str,
         days: int,
-        callback: Callable[[TickData], None]
+        callback: Callable[[TickData], None] = None,
     ) -> List[TickData]:
         """"""
         symbol, exchange = extract_vt_symbol(vt_symbol)
@@ -969,6 +1013,13 @@ class CtaEngine(BaseEngine):
         event: Event = Event(EVENT_CTA_STRATEGY, data)
         self.event_engine.put(event)
 
+    def put_rpc_publish_event(self, data: dict) -> None:
+        """
+        Put an event to update strategy status.
+        """
+        event: Event = Event(EVENT_RPC_PUBLISH, data)
+        self.event_engine.put(event)
+
     def write_log(self, msg: str, strategy: CtaTemplate = None) -> None:
         """
         Create cta engine log event.
@@ -980,7 +1031,7 @@ class CtaEngine(BaseEngine):
         event: Event = Event(type=EVENT_CTA_LOG, data=log)
         self.event_engine.put(event)
 
-    def send_email(self, msg: str, strategy: CtaTemplate = None) -> None:
+    def send_email(self, msg: str, strategy: CtaTemplate = None) -> None:     
         """
         Send email to default receiver.
         """
@@ -990,3 +1041,46 @@ class CtaEngine(BaseEngine):
             subject: str = "CTA Engine"
 
         self.main_engine.send_email(subject, msg)
+        
+    def subscribe(self, strategy: CtaTemplate, vt_symbol: str) -> None:
+        """
+        Subscribe market data update
+        """
+        contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
+        if contract:
+            req: SubscribeRequest = SubscribeRequest(
+                symbol=contract.symbol, exchange=contract.exchange)
+            self.main_engine.subscribe(req, contract.gateway_name)
+            
+            # Add vt_symbol to strategy map.
+            strategies: list = self.symbol_strategy_map[vt_symbol]
+            if strategy not in strategies:
+                strategies.append(strategy)
+            else:
+                self.write_log(f"strategy {strategy.strategy_name} already subscribed {vt_symbol}", strategy)
+        else:
+            self.write_log(f"failed to subscribe market data, symbol not found: {vt_symbol}", strategy)
+            return False
+        return True
+    
+    def unsubscribe(self, strategy: CtaTemplate, vt_symbol: str) -> None:
+        """
+        Unsubscribe market data update
+        """
+        contract: Optional[ContractData] = self.main_engine.get_contract(vt_symbol)
+        if contract:
+            """
+            req: SubscribeRequest = SubscribeRequest(
+                symbol=contract.symbol, exchange=contract.exchange)
+            self.main_engine.unsubscribe(req, contract.gateway_name)
+            """
+            
+            # Remove vt_symbol from strategy map.
+            strategies: list = self.symbol_strategy_map[vt_symbol]
+            if strategy in strategies:
+                strategies.remove(strategy)
+            else:
+                self.write_log(f"strategy {strategy.strategy_name} already unsubscribed {vt_symbol}", strategy)
+        else:
+            self.write_log(f"failed to unsubscribe market data, symbol not found: {vt_symbol}", strategy)
+      
