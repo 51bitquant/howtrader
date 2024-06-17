@@ -538,6 +538,7 @@ class BacktestingEngine:
 
         ohlc = DataFrame(bar_dict, index=datetime_list)
 
+        # Swing highs and lows
         swing_highs_lows_res = smc.swing_highs_lows(ohlc, swing_length=50)
         swing_highs_lows_res.index = datetime_list
         swing_highs = swing_highs_lows_res[swing_highs_lows_res["HighLow"] == 1.0]
@@ -545,6 +546,20 @@ class BacktestingEngine:
 
         results["swing_highs"] = swing_highs
         results["swing_lows"] = swing_lows
+
+        # FVGs
+        fvg_res = smc.fvg(ohlc, join_consecutive=True)
+        fvg_res.index = datetime_list
+        bullish_fvg = fvg_res[fvg_res["FVG"] == 1.0]
+        bearish_fvg = fvg_res[fvg_res["FVG"] == -1.0]
+
+        bullish_fvg['Mitigateddate'] = bullish_fvg['MitigatedIndex'].apply(lambda x: datetime_list[int(x)])
+        bearish_fvg['Mitigateddate'] = bearish_fvg['MitigatedIndex'].apply(lambda x: datetime_list[int(x)])
+
+        results["bullish_fvg"] = bullish_fvg
+        results["bearish_fvg"] = bearish_fvg
+
+        print(bullish_fvg)
 
         return results
 
@@ -719,6 +734,27 @@ class BacktestingEngine:
             ),
             name="SMC Swing Low"
         )
+
+        # for row in smc_data["bullish_fvg"].itertuples(index=True, name='Pandas'):
+        bullish_fvg_list = list(smc_data["bullish_fvg"].itertuples(index=True, name='Pandas'))
+        for row in bullish_fvg_list[-10:]:
+            if (row.MitigatedIndex != 0.0):
+                fig.add_shape(
+                    type="rect",
+                    x0=row.Index, y0=row.Bottom,  # Left-Bottom
+                    x1=row.Mitigateddate, y1=row.Top,  # Top-Right
+                    line=dict(color="RoyalBlue", width=2),
+                )
+        bearish_fvg_list = list(smc_data["bearish_fvg"].itertuples(index=True, name='Pandas'))
+        for row in bearish_fvg_list[-10:]:
+            if (row.MitigatedIndex != 0.0):
+                fig.add_shape(
+                    type="rect",
+                    x0=row.Index, y0=row.Bottom,  # Left-Bottom
+                    x1=row.Mitigateddate, y1=row.Top,  # Top-Right
+                    line=dict(color="#353934", width=2),
+                )
+
 
         fig.add_trace(candle_bar, row=1, col=1)
 
