@@ -21,6 +21,8 @@ from howtrader.trader.object import OrderData, TradeData, BarData, TickData
 from howtrader.trader.utility import round_to
 from decimal import Decimal
 
+from smartmoneyconcepts import smc
+
 database: BaseDatabase = get_database()
 
 from .base import (
@@ -524,6 +526,28 @@ class BacktestingEngine:
         self.output("finish calculating strategy's performance")
         return statistics
     
+    def get_smc_data(self, datetime_list, close_price_list, open_price_list, high_price_list, low_price_list, volume_list):
+        results: Dict = {}
+        bar_dict: Dict = {}
+
+        bar_dict["close"] = close_price_list
+        bar_dict["open"] = open_price_list
+        bar_dict["high"] = high_price_list
+        bar_dict["low"] = low_price_list
+        bar_dict["volume"] = volume_list
+
+        ohlc = DataFrame(bar_dict, index=datetime_list)
+
+        swing_highs_lows_res = smc.swing_highs_lows(ohlc, swing_length=50)
+        swing_highs_lows_res.index = datetime_list
+        swing_highs = swing_highs_lows_res[swing_highs_lows_res["HighLow"] == 1.0]
+        swing_lows = swing_highs_lows_res[swing_highs_lows_res["HighLow"] == -1.0]
+
+        results["swing_highs"] = swing_highs
+        results["swing_lows"] = swing_lows
+
+        return results
+
     def show_candle_chart(self, df: DataFrame = None):
         # Show Candle char
 
@@ -551,6 +575,7 @@ class BacktestingEngine:
         open_price_list = []
         high_price_list = []
         low_price_list = []
+        volume_list = []
         for bardata in self.history_data:
             # 'close_price', 'datetime', 'exchange', 'gateway_name', 'high_price', 'interval', 
             # 'low_price', 'open_interest', 'open_price', 'symbol', 'turnover', 'volume', 'vt_symbol'
@@ -560,6 +585,7 @@ class BacktestingEngine:
             open_price_list.append(bardata.open_price)
             high_price_list.append(bardata.high_price)
             low_price_list.append(bardata.low_price)
+            volume_list.append(bardata.volume)
 
         bar_dict["close_price"] = close_price_list
         bar_dict["open_price"] = open_price_list
@@ -666,6 +692,34 @@ class BacktestingEngine:
             name="Buy to Close"
         )
 
+        # SMC Data
+        smc_data = self.get_smc_data(datetime_list,
+                                     close_price_list,
+                                     open_price_list,
+                                     high_price_list,
+                                     low_price_list,
+                                     volume_list)
+        swing_highs = go.Scatter(
+            x=smc_data["swing_highs"].index, y=smc_data["swing_highs"]["Level"],
+            mode="markers",
+            marker=dict(
+                size=15,
+                symbol='star',
+                color='#5FE988'
+            ),
+            name="SMC Swing High"
+        )
+        swing_lows = go.Scatter(
+            x=smc_data["swing_lows"].index, y=smc_data["swing_lows"]["Level"],
+            mode="markers",
+            marker=dict(
+                size=15,
+                symbol='star',
+                color='#FA396D'
+            ),
+            name="SMC Swing Low"
+        )
+
         fig.add_trace(candle_bar, row=1, col=1)
 
         fig.add_trace(buy_to_open, row=1, col=1)
@@ -673,6 +727,9 @@ class BacktestingEngine:
 
         fig.add_trace(sell_to_open, row=1, col=1)
         fig.add_trace(buy_to_close, row=1, col=1)
+
+        fig.add_trace(swing_highs, row=1, col=1)
+        fig.add_trace(swing_lows, row=1, col=1)
 
         fig.update_yaxes(fixedrange=False)
 
