@@ -553,13 +553,28 @@ class BacktestingEngine:
         bullish_fvg = fvg_res[fvg_res["FVG"] == 1.0]
         bearish_fvg = fvg_res[fvg_res["FVG"] == -1.0]
 
-        bullish_fvg['Mitigateddate'] = bullish_fvg['MitigatedIndex'].apply(lambda x: datetime_list[int(x)])
-        bearish_fvg['Mitigateddate'] = bearish_fvg['MitigatedIndex'].apply(lambda x: datetime_list[int(x)])
+        bullish_fvg["Mitigateddate"] = bullish_fvg["MitigatedIndex"].apply(lambda x: datetime_list[int(x)])
+        bearish_fvg["Mitigateddate"] = bearish_fvg["MitigatedIndex"].apply(lambda x: datetime_list[int(x)])
 
         results["bullish_fvg"] = bullish_fvg
         results["bearish_fvg"] = bearish_fvg
 
-        print(bullish_fvg)
+        # Break of Structure(BOS) & Change of Character(CHoCH)
+        bos_choch_res = smc.bos_choch(ohlc, swing_highs_lows_res, close_break=True)
+
+        bos_bullish = bos_choch_res[bos_choch_res["BOS"] == 1.0]
+        bos_bearish = bos_choch_res[bos_choch_res["BOS"] == -1.0]
+        bos_bullish["Brokendate"] = bos_bullish["BrokenIndex"].apply(lambda x: datetime_list[int(x)])
+        bos_bearish["Brokendate"] = bos_bearish["BrokenIndex"].apply(lambda x: datetime_list[int(x)])
+        choch_bullish = bos_choch_res[bos_choch_res["CHOCH"] == 1.0]
+        choch_bearish = bos_choch_res[bos_choch_res["CHOCH"] == -1.0]
+        choch_bullish["Brokendate"] = choch_bullish["BrokenIndex"].apply(lambda x: datetime_list[int(x)])
+        choch_bearish["Brokendate"] = choch_bearish["BrokenIndex"].apply(lambda x: datetime_list[int(x)])
+
+        results["bos_bullish"] = bos_bullish
+        results["bos_bearish"] = bos_bearish
+        results["choch_bullish"] = choch_bullish
+        results["choch_bearish"] = choch_bearish
 
         return results
 
@@ -735,7 +750,7 @@ class BacktestingEngine:
             name="SMC Swing Low"
         )
 
-        # for row in smc_data["bullish_fvg"].itertuples(index=True, name='Pandas'):
+
         bullish_fvg_list = list(smc_data["bullish_fvg"].itertuples(index=True, name='Pandas'))
         for row in bullish_fvg_list[-10:]:
             if (row.MitigatedIndex != 0.0):
@@ -756,6 +771,56 @@ class BacktestingEngine:
                 )
 
 
+        bos_bullish = go.Scatter(
+            x=smc_data["bos_bullish"]["Brokendate"], y=smc_data["bos_bullish"]["Level"],
+            mode="markers+text",
+            marker=dict(
+                color="#19650D",
+                symbol='square',
+                size=15
+            ),
+            text="BOS",
+            textposition="middle center",
+            name="BOS"
+        )
+        bos_bearish = go.Scatter(
+            x=smc_data["bos_bearish"]["Brokendate"], y=smc_data["bos_bearish"]["Level"],
+            mode="markers+text",
+            marker=dict(
+                color="#B71435",
+                symbol='square',
+                size=15
+            ),
+            text="BOS",
+            textposition="middle center",
+            name="BOS"
+        )
+        choch_bullish = go.Scatter(
+            x=smc_data["choch_bullish"]["Brokendate"], y=smc_data["choch_bullish"]["Level"],
+            mode="markers+text",
+            marker=dict(
+                color="#19650D",
+                symbol='circle-x',
+                size=15
+            ),
+            text="CHoCH",
+            textposition="middle center",
+            name="ChoCH"
+        )
+        choch_bearish = go.Scatter(
+            x=smc_data["choch_bearish"]["Brokendate"], y=smc_data["choch_bearish"]["Level"],
+            mode="markers+text",
+            marker=dict(
+                color="#B71435",
+                symbol='circle-x',
+                size=15
+            ),
+            text="CHoCH",
+            textposition="middle center",
+            name="ChoCH"
+        )
+
+
         fig.add_trace(candle_bar, row=1, col=1)
 
         fig.add_trace(buy_to_open, row=1, col=1)
@@ -766,6 +831,12 @@ class BacktestingEngine:
 
         fig.add_trace(swing_highs, row=1, col=1)
         fig.add_trace(swing_lows, row=1, col=1)
+
+        fig.add_trace(bos_bullish, row=1, col=1)
+        fig.add_trace(bos_bearish, row=1, col=1)
+        fig.add_trace(choch_bullish, row=1, col=1)
+        fig.add_trace(choch_bearish, row=1, col=1)
+
 
         fig.update_yaxes(fixedrange=False)
 
