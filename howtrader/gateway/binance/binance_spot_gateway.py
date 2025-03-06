@@ -47,8 +47,8 @@ from howtrader.trader.setting import SETTINGS
 REST_HOST: str = "https://api.binance.com"
 
 # Websocket API HOST
-WEBSOCKET_TRADE_HOST: str = "wss://stream.binance.com:9443/ws/"
-WEBSOCKET_DATA_HOST: str = "wss://stream.binance.com:9443/stream"
+WEBSOCKET_TRADE_HOST: str = "wss://stream.binance.com:443/ws/"
+WEBSOCKET_DATA_HOST: str = "wss://stream.binance.com:443/stream"
 
 
 # order status mapping

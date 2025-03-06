@@ -71,7 +71,7 @@ def run():
     tv_engine: TVEngine = main_engine.add_app(TradingViewApp)
     main_engine.write_log("setup main engine")
 
-    log_engine: LogEngine  = main_engine.get_engine("log")
+    log_engine: LogEngine = main_engine.get_engine("log")
     event_engine.register(EVENT_TV_LOG, log_engine.process_log_event)
     main_engine.write_log("register event listener")
 
