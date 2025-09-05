@@ -51,13 +51,13 @@ from howtrader.api.rest import Request, RestClient, Response
 from howtrader.api.websocket import WebsocketClient
 from howtrader.trader.constant import LOCAL_TZ
 from howtrader.trader.setting import SETTINGS
+
 # rest api host
 F_REST_HOST: str = "https://fapi.binance.com"
 
 # ws api host
 F_WEBSOCKET_TRADE_HOST: str = "wss://fstream.binance.com/ws/"
 F_WEBSOCKET_DATA_HOST: str = "wss://fstream.binance.com/stream"
-
 
 # Order status map
 STATUS_BINANCES2VT: Dict[str, Status] = {
@@ -623,7 +623,7 @@ class BinanceUsdtRestApi(RestClient):
     def on_query_time_failed(self, status_code: int, request: Request):
         self.query_time()
 
-    def on_query_time_error(self,  exception_type: type, exception_value: Exception, tb, request: Request) -> None:
+    def on_query_time_error(self, exception_type: type, exception_value: Exception, tb, request: Request) -> None:
         self.query_time()
 
     def on_query_account(self, datas: list, request: Request) -> None:
@@ -717,7 +717,7 @@ class BinanceUsdtRestApi(RestClient):
             type=order_type,
             direction=DIRECTION_BINANCES2VT[data["side"]],
             status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
-            datetime=generate_datetime(data.get("time", time.time()*1000)),
+            datetime=generate_datetime(data.get("time", time.time() * 1000)),
             gateway_name=self.gateway_name,
         )
         self.gateway.on_order(order)
@@ -748,7 +748,7 @@ class BinanceUsdtRestApi(RestClient):
                 type=order_type,
                 direction=DIRECTION_BINANCES2VT[data["side"]],
                 status=STATUS_BINANCES2VT.get(data["status"], Status.NOTTRADED),
-                datetime=generate_datetime(data.get("time", time.time()*1000)),
+                datetime=generate_datetime(data.get("time", time.time() * 1000)),
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_order(order)
@@ -817,8 +817,6 @@ class BinanceUsdtRestApi(RestClient):
                 last_funding_rate=float(fund_data['lastFundingRate']) * 100,
                 gateway_name=self.gateway_name
             )
-
-
 
             self.gateway.on_funding_rate(funding_rate)
 
@@ -900,7 +898,7 @@ class BinanceUsdtRestApi(RestClient):
                 type=order_type,
                 direction=DIRECTION_BINANCES2VT.get(data.get("side")),
                 status=STATUS_BINANCES2VT.get(data.get("status"), Status.CANCELLED),
-                datetime=generate_datetime(float(data.get("updateTime", time.time()*1000))),
+                datetime=generate_datetime(float(data.get("updateTime", time.time() * 1000))),
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_order(order)
