@@ -65,7 +65,8 @@ class OrderType(Enum):
     LIMIT = "LIMIT"
     TAKER = "TAKER"
     MAKER = "MAKER"
-    STOP = "STOP"
+    STOP = "STOP"  # stop market as default
+    STOP_LIMIT = "STOP_LIMIT"
     FAK = "FAK"
     FOK = "FOK"
     RFQ = "RFQ"

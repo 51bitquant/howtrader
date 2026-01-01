@@ -521,6 +521,16 @@ class BinanceUsdtRestApi(RestClient):
 
         if req.type == OrderType.TAKER:
             params["type"] = "MARKET"
+
+        elif req.type == OrderType.STOP:
+            params["type"] = "STOP_MARKET"
+            params["stopPrice"] = req.price
+
+        elif req.type == OrderType.STOP_LIMIT:
+            params["type"] = "STOP_LIMIT"
+            params["stopPrice"] = req.price
+            params["price"] = req.price
+
         else:
             order_type, time_condition = ORDERTYPE_VT2BINANCES[req.type]
             params["type"] = order_type
